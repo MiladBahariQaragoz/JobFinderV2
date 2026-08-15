@@ -80,3 +80,7 @@ class Settings:
     @property
     def llm_cache_path(self) -> Path:
         return self.data_dir / "llm-cache.db"
+
+    @property
+    def suggested_roles_path(self) -> Path:
+        return self.data_dir / "suggested_roles.json"

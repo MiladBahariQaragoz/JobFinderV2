@@ -638,14 +638,14 @@ its output feeds the search keywords in Phase 4.
 
 ### Test-first checklist
 
-- [ ] `test_cv_digest_excludes_address_email_and_phone` — privacy, tested not assumed
-- [ ] `test_cv_digest_includes_skill_groups_and_education_level`
-- [ ] `test_roles_parsed_from_fake_answer_into_objects`
-- [ ] `test_role_without_german_title_is_rejected_by_the_validator`
-- [ ] `test_search_keywords_are_deduplicated_and_lowercased`
-- [ ] `test_suggestions_are_cached_and_second_run_makes_no_call`
+- [x] `test_cv_digest_excludes_address_email_and_phone` — privacy, tested not assumed
+- [x] `test_cv_digest_includes_skill_groups_and_education_level`
+- [x] `test_roles_parsed_from_fake_answer_into_objects`
+- [x] `test_role_without_german_title_is_rejected_by_the_validator`
+- [x] `test_search_keywords_are_deduplicated_and_lowercased`
+- [x] `test_suggestions_are_cached_and_second_run_makes_no_call`
 - [ ] `test_suggest_roles_cli_renders_a_table_from_stored_suggestions`
-- [ ] `test_empty_cv_produces_a_helpful_message_not_an_empty_table`
+- [x] `test_empty_cv_produces_a_helpful_message_not_an_empty_table`
 
 ### Done when
 

@@ -23,6 +23,12 @@ def cache_key(prompt_version: str, content_hash: str, spec_fingerprint: str) -> 
     return digest.hexdigest()
 
 
+def fingerprint(obj) -> str:
+    """A stable sha1 of any JSON-able object — the 'spec' part of a cache key."""
+    canonical = json.dumps(obj, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha1(canonical.encode()).hexdigest()
+
+
 class LLMCache:
     """SQLite-backed answer store. One row per cache key, JSON-encoded answers."""
 
