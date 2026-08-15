@@ -510,9 +510,14 @@ That sentence has to mean something before Phase 1.
 
 ### Done when
 
-- [ ] `pytest` runs in under 2 seconds and is green
-- [ ] A deliberate `requests.get("https://example.com")` inside a unit test fails loudly
-- [ ] `pip install -e .` then `python -c "import jobfinder"` works in the venv
+- [x] `pytest` runs in under 2 seconds and is green — 18 passed in 0.95 s, clean under
+      `-W error`
+- [x] A deliberate `requests.get("https://example.com")` inside a unit test fails loudly
+- [x] `pip install -e .` then `python -c "import jobfinder"` works in the venv
+
+**Phase 0 complete.** `ruff check` and `ruff format --check` clean, `pytest -m live`
+green, and `scripts/record_fixture.py` has recorded its first real Bundesagentur
+response into `tests/fixtures/ba/`.
 
 **Out of scope:** CI. One user, one laptop — a pre-commit hook running ruff + pytest
 is enough, and even that is optional.

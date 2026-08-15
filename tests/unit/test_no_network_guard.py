@@ -15,9 +15,9 @@ def test_outbound_connection_is_blocked():
 
 
 def test_socket_connect_is_blocked_too():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    with pytest.raises(RuntimeError, match="network access"):
-        sock.connect(("93.184.216.34", 80))
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        with pytest.raises(RuntimeError, match="network access"):
+            sock.connect(("93.184.216.34", 80))
 
 
 def test_error_names_the_host_that_was_attempted():
