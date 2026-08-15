@@ -687,8 +687,8 @@ only one source ever works, this is the one that has to.
 
 ### Test-first checklist
 
-- [ ] `test_spec_with_minijob_maps_to_ba_angebotsart_and_arbeitszeit_params`
-- [ ] `test_spec_with_three_cities_produces_three_queries_with_correct_umkreis`
+- [x] `test_spec_with_minijob_maps_to_ba_angebotsart_and_arbeitszeit_params`
+- [x] `test_spec_with_three_cities_produces_three_queries_with_correct_umkreis`
 - [ ] `test_ba_fixture_parses_into_raw_postings_with_expected_fields`
 - [ ] `test_ba_posting_id_is_source_prefixed_referenznummer`
 - [ ] `test_ba_minijob_flag_is_read_from_istGeringfuegigeBeschaeftigung`
