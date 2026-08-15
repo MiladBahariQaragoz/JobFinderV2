@@ -31,9 +31,12 @@ Two product rules that override convenience:
 pip install -r requirements.txt
 python -m llmpool doctor            # provider keys + live ping + model drift
 python scripts/llm_smoke.py         # end-to-end LLM backend check
+pytest                              # offline suite: unit + contract + store + web
+pytest -m live                      # opt-in tests that hit the real internet
+pytest -m live_llm                  # opt-in tests that spend a real LLM call
+ruff check . && ruff format --check .
+jobfinder profile validate          # parse her pool.yaml and print a summary
 ```
-
-There is no test or lint command configured yet. Add one here when there is.
 
 ## LLM calls
 

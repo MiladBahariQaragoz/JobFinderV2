@@ -561,7 +561,7 @@ readable error at second zero, not an empty result list after four minutes of se
 
 ### Done when
 
-- [ ] She fills `pool.yaml` and `jobfinder profile validate` prints a green summary:
+- [x] She fills `pool.yaml` and `jobfinder profile validate` prints a green summary:
       name, languages, 3 strongest skill groups, years of experience
 - [x] Every failure mode above prints one sentence a non-programmer can act on
 

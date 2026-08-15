@@ -1,10 +1,13 @@
 # Secrets and personal data
+# (gitignore has no inline comments — keep notes on their own lines)
 .env
 .env.local
 .env.*.local
-pool.yaml          # her filled CV — name, address, contact details
+# her filled CV — name, address, contact details
+pool.yaml
 !pool.template.yaml
-*.docx             # her original CV documents never leave this machine
+# her original CV documents never leave this machine
+*.docx
 
 # Python
 __pycache__/
