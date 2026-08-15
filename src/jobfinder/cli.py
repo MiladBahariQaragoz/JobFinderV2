@@ -99,8 +99,10 @@ def _cache_size_line(settings: Settings) -> str:
     if not path.exists():
         return "Cache: no cache yet — nothing has been enriched."
     import sqlite3
+    from contextlib import closing
 
-    with sqlite3.connect(path) as db:
+    # sqlite3's own context manager commits, it does not close — hence `closing`.
+    with closing(sqlite3.connect(path)) as db:
         count = db.execute("SELECT COUNT(*) FROM llm_cache").fetchone()[0]
     plural = "" if count == 1 else "s"
     return f"Cache: {count} cached answer{plural} in {path.name}."

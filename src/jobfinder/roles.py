@@ -107,11 +107,11 @@ def suggest_roles(
     )
     prompt = f"{spec.text}\n\n---\n\nCV DIGEST:\n\n{digest}"
 
-    cache = LLMCache(settings.llm_cache_path)
-    answer = cache.get(key)
-    fresh = answer is None  # fresh means: a provider call had to be made
-    if fresh:
-        answer = complete_json_cached(pool, cache, prompt=prompt, key=key)
+    with LLMCache(settings.llm_cache_path) as cache:
+        answer = cache.get(key)
+        fresh = answer is None  # fresh means: a provider call had to be made
+        if fresh:
+            answer = complete_json_cached(pool, cache, prompt=prompt, key=key)
 
     ok, reason = roles_answer_validator(answer)
     if not ok:

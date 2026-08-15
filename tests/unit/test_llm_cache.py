@@ -13,7 +13,8 @@ ANSWER = {"roles": [{"title_de": "Werkstudent Datenanalyse"}]}
 
 @pytest.fixture
 def cache(tmp_path):
-    return LLMCache(tmp_path / "cache.db")
+    with LLMCache(tmp_path / "cache.db") as open_cache:
+        yield open_cache
 
 
 def test_cache_returns_stored_answer_without_calling_the_pool(cache):
@@ -46,11 +47,11 @@ def test_cache_misses_when_content_hash_changes(cache):
 
 def test_cache_survives_reopening_the_database(tmp_path):
     db_path = tmp_path / "cache.db"
-    LLMCache(db_path).put("k", ANSWER)
+    with LLMCache(db_path) as first:
+        first.put("k", ANSWER)
 
-    reopened = LLMCache(db_path)
-
-    assert reopened.get("k") == ANSWER
+    with LLMCache(db_path) as reopened:
+        assert reopened.get("k") == ANSWER
 
 
 def test_pool_exhausted_is_surfaced_as_a_handled_error_not_a_crash(cache):
@@ -61,6 +62,13 @@ def test_pool_exhausted_is_surfaced_as_a_handled_error_not_a_crash(cache):
 
     # nothing half-written is stored — the job stays unenriched, retried later
     assert cache.get(cache_key("v1", "h1", "f1")) is None
+
+
+def test_cache_closes_its_connection_on_context_manager_exit(tmp_path, sqlite_leaks):
+    with LLMCache(tmp_path / "cache.db") as cache:
+        cache.put("k", ANSWER)
+
+    assert sqlite_leaks() == []
 
 
 def test_cache_keys_differ_on_every_component():

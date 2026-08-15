@@ -9,10 +9,9 @@ from jobfinder.llm.cache import LLMCache
 
 def test_llm_doctor_runs_llmpool_doctor_and_reports_the_cache(tmp_path, capsys):
     settings = Settings.load(tmp_path)
-    cache = LLMCache(settings.llm_cache_path)
-    cache.put("k1", {"a": 1})
-    cache.put("k2", {"b": 2})
-    cache.close()
+    with LLMCache(settings.llm_cache_path) as cache:
+        cache.put("k1", {"a": 1})
+        cache.put("k2", {"b": 2})
 
     seen: list[str] = []
 
@@ -41,6 +40,16 @@ def test_llm_doctor_propagates_doctor_failure(tmp_path, capsys):
     exit_code = main(["llm", "doctor", "--root", str(tmp_path)], _run_doctor=lambda s: 1)
 
     assert exit_code == 1
+
+
+def test_llm_doctor_closes_the_cache_it_counted(tmp_path, sqlite_leaks):
+    settings = Settings.load(tmp_path)
+    with LLMCache(settings.llm_cache_path) as cache:
+        cache.put("k1", {"a": 1})
+
+    main(["llm", "doctor", "--root", str(tmp_path)], _run_doctor=lambda s: 0)
+
+    assert sqlite_leaks() == []
 
 
 def test_settings_cache_path_lives_in_data_dir(tmp_path):

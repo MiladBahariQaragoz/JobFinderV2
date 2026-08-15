@@ -60,6 +60,12 @@ class LLMCache:
     def close(self) -> None:
         self._db.close()
 
+    def __enter__(self) -> LLMCache:
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.close()
+
 
 def complete_json_cached(pool: Pool, cache: LLMCache, *, prompt: str, key: str) -> dict:
     """Ask the pool once per key: cache first, provider second, store on return.

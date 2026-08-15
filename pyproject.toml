@@ -34,6 +34,9 @@ markers = [
     "live_llm: spends a real LLM call; run with `pytest -m live_llm`",
 ]
 addopts = "-m 'not live and not live_llm'"
+# "pytest green, no warnings" is in every phase's Definition of Done, so a warning
+# fails the run rather than scrolling past. Unclosed SQLite connections hid here.
+filterwarnings = ["error"]
 
 [tool.ruff]
 line-length = 100

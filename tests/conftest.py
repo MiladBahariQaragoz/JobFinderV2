@@ -8,6 +8,7 @@ a recorded fixture instead — see `scripts/record_fixture.py`.
 from __future__ import annotations
 
 import socket
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -51,6 +52,38 @@ def no_network(request, monkeypatch):
 
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
+
+
+def _is_closed(connection: sqlite3.Connection) -> bool:
+    try:
+        connection.execute("SELECT 1")
+    except sqlite3.ProgrammingError:
+        return True
+    return False
+
+
+@pytest.fixture
+def sqlite_leaks(monkeypatch):
+    """Report which SQLite connections opened during this test are still open.
+
+    An unclosed connection is not cosmetic: on Windows it keeps a lock on the
+    database file, and it surfaces later as a `ResourceWarning` attributed to
+    whichever unlucky test the garbage collector was running at the time.
+    """
+    opened: list[sqlite3.Connection] = []
+    real_connect = sqlite3.connect
+
+    def tracking_connect(*args, **kwargs):
+        connection = real_connect(*args, **kwargs)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", tracking_connect)
+
+    def still_open() -> list[sqlite3.Connection]:
+        return [connection for connection in opened if not _is_closed(connection)]
+
+    return still_open
 
 
 @pytest.fixture

@@ -158,6 +158,15 @@ def test_suggestions_are_cached_and_second_run_makes_no_call(tmp_path):
     assert roles[0].title_de == "Werkstudent Datenanalyse"
 
 
+def test_suggest_roles_closes_the_cache_it_opened(tmp_path, sqlite_leaks):
+    settings = Settings.load(tmp_path)
+    pool = FakePool([WELL_FORMED_ANSWER])
+
+    suggest_roles(settings, sample_resume(), pool)
+
+    assert sqlite_leaks() == []
+
+
 def test_empty_cv_produces_a_helpful_message_not_an_empty_table(tmp_path):
     settings = Settings.load(tmp_path)
     pool = FakePool([])  # would raise AssertionError if ever called
