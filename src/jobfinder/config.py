@@ -67,5 +67,9 @@ class Settings:
         return self.data_dir / "jobs-enriched.csv"
 
     @property
+    def pool_path(self) -> Path:
+        return self.project_root / "pool.yaml"
+
+    @property
     def pool_state_path(self) -> Path:
         return self.data_dir / "pool_state.json"

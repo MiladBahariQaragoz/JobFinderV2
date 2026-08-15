@@ -563,7 +563,7 @@ readable error at second zero, not an empty result list after four minutes of se
 
 - [ ] She fills `pool.yaml` and `jobfinder profile validate` prints a green summary:
       name, languages, 3 strongest skill groups, years of experience
-- [ ] Every failure mode above prints one sentence a non-programmer can act on
+- [x] Every failure mode above prints one sentence a non-programmer can act on
 
 **Out of scope:** PDF/DOCX CV parsing. She has the YAML; asking her to fill one file
 once is cheaper than building a parser that guesses.
