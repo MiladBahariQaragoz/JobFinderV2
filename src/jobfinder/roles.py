@@ -69,6 +69,14 @@ def build_cv_digest(resume: Resume) -> str:
     return "\n".join(sections)
 
 
+def stored_suggestions(settings: Settings) -> list[Role] | None:
+    """Roles from the last successful run — no CV, no pool, no LLM call."""
+    storage = settings.suggested_roles_path
+    if not storage.exists():
+        return None
+    return _load_stored(storage)
+
+
 def suggest_roles(
     settings: Settings, resume: Resume, pool, *, refresh: bool = False
 ) -> tuple[list[Role], bool]:

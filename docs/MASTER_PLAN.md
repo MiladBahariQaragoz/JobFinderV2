@@ -644,7 +644,7 @@ its output feeds the search keywords in Phase 4.
 - [x] `test_role_without_german_title_is_rejected_by_the_validator`
 - [x] `test_search_keywords_are_deduplicated_and_lowercased`
 - [x] `test_suggestions_are_cached_and_second_run_makes_no_call`
-- [ ] `test_suggest_roles_cli_renders_a_table_from_stored_suggestions`
+- [x] `test_suggest_roles_cli_renders_a_table_from_stored_suggestions`
 - [x] `test_empty_cv_produces_a_helpful_message_not_an_empty_table`
 
 ### Done when
