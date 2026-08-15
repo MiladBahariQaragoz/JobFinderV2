@@ -552,8 +552,8 @@ readable error at second zero, not an empty result list after four minutes of se
 - [ ] `test_language_levels_parse_including_mother_tongue`
 - [ ] `test_experience_dates_accept_yyyy_mm_and_present`
 - [ ] `test_invalid_date_reports_the_entry_id_not_a_stack_trace`
-- [ ] `test_unknown_city_lists_the_valid_ones` — the error message is the feature
-- [ ] `test_city_radius_defaults_to_25km_and_can_be_overridden`
+- [x] `test_unknown_city_lists_the_valid_ones` — the error message is the feature
+- [x] `test_city_radius_defaults_to_25km_and_can_be_overridden`
 - [ ] `test_search_spec_rejects_empty_employment_types`
 - [ ] `test_general_mode_does_not_require_a_resume` — she can search for kitchen work
       before her CV is finished
