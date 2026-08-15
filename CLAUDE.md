@@ -1,6 +1,13 @@
 # JobFinderV2 — project instructions
 
-Job search tooling. Python 3.13, virtualenv in `.venv`.
+A local job-search assistant built for a single user (see
+[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) for the product, the phases, and the
+data contracts — read it before starting any feature). Python 3.13, virtualenv
+in `.venv`.
+
+Work is phase-by-phase and test-first. Before implementing a phase, write its
+task plan into `docs/superpowers/plans/` and follow the TDD cycle: failing test,
+watch it fail, minimal code, refactor, commit.
 
 ## Commands
 

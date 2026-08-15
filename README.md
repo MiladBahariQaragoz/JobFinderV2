@@ -1,7 +1,14 @@
 # JobFinderV2
 
-Job search tooling, rebuilt. LLM work in this repo runs on a pool of free
-provider APIs rather than a single paid endpoint.
+A local job-search assistant for one person: it turns a CV into search terms,
+collects live postings from German job APIs and job boards, explains each one in
+English (including how much German it really needs), and tracks what has been
+applied to. LLM work runs on a pool of free provider APIs rather than a single
+paid endpoint.
+
+**Start here:** [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) — the phase-by-phase
+build plan, data contracts, verified source list, and definition of done for each
+stage.
 
 ## Setup
 

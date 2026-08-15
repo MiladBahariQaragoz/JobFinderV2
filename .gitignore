@@ -1,7 +1,9 @@
-# Secrets
+# Secrets and personal data
 .env
 .env.local
 .env.*.local
+pool.yaml          # her filled CV — name, address, contact details
+!pool.template.yaml
 
 # Python
 __pycache__/

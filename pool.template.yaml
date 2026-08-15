@@ -1,0 +1,174 @@
+# =============================================================================
+# CV POOL — single source of truth for all CV content.
+# Edit facts ONCE here; the build script assembles tailored CVs per target.
+#
+# Conventions
+#   - Dates: "YYYY-MM" or "present".
+#   - tags:  free-text labels (software, data-ml, aerospace, product, general).
+#            Targets use these to pick which bullets/skills/certs to show.
+#   - Add a new job? Add an entry under `experience`. Add a new role variant?
+#     Drop a file in targets/. Nothing else needs to change.
+#
+# This is a BLANK TEMPLATE. Replace every placeholder with your own facts.
+# Delete the example entries you don't need, and add as many as you like.
+# =============================================================================
+
+basics:
+  name: Your Full Name
+  headline: "MSc <Your Field> @ <University> · <Your focus, e.g. Software / Data / ML>"
+  email: your.email@example.com
+  location: City, Country
+  links:
+    Portfolio: "https://your-portfolio.example.com/"   # primary — programming work
+    LinkedIn: "https://www.linkedin.com/in/your-handle/"
+  languages:
+    - { name: Language A, level: "Mother tongue" }
+    - { name: Language B, level: "C1" }
+    - { name: Language C, level: "B1" }
+
+
+# -----------------------------------------------------------------------------
+# Experience. All roles are normally shown on every CV; bullets are filtered by
+# the target's tag so each version emphasizes the relevant work.
+# -----------------------------------------------------------------------------
+experience:
+  - id: job-short-id            # unique, lowercase, used as a handle
+    role: Your Job Title
+    org: Company / Organization
+    employment: Part-time       # Full-time | Part-time | Internship | Freelance
+    location: "City, Country"
+    start: "YYYY-MM"
+    end: present                # "YYYY-MM" or present
+    tags: [software, data-ml, product, general]
+    bullets:
+      - text: "What you did and the impact — start with a strong verb."
+        tags: [software, general]       # which CV variants show this bullet
+      - text: "Another achievement, scoped to a different audience."
+        tags: [data-ml]
+    skills: [Skill A, Skill B, Skill C]
+
+  - id: another-job
+    role: Earlier Role
+    org: Previous Organization
+    employment: Internship
+    location: "City, Country"
+    start: "YYYY-MM"
+    end: "YYYY-MM"
+    tags: [product, general]
+    bullets:
+      - text: "Describe the work in one concrete, result-oriented line."
+        tags: [product, general]
+    skills: [Skill X, Skill Y]
+
+# -----------------------------------------------------------------------------
+# Projects. Each has a one-line `summary`, a curated `stack`, and `tags` so
+# targets can surface the most relevant builds. `highlights` are optional bullets.
+# -----------------------------------------------------------------------------
+projects:
+  - id: project-short-id
+    name: "Project Name"
+    summary: "One sentence: what it does and the interesting part."
+    stack: [Language, Framework, Database, "Other tool"]
+    highlights:
+      - "A notable detail, feature, or result worth calling out."
+      - "Another highlight (optional)."
+    tags: [software, data-ml, product]
+
+  - id: another-project
+    name: "Second Project"
+    summary: "One-line description of the second project."
+    stack: [Tool A, Tool B]
+    tags: [data-ml, software]
+
+# -----------------------------------------------------------------------------
+# Education
+# -----------------------------------------------------------------------------
+education:
+  - org: University / School Name
+    degree: "Master's degree — Your Program"
+    location: "City, Country"
+    start: "YYYY-MM"
+    end: present
+    notes: []
+  - org: Previous University
+    degree: "BEng — Your Program"
+    location: "City, Country"
+    start: "YYYY"
+    end: "YYYY-MM"
+    notes:
+      - "Optional honor, award, or thesis title."
+
+# -----------------------------------------------------------------------------
+# Skills, grouped. Targets choose which groups to show and in what order.
+# -----------------------------------------------------------------------------
+skill_groups:
+  Programming Languages:
+    items: [Language A, Language B, Language C]
+    tags: [software, data-ml, general]
+  Web & Frontend:
+    items: [Framework A, Framework B, Web Development]
+    tags: [software, product, general]
+  Backend & APIs:
+    items: ["Runtime / framework", REST APIs, WebSockets]
+    tags: [software, general]
+  AI, LLM & RAG:
+    items: ["LLM integration", "Retrieval-Augmented Generation (RAG)", "Vector databases"]
+    tags: [data-ml, software]
+  Data & Machine Learning:
+    items: [Machine Learning, Data Analysis, "BI tool"]
+    tags: [data-ml, software, general]
+  Cloud, DevOps & Databases:
+    items: ["Cloud provider", Docker, Git, "Database"]
+    tags: [software, data-ml, general]
+  Engineering & Simulation:
+    items: ["CAD tool", "Simulation tool"]
+    tags: [aerospace, general]
+  Design & Product:
+    items: [Product Design, Rapid Prototyping]
+    tags: [product]
+  Methods & Soft Skills:
+    items: [Systems Design, Project Management, Problem Solving]
+    tags: [software, data-ml, aerospace, product, general]
+  Productivity & Docs:
+    items: [LaTeX, Markdown, Microsoft Office]
+    tags: [general]
+
+# -----------------------------------------------------------------------------
+# Certifications. Targets can filter by cert tags and cap the count.
+# `id`/`url` are optional public credential links — leave blank if none.
+# -----------------------------------------------------------------------------
+certifications:
+  - name: "Certificate Name"
+    issuer: Issuing Organization
+    date: "YYYY-MM"
+    id: ""                       # optional credential id
+    url: ""                      # optional public verification link
+    tags: [software]
+  - name: "Another Certificate"
+    issuer: Issuing Organization
+    date: "YYYY-MM"
+    url: ""
+    tags: [data-ml]
+
+# -----------------------------------------------------------------------------
+# Interests / hobbies. Optional CV section; common (and welcome) in German CVs.
+# -----------------------------------------------------------------------------
+interests:
+  - Interest one
+  - Interest two
+  - Interest three
+
+# -----------------------------------------------------------------------------
+# Working style. Better suited to cover letters, "About me" / interview prep, or
+# a short line on the CV. Kept here so it's reusable.
+# -----------------------------------------------------------------------------
+working_style:
+  # one-line versions to drop straight into a CV or profile
+  short: >
+    One or two sentences describing how you work best — your strengths,
+    how you like to plan, and how you fit into a team.
+  # bullet form for an "About me" / interview / cover-letter section
+  points:
+    - "A short, punchy statement about how you work."
+    - "Another trait or working preference."
+    - "One more, if useful."
