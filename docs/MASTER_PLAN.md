@@ -595,16 +595,16 @@ app already knows the answer to.
 
 ### Test-first checklist
 
-- [ ] `test_validator_accepts_a_well_formed_answer`
-- [ ] `test_validator_rejects_missing_required_key_with_named_reason`
-- [ ] `test_validator_rejects_prose_masquerading_as_json`
-- [ ] `test_validator_rejects_out_of_range_enum_value` (e.g. `german_level: "fluent"`)
-- [ ] `test_cache_returns_stored_answer_without_calling_the_pool` — assert the fake
+- [x] `test_validator_accepts_a_well_formed_answer`
+- [x] `test_validator_rejects_missing_required_key_with_named_reason`
+- [x] `test_validator_rejects_prose_masquerading_as_json`
+- [x] `test_validator_rejects_out_of_range_enum_value` (e.g. `german_level: "fluent"`)
+- [x] `test_cache_returns_stored_answer_without_calling_the_pool` — assert the fake
       recorded zero calls
-- [ ] `test_cache_misses_when_prompt_version_changes`
-- [ ] `test_cache_misses_when_content_hash_changes`
-- [ ] `test_pool_exhausted_is_surfaced_as_a_handled_error_not_a_crash`
-- [ ] `test_build_pool_raises_a_readable_error_when_no_provider_keys_exist`
+- [x] `test_cache_misses_when_prompt_version_changes`
+- [x] `test_cache_misses_when_content_hash_changes`
+- [x] `test_pool_exhausted_is_surfaced_as_a_handled_error_not_a_crash`
+- [x] `test_build_pool_raises_a_readable_error_when_no_provider_keys_exist`
 - [x] `tests/live/test_llm_smoke.py` (marked `live_llm`) — one real call, valid JSON back
 
 ### Done when
