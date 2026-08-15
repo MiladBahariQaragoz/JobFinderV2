@@ -547,11 +547,11 @@ readable error at second zero, not an empty result list after four minutes of se
 
 ### Test-first checklist
 
-- [ ] `test_parses_the_blank_template_without_crashing` — the shipped template must load
-- [ ] `test_missing_required_basics_names_the_field_and_the_line`
-- [ ] `test_language_levels_parse_including_mother_tongue`
-- [ ] `test_experience_dates_accept_yyyy_mm_and_present`
-- [ ] `test_invalid_date_reports_the_entry_id_not_a_stack_trace`
+- [x] `test_parses_the_blank_template_without_crashing` — the shipped template must load
+- [x] `test_missing_required_basics_names_the_field_and_the_line`
+- [x] `test_language_levels_parse_including_mother_tongue`
+- [x] `test_experience_dates_accept_yyyy_mm_and_present`
+- [x] `test_invalid_date_reports_the_entry_id_not_a_stack_trace`
 - [x] `test_unknown_city_lists_the_valid_ones` — the error message is the feature
 - [x] `test_city_radius_defaults_to_25km_and_can_be_overridden`
 - [ ] `test_search_spec_rejects_empty_employment_types`
