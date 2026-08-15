@@ -4,6 +4,7 @@
 .env.*.local
 pool.yaml          # her filled CV — name, address, contact details
 !pool.template.yaml
+*.docx             # her original CV documents never leave this machine
 
 # Python
 __pycache__/
