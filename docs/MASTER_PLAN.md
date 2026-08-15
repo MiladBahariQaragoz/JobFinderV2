@@ -92,8 +92,8 @@ Phases are ordered so that the app becomes useful before it becomes complete.
                           |                          |
         +-----------------v------------------+       |
         |          source registry           |       |
-        |  BA | Arbeitnow | Adzuna | StepStone|      |
-        |  Indeed | Xing | Overpass(POIs)     |      |
+        |  BA | Arbeitnow | Adzuna | Kleinanz.|       |
+        |  StepStone | Indeed | Xing | Overpass|      |
         +-----------------+------------------+       |
                           | RawPosting                |
                           v                           v
@@ -132,6 +132,7 @@ src/jobfinder/
     ba.py            Bundesagentur für Arbeit Jobsuche  (API)
     arbeitnow.py     Arbeitnow                          (API)
     adzuna.py        Adzuna                             (API, optional key)
+    kleinanzeigen.py Kleinanzeigen classifieds          (scraper — best minijob source)
     stepstone.py     StepStone                          (scraper)
     indeed.py        Indeed                             (scraper)
     xing.py          Xing                               (scraper)
@@ -244,6 +245,8 @@ assumptions, and the failures are recorded so nobody re-discovers them.
 | **StepStone** | 🔨 scraper | Search results page → listing pages | `robots.txt` disallows much of the site and forbids non-conforming robots. Included by explicit decision; treat as fragile. |
 | **Indeed** | 🔨 scraper | Search results page → listing pages | Aggressive bot detection; expect it to be the first to break. Kill switch matters here. |
 | **Xing** | 🔨 scraper | Public job pages | `robots.txt` disallows `/search/` and `/publicsearch/`. Public listing pages only, never anything behind login. |
+| **Kleinanzeigen** | ✅ verified `200`, scraper | `GET www.kleinanzeigen.de/s-jobs/{city}/c102l{locationId}` → 25 listings per page, then `/s-anzeige/{slug}/{id}` | **Probably her best source for minijobs.** This is where Bavarian bakeries, kitchens, cleaning firms and shops actually post. Verified: 25 parseable listing links and 27 JSON-LD blocks on one page, ads like "Aushilfe im Verkauf Minijob", "Reinigungskraft als Minijob". Category `c102` is Jobs. |
+| | ⚠️ | The `l{id}` code is a Kleinanzeigen location id, not a city name — `l7414` resolved to Stockstadt, not Ingolstadt | A verified city → location-id map is a deliverable, not something to guess at runtime. |
 
 **Adding a source later** must mean writing one adapter file plus one fixture-backed
 contract test. If it ever means touching the store, the enrichment, or the UI, the
@@ -291,6 +294,23 @@ still works. When a live test fails, the fixture is stale and the adapter needs 
   missing keys, wrong `german_level` values, prose instead of JSON.
 - Exactly one live LLM test, marked, that enriches one real posting end to end.
 
+### Commit rhythm — one task, one commit, pushed
+
+**Every time a checklist item in this document is finished, it is closed out on the
+spot:**
+
+1. Tick the box in `docs/MASTER_PLAN.md` — `- [ ]` becomes `- [x]`
+2. Commit the work **and** the ticked box together, message in the form
+   `type: what and why`
+3. `git push` immediately — no batching, no end-of-day dump
+
+The plan is therefore the live progress record: at any moment, the ticked boxes on
+GitHub are exactly what works. Nothing is "done but not pushed". If the laptop dies
+mid-phase, the remote already has everything that was finished — the same principle
+the app itself follows in [§9](#9-incremental-persistence-and-resume).
+
+A red test is not a task. Commit at green, or at green-plus-refactor.
+
 ### Definition of Done — applies to every phase
 
 - [ ] Every new behavior had a failing test first, and the failure was watched
@@ -320,6 +340,124 @@ These are engineering constraints that keep her searches working, and they are t
 6. **Per-source kill switch** in config; `sources.stepstone.enabled: false` is a
    one-line fix when a site changes and she needs results today.
 7. **Total request budget per run** (default 200) so a bug cannot turn into a flood.
+
+---
+
+## 9. Incremental persistence and resume
+
+**The rule: nothing lives only in memory.** Every unit of work is committed the moment
+it completes. Her internet drops on a train, a free-tier quota runs out at job 143 of
+400, she closes the laptop lid — in every case the app keeps what it had and continues
+from there. This is a first-class requirement, not error handling bolted on later.
+
+### How it works
+
+| Mechanism | Detail |
+|---|---|
+| **Unit of work** | One fetched page, one stored job, one enriched job, one contact. Each is its own SQLite transaction, committed immediately. |
+| **SQLite mode** | WAL journal, `synchronous=NORMAL`. Survives a hard kill without corrupting the database. |
+| **Run journal** | `runs` holds one row per search/enrich/contacts run: spec, started_at, `last_progress_at`, state (`running`, `done`, `interrupted`, `failed`), counters. Updated as work lands, not at the end. |
+| **Per-source cursors** | `source_state` stores the query hash and the last completed page per source. A resumed search re-enters at that page instead of at page 1. |
+| **Idempotent writes** | `job_id` is the primary key; enrichment is keyed by `(job_id, prompt_version)`. Replaying work already done changes nothing and costs nothing. |
+| **Atomic exports** | CSVs are written to `*.tmp` then `os.replace()`d. A crash mid-export leaves the previous good CSV intact, never a half file. |
+| **Stale run detection** | A `running` row whose `last_progress_at` is older than the heartbeat interval is marked `interrupted` on next start, so the app never claims to be doing something it is not. |
+| **Nothing partial is stored** | An LLM answer that fails validation is discarded, not written half-parsed. The job stays unenriched and gets retried. |
+
+### Failure semantics — what happens, and what she sees
+
+| Failure | Kept | On resume |
+|---|---|---|
+| Internet drops mid-search | Every page already fetched and stored | Continues from the last completed page of each source |
+| A source blocks or times out | Everything from the other sources | That source is skipped or retried; the run does not fail |
+| LLM quota exhausted (`PoolExhausted`) | Every job enriched so far | "143 of 400 enriched — quota spent. Resume tomorrow, or add another key." Resuming skips the 143. |
+| She closes the app / Ctrl-C | Everything committed up to that second | "Interrupted run — Resume" offered on next start |
+| Power loss | Same, WAL-protected | Same |
+| A single job's enrichment fails | All others | That job alone is retried next run |
+
+### Commands and UI
+
+- `jobfinder search --resume` and `jobfinder enrich --resume` continue the newest
+  interrupted run; without the flag, a new run starts and finished work is still skipped
+- The web app shows an interrupted run as a banner with a **Resume** button, and the
+  counts it left behind
+- Every run's summary is stored, so "what happened last night" is answerable
+
+### Tests (owned by Phases 4, 7 and 9, listed together because the rule is shared)
+
+- [ ] `test_killing_a_search_after_two_pages_keeps_both_pages`
+- [ ] `test_resumed_search_starts_at_the_stored_cursor_not_page_one`
+- [ ] `test_network_error_mid_run_marks_run_interrupted_with_counts`
+- [ ] `test_pool_exhausted_mid_batch_keeps_every_completed_enrichment`
+- [ ] `test_resume_after_quota_exhaustion_skips_already_enriched_jobs`
+- [ ] `test_invalid_llm_answer_leaves_the_job_unenriched_not_half_written`
+- [ ] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
+- [ ] `test_stale_running_run_is_marked_interrupted_on_next_start`
+- [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
+- [ ] `test_wal_mode_is_enabled_on_every_connection`
+
+---
+
+## 10. UX principles
+
+She is not a developer, she is under pressure, and a screen that sits still reads as
+broken. **The panic rule: at any moment she must be able to answer three questions
+from what is on screen — is it working, how far along is it, and how long is left.**
+
+### Progress and feedback
+
+| Situation | What she sees |
+|---|---|
+| Any action over ~1 s | Immediate acknowledgement — the button enters a working state, nothing looks unclicked |
+| Search running | A determinate progress bar (pages done / pages expected), the current source and city in words, live counters: found / new / duplicates, and elapsed time |
+| Per source | One line each: `Bundesagentur — 42 found, 7 new`, `StepStone — searching…`, `Indeed — skipped (disabled)`. A failed source says so in plain English and the run continues |
+| Enrichment running | `143 of 400 jobs explained`, a progress bar, the title of the job being processed, and an estimate from the observed average |
+| Long waits inside a run | The reason, in her words: "Waiting 40 s for a free provider slot" — never a frozen bar |
+| Any run | A **Cancel** button that is always safe to press, because of [§9](#9-incremental-persistence-and-resume) |
+| After a run | A summary that stays on screen: what was searched, per-source counts, what failed, what to do next |
+
+**Progress is read from the database, not from memory.** If she reloads the page or
+closes and reopens the browser mid-run, the progress bar is still there and still
+correct. This falls out of §9 and is tested as such.
+
+### States that must exist before a page is called done
+
+Loading (skeleton rows matching the real layout, not a spinner), empty (what was
+searched, why it found nothing, and the one filter to loosen), error (plain sentence
+plus the fix — "No API key yet. Add one in Settings."), and success. A page with only
+its success state is not finished.
+
+### Visual system
+
+Built for reading a lot of structured information quickly, not for looking clever.
+
+- **Stack:** Jinja2 templates + HTMX for interactivity + one bundled CSS file. No build
+  step, no CDN — the packaged `.exe` must work offline, so fonts and scripts ship inside it.
+- **Type:** `Geist` (or `Satoshi`) for text, `JetBrains Mono` for every number — fit
+  score, distance in km, dates, counts. Never `Inter`, never a serif in this UI.
+- **Colour:** neutral zinc base, exactly **one** desaturated accent. No purple-blue AI
+  glow, no neon, no gradient text, no pure black. German level and fit score get a
+  restrained three-step scale (comfortable / stretch / out of reach) that reads in
+  greyscale too.
+- **Density ~6:** an information app, not an art gallery. Group with `divide-y` and
+  1 px rules; use a card only where elevation actually means something. No three-equal-cards
+  row.
+- **Motion:** CSS transitions only, 150–250 ms, `transform` and `opacity` exclusively.
+  Tactile `:active` press on buttons. Nothing decorative that moves while she reads.
+- **No emoji anywhere in the UI.** Inline SVG icons, one stroke width throughout.
+- **Language:** every string is plain English written for her, not log output.
+  `Bundesagentur — 42 found` beats `GET /pc/v6/jobs 200`.
+
+### Tests for the above (owned by Phase 8)
+
+- [ ] `test_search_progress_is_persisted_and_survives_a_page_reload`
+- [ ] `test_progress_endpoint_reports_current_source_and_counts`
+- [ ] `test_cancel_stops_the_run_and_keeps_completed_work`
+- [ ] `test_every_list_page_renders_a_skeleton_state`
+- [ ] `test_empty_result_page_names_the_filters_that_were_applied`
+- [ ] `test_missing_api_key_renders_a_sentence_and_a_link_not_a_traceback`
+- [ ] `test_interrupted_run_banner_offers_resume_with_the_right_counts`
+- [ ] `test_no_emoji_in_any_template` (a grep test — cheap, and it holds the line)
+- [ ] `test_numbers_render_in_the_monospace_class`
 
 ---
 
@@ -542,6 +680,8 @@ only one source ever works, this is the one that has to.
 - [ ] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
 - [ ] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
 - [ ] `test_source_failure_records_error_and_does_not_abort_the_run`
+- [ ] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
+      page-level commits, cursor resume, interrupted-run marking, atomic export
 - [ ] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
       `stellenangebotsTitel` still exist, `X-API-Key` still accepted
 
@@ -593,10 +733,15 @@ set she can trust.
 
 ---
 
-## Phase 6 — Scrapers: StepStone, Indeed, Xing
+## Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing
 
-**Goal:** The big commercial boards, behind the same adapter interface, built to fail
-softly.
+**Goal:** The commercial boards and the local classifieds, behind the same adapter
+interface, built to fail softly.
+
+**Build Kleinanzeigen first.** It is verified working, it is the least defended, and it
+is where the jobs she can actually take today are posted — Aushilfe, Reinigungskraft,
+Verkauf, Küchenhilfe, all as minijobs. The corporate boards matter for her qualified
+roles; this one matters for rent.
 
 **Reality check:** these will break. Not "might" — will, whenever a site redesigns.
 The design goal is that a broken scraper costs her one missing source in a run summary,
@@ -605,6 +750,12 @@ never a failed run and never a blocked IP. Everything in
 
 ### Deliverables
 
+- `src/jobfinder/sources/kleinanzeigen.py` — category `c102` (Jobs) per city, paginated;
+  extracts title, price/pay line, location, posted date, description, and the seller's
+  contact route (message form, sometimes a phone number in the ad text)
+- `src/jobfinder/cities.py` gains a verified **city → Kleinanzeigen location id** map,
+  recorded once by hand from their location picker and asserted by a live test — a wrong
+  id silently returns jobs in the wrong part of Germany, which is worse than an error
 - `src/jobfinder/sources/stepstone.py`, `indeed.py`, `xing.py` — search page → listing
   URLs → listing page → `RawPosting`
 - Extraction prefers **structured data** (`JSON-LD` `JobPosting` blocks, which all three
@@ -619,6 +770,14 @@ never a failed run and never a blocked IP. Everything in
 
 ### Test-first checklist
 
+- [ ] `test_kleinanzeigen_fixture_yields_25_listing_urls_from_one_page`
+- [ ] `test_kleinanzeigen_listing_parses_title_location_date_and_body`
+- [ ] `test_kleinanzeigen_minijob_wording_sets_the_minijob_flag`
+      ("Minijob", "450 €", "520 €", "Aushilfe", "geringfügig")
+- [ ] `test_kleinanzeigen_gesuche_ads_are_excluded` — people *seeking* work, not offering it
+- [ ] `test_unknown_city_has_no_kleinanzeigen_location_id_and_is_skipped_loudly`
+- [ ] `tests/live/test_kleinanzeigen_location_ids.py` — each mapped id still returns ads
+      whose location matches the intended city
 - [ ] `test_stepstone_fixture_yields_expected_listing_urls`
 - [ ] `test_stepstone_listing_page_parses_title_company_city_description`
 - [ ] `test_jsonld_extraction_is_preferred_over_css_selectors`
@@ -638,6 +797,8 @@ never a failed run and never a blocked IP. Everything in
 
 - [ ] Each scraper returns real listings for "Werkstudent München" and "Aushilfe Küche
       Ingolstadt"
+- [ ] Kleinanzeigen returns ads for Neuburg, Ingolstadt and Munich with the right
+      locations, and the minijob flag is right on a hand-checked sample of ten
 - [ ] Turning all three off leaves the app fully working on API sources
 - [ ] A deliberately corrupted fixture produces a clean "source failed" line, no traceback
 - [ ] A full run makes no more requests than the budget allows, at human pace
@@ -684,6 +845,8 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 - [ ] `test_one_failing_item_does_not_end_the_batch`
 - [ ] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`
 - [ ] `test_enrich_limit_respects_the_llm_budget`
+- [ ] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
+      quota exhaustion keeps completed work, resume skips it, no half-written answers
 - [ ] `tests/live/test_enrich_one_real_posting.py` (marked `live_llm`)
 
 ### Done when
@@ -720,6 +883,13 @@ marks what she has applied to. This is the milestone that makes the project real
   the German original in a collapsible block
 - **Status actions** write to `status` and are visible immediately; deleted jobs are
   soft-deleted and never re-appear in a later search
+- **Live progress surface** — the whole of [§10](#10-ux-principles) is built here:
+  a `/progress` endpoint reading the `runs` journal, a determinate bar, per-source
+  lines in plain English, live found/new counters, elapsed and estimated time, a
+  Cancel button, and an interrupted-run banner with **Resume**. Progress comes from
+  the database, so reloading mid-run shows the same state.
+- Skeleton, empty and error states for every page, written at the same time as the
+  success state
 - `jobfinder serve` starts it and opens the browser
 
 ### Test-first checklist
@@ -737,10 +907,13 @@ marks what she has applied to. This is the milestone that makes the project real
 - [ ] `test_german_original_is_present_but_collapsed`
 - [ ] `test_server_binds_localhost_only`
 - [ ] `test_playwright_smoke_filter_open_job_mark_applied` (one end-to-end path)
+- [ ] Plus every test in [§10](#tests-for-the-above-owned-by-phase-8)
 
 ### Done when
 
 - [ ] She uses it for one real search session without asking a question
+- [ ] During a four-minute search she can tell, at every moment, that it is working
+      and roughly how far along it is — and a mid-run browser reload proves it
 - [ ] Every action survives a restart of the app
 - [ ] The list stays responsive at 1 000 jobs
 - [ ] Nothing on screen is in German except the original ad and job titles
@@ -755,6 +928,10 @@ spreadsheet view, `jobs-enriched.csv` is right there.
 **Goal:** For the "I just need work" mode — a list of restaurants, cafés, bakeries and
 hotel kitchens in her cities, with a phone number or email, ranked so the ones where
 she can work in the back and speak little German come first.
+
+**Pairs with Kleinanzeigen.** Phase 6 finds the local places that *did* post something;
+this phase finds the far larger number that never post at all. Together they are her
+whole realistic minijob market.
 
 **Why this is separate:** these places do not post jobs. They hire when someone walks
 in or calls. The product here is a contact list and the courage to use it, not a
@@ -856,7 +1033,8 @@ Checked at the end of every phase, not saved for the end of the project.
 |---|---|---|
 | **Her privacy** | Name, address, phone and email never leave the machine except inside a job application she sends herself. The CV digest sent to LLM providers is skills and education only. | Phase 3 |
 | **Free-tier budget** | Every LLM call is cached and skippable; a run announces how many calls it will make before making them. | Phases 2, 7 |
-| **Resumability** | Any long run (search, enrich, contacts) can be killed at any moment and resumed without loss or duplicate spend. | Phases 4, 7, 9 |
+| **Resumability** | Any long run can be killed at any moment and resumed without loss or duplicate spend — the full contract is [§9](#9-incremental-persistence-and-resume). | Phases 4, 7, 9 |
+| **Never looks frozen** | Every wait over a second is narrated with counts and progress, read from the database so it survives a reload — [§10](#10-ux-principles). | Phase 8 |
 | **Windows reality** | `pathlib` everywhere, `utf-8-sig` CSVs, `newline=""`, no `:` in filenames, paths with spaces. | Phase 4 onward |
 | **German text** | Umlauts and `ß` survive fetch → store → CSV → browser. One fixture with `Bäckerei Müller & Söhne` rides along through every layer. | Phases 4, 8 |
 | **One dead source** | Never fails a run. Ever. | Phases 5, 6 |
@@ -875,7 +1053,9 @@ Checked at the end of every phase, not saved for the end of the project.
 | Free LLM quota exhausted mid-search | Medium | `llmpool` handles pacing and failover; enrichment is resumable and cached; she can add a second key in 30 seconds |
 | LLM invents a German level or a skill | Medium | Evidence field is mandatory and validated; she sees the original ad on the same page |
 | Too many results, she cannot act | Medium | Fit score, filters, and "not for me" as a first-class action |
-| Too few results in Neuburg | **High** | Radius per city, Munich and Ingolstadt included by default, and Phase 9's cold-contact list exists precisely for this |
+| Too few results in Neuburg | **High** | Radius per city, Munich and Ingolstadt included by default, Kleinanzeigen for local minijobs, and Phase 9's cold-contact list exists precisely for this |
+| She thinks the app has frozen and force-quits it | Medium | [§10](#10-ux-principles) progress rules — and thanks to [§9](#9-incremental-persistence-and-resume) a force-quit costs her nothing anyway |
+| Kleinanzeigen location ids drift or the layout changes | Medium | Live test asserts each mapped id still returns the right city; JSON-LD first, selectors second |
 | Building all ten phases takes too long | Medium | M4 is the shipping line. Phases 6, 9, 10 are additive |
 
 ---
@@ -897,8 +1077,10 @@ Checked at the end of every phase, not saved for the end of the project.
 1. `git checkout -b feat/phase-N-<name>`
 2. Write the detailed task plan with the `writing-plans` skill into
    `docs/superpowers/plans/YYYY-MM-DD-phase-N-<name>.md`, one bite-sized step per task
-3. Work the plan test-first: red → watch it fail → green → refactor → commit
-4. Atomic commits, `type: what and why`, pushed as they land
+3. Work the plan test-first: red → watch it fail → green → refactor → tick the box in
+   this file → commit → **push**, one task at a time (see
+   [commit rhythm](#commit-rhythm--one-task-one-commit-pushed))
+4. Atomic commits, `type: what and why`, pushed as they land — never batched
 5. Close the phase against its Definition of Done **and** the shared one in
    [§7](#7-tdd-working-agreement); anything unchecked either gets done or gets written
    into this file as a known gap
