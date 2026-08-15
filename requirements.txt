@@ -1,0 +1,6 @@
+# LLM backend: a pool of free provider APIs with pacing, failover and memory.
+# Source: https://github.com/MiladBahariQaragoz/FreeLLMPool
+llmpool @ git+https://github.com/MiladBahariQaragoz/FreeLLMPool.git
+
+# Reads API keys out of .env for scripts and the app.
+python-dotenv>=1.0
