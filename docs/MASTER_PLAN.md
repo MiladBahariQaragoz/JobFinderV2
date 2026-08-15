@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: approved, not started
+status: in progress — M1 and M2 done (phases 0-3)
 ---
 
 # JobFinderV2 — Master Plan
@@ -649,10 +649,10 @@ its output feeds the search keywords in Phase 4.
 
 ### Done when
 
-- [ ] Run against her real CV, the German titles are ones a German recruiter would
+- [x] Run against her real CV, the German titles are ones a German recruiter would
       actually use (`Werkstudent Datenanalyse`, not a literal translation)
-- [ ] Each suggestion carries keywords that go straight into the Phase 4 search
-- [ ] Second run is instant and costs nothing
+- [x] Each suggestion carries keywords that go straight into the Phase 4 search
+- [x] Second run is instant and costs nothing
 
 **Out of scope:** ranking roles by market demand. Phase 5 will show how many live
 postings each keyword actually returns, which is the honest version of that.
