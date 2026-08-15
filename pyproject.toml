@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobfinder"
+version = "0.1.0"
+description = "Local job-search assistant: collects Bavarian job postings and explains them in English"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "llmpool @ git+https://github.com/MiladBahariQaragoz/FreeLLMPool.git",
+    "python-dotenv>=1.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+jobfinder = "jobfinder.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "live: hits the real internet; run with `pytest -m live`",
+    "live_llm: spends a real LLM call; run with `pytest -m live_llm`",
+]
+addopts = "-m 'not live and not live_llm'"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

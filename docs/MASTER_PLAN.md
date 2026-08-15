@@ -496,7 +496,7 @@ That sentence has to mean something before Phase 1.
 
 ### Test-first checklist
 
-- [ ] `test_settings_defaults_point_into_data_dir` — fails, then implement `Settings`
+- [x] `test_settings_defaults_point_into_data_dir` — fails, then implement `Settings`
 - [ ] `test_settings_override_from_config_yaml`
 - [ ] `test_settings_reads_secrets_from_env_not_config` — a key in `config.yaml` is ignored
 - [ ] `test_no_network_fixture_blocks_outbound_socket` — proves the guard actually bites
