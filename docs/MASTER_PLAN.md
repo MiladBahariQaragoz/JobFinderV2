@@ -695,8 +695,8 @@ only one source ever works, this is the one that has to.
 - [ ] `test_detail_fetch_base64_encodes_the_reference_number`
 - [ ] `test_empty_description_triggers_external_url_fallback` (fixture: the real
       `jobboard.compleet.com` shape)
-- [ ] `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
-- [ ] `test_http_client_serves_second_identical_request_from_cache`
+- [x] `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
+- [x] `test_http_client_serves_second_identical_request_from_cache`
 - [ ] `test_request_budget_stops_the_run_and_records_it_in_runs_table`
 - [ ] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
 - [ ] `test_dedupe_key_matches_same_job_from_two_sources`
