@@ -503,7 +503,8 @@ That sentence has to mean something before Phase 1.
       rejected outright, `.env` is loaded, and an already-set variable wins over it
 - [x] `test_no_network_fixture_blocks_outbound_socket` — proves the guard actually bites:
       `create_connection`, raw `connect`, the host named in the error, localhost still allowed
-- [ ] `test_live_marker_is_registered` — `pytest -m live` selects only `tests/live/`
+- [x] `test_live_marker_is_registered` — both markers registered, live tests deselected
+      by default, `pytest -m live` selects them, and the live lane really can reach out
 - [ ] `test_record_fixture_writes_pretty_json_to_expected_path`
 
 ### Done when
