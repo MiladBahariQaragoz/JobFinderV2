@@ -53,10 +53,12 @@ one — [Groq](https://console.groq.com/keys) is the fastest and needs no card.
 ```python
 from llmpool import Pool, build_providers, load_catalog
 
-pool = Pool(build_providers(load_catalog()),
-            validator=my_validator,              # (dict) -> (ok, reason)
-            state_path="data/pool_state.json")
-answer = pool.complete_json(prompt)              # dict, or raises PoolExhausted
+pool = Pool(
+    build_providers(load_catalog()),
+    validator=my_validator,  # (dict) -> (ok, reason)
+    state_path="data/pool_state.json",
+)
+answer = pool.complete_json(prompt)  # dict, or raises PoolExhausted
 ```
 
 See [docs/llm-backend.md](docs/llm-backend.md) for the conventions this repo

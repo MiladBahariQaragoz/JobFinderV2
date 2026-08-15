@@ -1,0 +1,467 @@
+{
+ "ergebnisliste": [
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Werkstudent (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-08-12"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "85051",
+      "ort": "Ingolstadt, Donau",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.7258019,
+     "laenge": 11.4118102
+    }
+   ],
+   "homeofficemoeglich": false,
+   "chiffrenummer": "34038564",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-08-11"
+   },
+   "datumErsteVeroeffentlichung": "2026-08-11",
+   "aenderungsdatum": "2026-08-11T09:03:19.407",
+   "externeURL": "https://jobboard.compleet.com/?externalId=4913285274",
+   "hauptberuf": "Assistent/in - Personalwesen",
+   "firma": "DEKRA Arbeit GmbH",
+   "referenznummer": "11119-4913285274-S",
+   "entfernung": 3,
+   "alleBerufe": [
+    "Assistent/in - Personalwesen"
+   ]
+  },
+  {
+   "stellenangebotsart": "PRAKTIKUM_TRAINEE",
+   "stellenangebotsTitel": "Werkstudent (m/w/d)",
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-06-25"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "BEFRISTET",
+   "befristungInMonaten": 12,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Esplanade",
+      "hausnummer": "10",
+      "plz": "85049",
+      "ort": "Ingolstadt, Donau",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.766824,
+     "laenge": 11.43171
+    }
+   ],
+   "veroeffentlichungszeitraum": {
+    "von": "2026-06-24"
+   },
+   "datumErsteVeroeffentlichung": "2026-06-24",
+   "aenderungsdatum": "2026-06-25T08:41:50.876",
+   "hauptberuf": "Berufsberater/in",
+   "firma": "Technische Hochschule Ingolstadt Land Bayern",
+   "arbeitgeberKundennummerHash": "qCn3lHtm0sdfOF4scQpQXe0TWp18u_6vzeuMZcNzKXc=",
+   "referenznummer": "10001-1003276441-S",
+   "entfernung": 2,
+   "alleBerufe": [
+    "Berufsberater/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "PRAKTIKUM_TRAINEE",
+   "stellenangebotsTitel": "Werkstudent (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-08-05"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "86633",
+      "ort": "Neuburg an der Donau",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.7336028,
+     "laenge": 11.1979707
+    }
+   ],
+   "homeofficemoeglich": false,
+   "chiffrenummer": "964948-de_DE",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-07-10"
+   },
+   "datumErsteVeroeffentlichung": "2026-07-10",
+   "aenderungsdatum": "2026-08-04T07:22:18.765",
+   "hauptberuf": "Helfer/in - Verkauf",
+   "firma": "Penny-Markt GmbH Verwaltung",
+   "arbeitgeberKundennummerHash": "T9M8xsA9Hmo3hixIfCrppo25bNKlTRCkot0aizUECVA=",
+   "referenznummer": "12608-1422085-9313-1-S",
+   "entfernung": 16,
+   "alleBerufe": [
+    "Helfer/in - Verkauf"
+   ]
+  },
+  {
+   "stellenangebotsart": "PRAKTIKUM_TRAINEE",
+   "stellenangebotsTitel": "Werkstudent (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-08-05"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "86633",
+      "ort": "Neuburg an der Donau",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.7336028,
+     "laenge": 11.1979707
+    }
+   ],
+   "homeofficemoeglich": false,
+   "chiffrenummer": "964926-de_DE",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-07-10"
+   },
+   "datumErsteVeroeffentlichung": "2026-07-10",
+   "aenderungsdatum": "2026-08-04T07:22:13.247",
+   "hauptberuf": "Helfer/in - Verkauf",
+   "firma": "Penny-Markt GmbH Verwaltung",
+   "arbeitgeberKundennummerHash": "T9M8xsA9Hmo3hixIfCrppo25bNKlTRCkot0aizUECVA=",
+   "referenznummer": "12608-1422101-9313-1-S",
+   "entfernung": 16,
+   "alleBerufe": [
+    "Helfer/in - Verkauf"
+   ]
+  },
+  {
+   "stellenangebotsart": "PRAKTIKUM_TRAINEE",
+   "stellenangebotsTitel": "Werkstudent (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-07-15"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "85296",
+      "ort": "Rohrbach, Ilm",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.6152636,
+     "laenge": 11.5531296
+    }
+   ],
+   "homeofficemoeglich": false,
+   "chiffrenummer": "965181-de_DE",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-07-14"
+   },
+   "datumErsteVeroeffentlichung": "2026-07-14",
+   "aenderungsdatum": "2026-07-14T09:41:41.496",
+   "hauptberuf": "Helfer/in - Verkauf",
+   "firma": "Penny-Markt GmbH Verwaltung",
+   "arbeitgeberKundennummerHash": "T9M8xsA9Hmo3hixIfCrppo25bNKlTRCkot0aizUECVA=",
+   "referenznummer": "12608-1422990-22498-1-S",
+   "entfernung": 19,
+   "alleBerufe": [
+    "Helfer/in - Verkauf"
+   ]
+  }
+ ],
+ "maxErgebnisse": 18,
+ "page": 1,
+ "size": 5,
+ "woOutput": {
+  "bereinigterOrt": "Ingolstadt, Donau",
+  "suchmodus": "UMKREISSUCHE",
+  "koordinaten": [
+   {
+    "lat": 48.756029,
+    "lon": 11.40795125
+   }
+  ]
+ },
+ "facetten": {
+  "befristung": {
+   "counts": {
+    "1": 1,
+    "2": 8,
+    "3": 9
+   },
+   "maxCount": 18
+  },
+  "externestellenboersen": {
+   "counts": {
+    "false": 15,
+    "true": 3
+   },
+   "maxCount": 18
+  },
+  "behinderung": {
+   "counts": {
+    "false": 14
+   },
+   "maxCount": 18
+  },
+  "pav": {
+   "counts": {
+    "false": 16,
+    "true": 2
+   },
+   "maxCount": 18
+  },
+  "berufsfeld": {
+   "counts": {
+    "Elektrotechnik": 1,
+    "Fahrzeug-, Luft-, Raumfahrt- und Schiffbautechnik": 2,
+    "Gastronomie": 1,
+    "IT-Netzwerktechnik, -Administration, -Organisation": 1,
+    "Personalwesen und -dienstleistung": 3,
+    "Technische Forschung und Entwicklung": 1,
+    "Technische Mediengestaltung": 1,
+    "Technische Produktionsplanung und -steuerung": 2,
+    "Verkauf (ohne Produktspezialisierung)": 6
+   },
+   "maxCount": 18
+  },
+  "topberuf": {
+   "counts": {
+    "Helfer/in - Verkauf": 6
+   },
+   "scores": {
+    "Helfer/in - Verkauf": 55250
+   },
+   "maxCount": 18
+  },
+  "arbeitsort": {
+   "counts": {
+    "Kösching": 1,
+    "Rohrbach, Ilm": 1,
+    "Reichertshofen, Oberbayern": 1,
+    "Wolnzach": 1,
+    "Eichstätt, Bayern": 1,
+    "Manching": 3,
+    "Ingolstadt, Donau": 6,
+    "Gaimersheim": 2,
+    "Neuburg an der Donau": 2
+   },
+   "maxCount": 18
+  },
+  "veroeffentlichtseit": {
+   "counts": {
+    "14": 2,
+    "28": 2,
+    "7": 2,
+    "alle": 18
+   },
+   "maxCount": 18
+  },
+  "schulbildung": {
+   "counts": {
+    "0": 9,
+    "4": 1
+   },
+   "maxCount": 18
+  },
+  "arbeitsort_plz": {
+   "counts": {
+    "22085": 1,
+    "30169": 1,
+    "38440": 2,
+    "40878": 1,
+    "50676": 1,
+    "60313": 1,
+    "70173": 1,
+    "80331": 1,
+    "85049": 2,
+    "85051": 1,
+    "85053": 1,
+    "85055": 1,
+    "85057": 1,
+    "85072": 1,
+    "85077": 3,
+    "85080": 2,
+    "85084": 1,
+    "85092": 1,
+    "85283": 1,
+    "85296": 1,
+    "86633": 2,
+    "90443": 1,
+    "99084": 1
+   },
+   "maxCount": 18
+  },
+  "arbeitgeber": {
+   "counts": {
+    "Airbus Defence and Space GmbH": 3,
+    "Capgemini": 1,
+    "DEKRA Arbeit GmbH": 1,
+    "EVOMOTIV GmbH": 1,
+    "FRISTO SE": 1,
+    "Gebrüder Peters": 1,
+    "Hunkemöller Deutschland B.V. & Co. KG": 1,
+    "KSE GmbH": 1,
+    "McDonald's Deutschland LLC": 1,
+    "Penny-Markt GmbH Verwaltung": 4,
+    "SIMunich GmbH": 2,
+    "Technische Hochschule Ingolstadt Land Bayern": 1
+   },
+   "maxCount": 18
+  },
+  "beruf": {
+   "counts": {
+    "Assistent/in - Personalwesen": 1,
+    "Automobil-Fachwirt/in": 2,
+    "Berufsberater/in": 1,
+    "Fachverkäufer/in - Textilien, Bekleidung": 1,
+    "Helfer/in - Gastgewerbe": 1,
+    "Helfer/in - Verkauf": 6,
+    "IT-Systemadministrator/in": 1,
+    "Ingenieur/in - Elektrotechnik": 1,
+    "Ingenieur/in - Luft- und Raumfahrttechnik": 2,
+    "Ingenieur/in - Systems Engineering": 2,
+    "Kaufmann/-frau - Einzelhandel (Textil, Bekleidung)": 1,
+    "Personalreferent/in": 1,
+    "Servicekraft - Gastronomie und Gastgewerbe": 1,
+    "Systemtester/in - Elektrotechnik": 2,
+    "Testingenieur/in": 1,
+    "Verkäufer/in": 1,
+    "Webdesigner/in": 1
+   },
+   "maxCount": 18
+  },
+  "homeoffice": {
+   "counts": {
+    "nv_true": 1
+   },
+   "maxCount": 18
+  },
+  "angebotsart": {
+   "counts": {
+    "1": 6,
+    "34": 12
+   },
+   "maxCount": 18
+  },
+  "quereinstieg": {
+   "counts": {
+    "false": 18
+   },
+   "maxCount": 18
+  },
+  "branche": {
+   "counts": {
+    "1": 2,
+    "10": 1,
+    "11": 1,
+    "13": 5,
+    "26": 3,
+    "27": 2,
+    "4": 1,
+    "9": 1
+   },
+   "maxCount": 18
+  },
+  "arbeitszeit": {
+   "counts": {
+    "mj": 1,
+    "snw": 1,
+    "tz": 11,
+    "vz": 5
+   },
+   "maxCount": 18
+  },
+  "eintrittsdatum": {
+   "counts": {
+    "10_01_01-now": 16,
+    "26_08_01-26_09_01": 5,
+    "26_09_01-26_10_01": 1,
+    "26_11_01-26_12_01": 1
+   },
+   "maxCount": 18
+  },
+  "zeitarbeit": {
+   "counts": {
+    "false": 18
+   },
+   "maxCount": 18
+  },
+  "topberufsfeld": {
+   "counts": {
+    "Personalwesen und -dienstleistung": 3,
+    "Technische Mediengestaltung": 1,
+    "Technische Forschung und Entwicklung": 1,
+    "Technische Produktionsplanung und -steuerung": 2,
+    "Verkauf (ohne Produktspezialisierung)": 6,
+    "Fahrzeug-, Luft-, Raumfahrt- und Schiffbautechnik": 2,
+    "IT-Netzwerktechnik, -Administration, -Organisation": 1,
+    "Gastronomie": 1,
+    "Elektrotechnik": 1
+   },
+   "scores": {
+    "Personalwesen und -dienstleistung": 35219,
+    "Technische Mediengestaltung": 28537,
+    "Technische Forschung und Entwicklung": 13769,
+    "Technische Produktionsplanung und -steuerung": 10726,
+    "Verkauf (ohne Produktspezialisierung)": 8190,
+    "Fahrzeug-, Luft-, Raumfahrt- und Schiffbautechnik": 3719,
+    "IT-Netzwerktechnik, -Administration, -Organisation": 2930,
+    "Gastronomie": 1297,
+    "Elektrotechnik": 1008
+   },
+   "maxCount": 18
+  }
+ }
+}

@@ -33,14 +33,16 @@ runs.
 ```python
 from llmpool import Pool, build_providers, load_catalog, run_batch
 
-pool = Pool(build_providers(load_catalog()),
-            validator=validator,
-            state_path="data/pool_state.json",
-            max_wait=3600,
-            run_deadline_seconds=7200)
+pool = Pool(
+    build_providers(load_catalog()),
+    validator=validator,
+    state_path="data/pool_state.json",
+    max_wait=3600,
+    run_deadline_seconds=7200,
+)
 
 results = run_batch(pool, items, prompt_for, workers=8, on_result=save)
-print(pool.summary())      # who actually did the work
+print(pool.summary())  # who actually did the work
 ```
 
 ## Keys

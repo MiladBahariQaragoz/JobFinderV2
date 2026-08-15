@@ -505,7 +505,8 @@ That sentence has to mean something before Phase 1.
       `create_connection`, raw `connect`, the host named in the error, localhost still allowed
 - [x] `test_live_marker_is_registered` — both markers registered, live tests deselected
       by default, `pytest -m live` selects them, and the live lane really can reach out
-- [ ] `test_record_fixture_writes_pretty_json_to_expected_path`
+- [x] `test_record_fixture_writes_pretty_json_to_expected_path` — plus verbatim HTML,
+      umlauts intact, and an error page kept rather than discarded
 
 ### Done when
 

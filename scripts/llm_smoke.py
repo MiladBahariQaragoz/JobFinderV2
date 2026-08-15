@@ -50,8 +50,7 @@ def main() -> int:
             print(f"  {name:<12} {env_var:<28} {signup}")
         return 1
 
-    print(f"{len(providers)} provider(s) with keys: "
-          f"{', '.join(p.name for p in providers)}\n")
+    print(f"{len(providers)} provider(s) with keys: {', '.join(p.name for p in providers)}\n")
 
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     pool = Pool(providers, validator=validator, state_path=STATE_PATH, max_wait=120)
