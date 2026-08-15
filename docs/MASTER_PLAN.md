@@ -41,7 +41,7 @@ auto-applying to jobs on her behalf, or storing anything about her on a remote s
 | Decision | Choice | Consequence |
 |---|---|---|
 | **App shape** | Local web app: FastAPI backend + server-rendered HTML, launched by one `.exe` that opens the browser | Real per-job pages, real buttons; packaging is a phase of its own (Phase 10) |
-| **Storage** | SQLite is the source of truth; `jobs-init.csv` and `jobs-enriched.csv` are exported on every run | Safe upserts, no half-written CSV after a crash, and the CSVs she can open in Excel still exist |
+| **Storage** | SQLite is the source of truth; `jobs-init.csv` and `jobs-enriched.csv` are written row by row as work completes | Safe upserts, an interrupted run leaves a complete readable CSV, and the files she can open in Excel still exist |
 | **Sources** | Free/official APIs **and** scrapers, both in v1 | Scrapers are plug-in adapters behind the same interface, with a per-source kill switch |
 | **Language** | English UI, English job summaries; the original German text is always one click away | The LLM does the translation work, not her |
 | **LLM** | `llmpool` only ([FreeLLMPool](https://github.com/MiladBahariQaragoz/FreeLLMPool)), no provider SDK anywhere | Free-tier pacing, failover and budget handling are already solved |
@@ -294,20 +294,24 @@ still works. When a live test fails, the fixture is stale and the adapter needs 
   missing keys, wrong `german_level` values, prose instead of JSON.
 - Exactly one live LLM test, marked, that enriches one real posting end to end.
 
-### Commit rhythm — one task, one commit, pushed
+### Commit rhythm — one task, one commit, pushed (source code only)
+
+Version control tracks **development progress**: code, tests, and this plan. It never
+touches her data — `data/`, both CSVs, the database, `pool.yaml` and `.env` are
+gitignored and stay on her laptop. Runtime saving is a different mechanism entirely,
+covered in [§9](#9-incremental-saving-and-resume-runtime-data).
 
 **Every time a checklist item in this document is finished, it is closed out on the
 spot:**
 
 1. Tick the box in `docs/MASTER_PLAN.md` — `- [ ]` becomes `- [x]`
-2. Commit the work **and** the ticked box together, message in the form
+2. `git commit` the code, its tests and the ticked box together, message in the form
    `type: what and why`
 3. `git push` immediately — no batching, no end-of-day dump
 
 The plan is therefore the live progress record: at any moment, the ticked boxes on
-GitHub are exactly what works. Nothing is "done but not pushed". If the laptop dies
-mid-phase, the remote already has everything that was finished — the same principle
-the app itself follows in [§9](#9-incremental-persistence-and-resume).
+GitHub are exactly what works. Nothing is "done but not pushed", so picking the work
+back up after a break needs no reconstruction of where it stopped.
 
 A red test is not a task. Commit at green, or at green-plus-refactor.
 
@@ -343,23 +347,31 @@ These are engineering constraints that keep her searches working, and they are t
 
 ---
 
-## 9. Incremental persistence and resume
+## 9. Incremental saving and resume (runtime data)
 
-**The rule: nothing lives only in memory.** Every unit of work is committed the moment
-it completes. Her internet drops on a train, a free-tier quota runs out at job 143 of
-400, she closes the laptop lid — in every case the app keeps what it had and continues
-from there. This is a first-class requirement, not error handling bolted on later.
+> **Two different things share the word "commit" in software, so this document does not
+> use it loosely.** This section is about the **running app saving her data to disk** —
+> SQLite and CSV, on her laptop. Git is never involved: `data/` is gitignored, and her
+> jobs, CV and contacts are never pushed anywhere. Version control of the *source code*
+> is [§7's commit rhythm](#commit-rhythm--one-task-one-commit-pushed), a separate matter.
+
+**The rule: nothing lives only in memory.** Every unit of work is written to disk the
+moment it completes. Her internet drops on a train, a free-tier quota runs out at job
+143 of 400, she closes the laptop lid — in every case the app keeps what it had and
+continues from there. This is a first-class requirement, not error handling bolted on
+later.
 
 ### How it works
 
 | Mechanism | Detail |
 |---|---|
-| **Unit of work** | One fetched page, one stored job, one enriched job, one contact. Each is its own SQLite transaction, committed immediately. |
+| **Unit of work** | One fetched page, one stored job, one enriched job, one contact. Each is written in its own SQLite transaction, straight away. |
+| **Enrichment lands twice** | The instant an answer passes validation it is written to the `enrichment` table **and** appended to `jobs-enriched.csv`. If the app dies one second later, both files already hold it. |
 | **SQLite mode** | WAL journal, `synchronous=NORMAL`. Survives a hard kill without corrupting the database. |
 | **Run journal** | `runs` holds one row per search/enrich/contacts run: spec, started_at, `last_progress_at`, state (`running`, `done`, `interrupted`, `failed`), counters. Updated as work lands, not at the end. |
 | **Per-source cursors** | `source_state` stores the query hash and the last completed page per source. A resumed search re-enters at that page instead of at page 1. |
 | **Idempotent writes** | `job_id` is the primary key; enrichment is keyed by `(job_id, prompt_version)`. Replaying work already done changes nothing and costs nothing. |
-| **Atomic exports** | CSVs are written to `*.tmp` then `os.replace()`d. A crash mid-export leaves the previous good CSV intact, never a half file. |
+| **CSV as it goes, not at the end** | Rows are appended and flushed per result, so the CSV is usable mid-run. A full, sorted re-export runs at the end of a run — written to `*.tmp` then `os.replace()`d, so a crash mid-export leaves the previous good CSV intact, never a half file. |
 | **Stale run detection** | A `running` row whose `last_progress_at` is older than the heartbeat interval is marked `interrupted` on next start, so the app never claims to be doing something it is not. |
 | **Nothing partial is stored** | An LLM answer that fails validation is discarded, not written half-parsed. The job stays unenriched and gets retried. |
 
@@ -370,7 +382,7 @@ from there. This is a first-class requirement, not error handling bolted on late
 | Internet drops mid-search | Every page already fetched and stored | Continues from the last completed page of each source |
 | A source blocks or times out | Everything from the other sources | That source is skipped or retried; the run does not fail |
 | LLM quota exhausted (`PoolExhausted`) | Every job enriched so far | "143 of 400 enriched — quota spent. Resume tomorrow, or add another key." Resuming skips the 143. |
-| She closes the app / Ctrl-C | Everything committed up to that second | "Interrupted run — Resume" offered on next start |
+| She closes the app / Ctrl-C | Everything saved up to that second, in both the database and the CSV | "Interrupted run — Resume" offered on next start |
 | Power loss | Same, WAL-protected | Same |
 | A single job's enrichment fails | All others | That job alone is retried next run |
 
@@ -384,12 +396,14 @@ from there. This is a first-class requirement, not error handling bolted on late
 
 ### Tests (owned by Phases 4, 7 and 9, listed together because the rule is shared)
 
-- [ ] `test_killing_a_search_after_two_pages_keeps_both_pages`
+- [ ] `test_killing_a_search_after_two_pages_keeps_both_pages_on_disk`
 - [ ] `test_resumed_search_starts_at_the_stored_cursor_not_page_one`
 - [ ] `test_network_error_mid_run_marks_run_interrupted_with_counts`
 - [ ] `test_pool_exhausted_mid_batch_keeps_every_completed_enrichment`
 - [ ] `test_resume_after_quota_exhaustion_skips_already_enriched_jobs`
 - [ ] `test_invalid_llm_answer_leaves_the_job_unenriched_not_half_written`
+- [ ] `test_each_enrichment_is_appended_to_the_csv_before_the_next_one_starts`
+- [ ] `test_csv_is_readable_mid_run_and_holds_every_finished_job`
 - [ ] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
 - [ ] `test_stale_running_run_is_marked_interrupted_on_next_start`
 - [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
@@ -412,7 +426,7 @@ from what is on screen — is it working, how far along is it, and how long is l
 | Per source | One line each: `Bundesagentur — 42 found, 7 new`, `StepStone — searching…`, `Indeed — skipped (disabled)`. A failed source says so in plain English and the run continues |
 | Enrichment running | `143 of 400 jobs explained`, a progress bar, the title of the job being processed, and an estimate from the observed average |
 | Long waits inside a run | The reason, in her words: "Waiting 40 s for a free provider slot" — never a frozen bar |
-| Any run | A **Cancel** button that is always safe to press, because of [§9](#9-incremental-persistence-and-resume) |
+| Any run | A **Cancel** button that is always safe to press, because of [§9](#9-incremental-saving-and-resume-runtime-data) |
 | After a run | A summary that stays on screen: what was searched, per-source counts, what failed, what to do next |
 
 **Progress is read from the database, not from memory.** If she reloads the page or
@@ -681,7 +695,7 @@ only one source ever works, this is the one that has to.
 - [ ] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
 - [ ] `test_source_failure_records_error_and_does_not_abort_the_run`
 - [ ] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
-      page-level commits, cursor resume, interrupted-run marking, atomic export
+      per-page saving, cursor resume, interrupted-run marking, atomic export
 - [ ] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
       `stellenangebotsTitel` still exist, `X-API-Key` still accepted
 
@@ -824,6 +838,9 @@ German it needs**, what type of contract it is, how well it fits her, and how to
   `workers` from settings, `on_result` persisting each answer the moment it lands
 - Skip logic: already enriched at this `prompt_version` **and** unchanged
   `content_hash` → not sent
+- Each validated answer is written to SQLite and appended to `jobs-enriched.csv`
+  immediately, before the next job is sent — she can open the CSV while the run is
+  still going, and an interrupted run leaves a complete, readable file behind
 - `fit_score` computed against her CV digest in the same call, with `fit_reasons` and
   `missing_for_fit` so a 40 % is explained rather than just discouraging
 - Application route extraction: email, portal URL, or phone — the difference between
@@ -1033,7 +1050,7 @@ Checked at the end of every phase, not saved for the end of the project.
 |---|---|---|
 | **Her privacy** | Name, address, phone and email never leave the machine except inside a job application she sends herself. The CV digest sent to LLM providers is skills and education only. | Phase 3 |
 | **Free-tier budget** | Every LLM call is cached and skippable; a run announces how many calls it will make before making them. | Phases 2, 7 |
-| **Resumability** | Any long run can be killed at any moment and resumed without loss or duplicate spend — the full contract is [§9](#9-incremental-persistence-and-resume). | Phases 4, 7, 9 |
+| **Resumability** | Any long run can be killed at any moment and resumed without loss or duplicate spend — the full contract is [§9](#9-incremental-saving-and-resume-runtime-data). | Phases 4, 7, 9 |
 | **Never looks frozen** | Every wait over a second is narrated with counts and progress, read from the database so it survives a reload — [§10](#10-ux-principles). | Phase 8 |
 | **Windows reality** | `pathlib` everywhere, `utf-8-sig` CSVs, `newline=""`, no `:` in filenames, paths with spaces. | Phase 4 onward |
 | **German text** | Umlauts and `ß` survive fetch → store → CSV → browser. One fixture with `Bäckerei Müller & Söhne` rides along through every layer. | Phases 4, 8 |
@@ -1054,7 +1071,7 @@ Checked at the end of every phase, not saved for the end of the project.
 | LLM invents a German level or a skill | Medium | Evidence field is mandatory and validated; she sees the original ad on the same page |
 | Too many results, she cannot act | Medium | Fit score, filters, and "not for me" as a first-class action |
 | Too few results in Neuburg | **High** | Radius per city, Munich and Ingolstadt included by default, Kleinanzeigen for local minijobs, and Phase 9's cold-contact list exists precisely for this |
-| She thinks the app has frozen and force-quits it | Medium | [§10](#10-ux-principles) progress rules — and thanks to [§9](#9-incremental-persistence-and-resume) a force-quit costs her nothing anyway |
+| She thinks the app has frozen and force-quits it | Medium | [§10](#10-ux-principles) progress rules — and thanks to [§9](#9-incremental-saving-and-resume-runtime-data) a force-quit costs her nothing anyway |
 | Kleinanzeigen location ids drift or the layout changes | Medium | Live test asserts each mapped id still returns the right city; JSON-LD first, selectors second |
 | Building all ten phases takes too long | Medium | M4 is the shipping line. Phases 6, 9, 10 are additive |
 

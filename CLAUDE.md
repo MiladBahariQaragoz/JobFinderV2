@@ -10,14 +10,17 @@ task plan into `docs/superpowers/plans/` and follow the TDD cycle: failing test,
 watch it fail, minimal code, refactor, commit.
 
 **Close out every task immediately.** When a checklist item in `docs/MASTER_PLAN.md`
-is finished: tick its box, commit the work and the ticked box together, and push.
-One task, one commit, pushed straight away — never batched.
+is finished: tick its box, `git commit` the code and the ticked box together, and
+push. One task, one commit, pushed straight away — never batched. Git tracks source
+code and progress only; `data/`, the CSVs, the database, `pool.yaml` and `.env` are
+gitignored and never leave the machine.
 
 Two product rules that override convenience:
 
 - **Nothing lives only in memory.** Every fetched page, stored job and enrichment is
-  committed as it completes, so a dropped connection or an exhausted LLM quota costs
-  nothing already done. See MASTER_PLAN §9.
+  saved to SQLite and appended to its CSV the moment it completes, so a dropped
+  connection or an exhausted LLM quota costs nothing already done and the app resumes
+  where it stopped. See MASTER_PLAN §9.
 - **Nothing ever looks frozen.** Any wait over a second is narrated with real counts
   and progress read from the database. See MASTER_PLAN §10.
 
