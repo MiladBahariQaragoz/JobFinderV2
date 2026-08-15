@@ -554,10 +554,10 @@ readable error at second zero, not an empty result list after four minutes of se
 - [x] `test_invalid_date_reports_the_entry_id_not_a_stack_trace`
 - [x] `test_unknown_city_lists_the_valid_ones` — the error message is the feature
 - [x] `test_city_radius_defaults_to_25km_and_can_be_overridden`
-- [ ] `test_search_spec_rejects_empty_employment_types`
-- [ ] `test_general_mode_does_not_require_a_resume` — she can search for kitchen work
+- [x] `test_search_spec_rejects_empty_employment_types`
+- [x] `test_general_mode_does_not_require_a_resume` — she can search for kitchen work
       before her CV is finished
-- [ ] `test_resume_mode_requires_a_readable_pool_yaml`
+- [x] `test_resume_mode_requires_a_readable_pool_yaml`
 
 ### Done when
 
