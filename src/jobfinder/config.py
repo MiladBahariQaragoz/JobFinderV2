@@ -6,8 +6,12 @@ codebase decides for itself where the database or the CSV exports belong.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
+
+import yaml
+
+CONFIG_FILENAME = "config.yaml"
 
 
 @dataclass(frozen=True)
@@ -15,10 +19,31 @@ class Settings:
     """Resolved paths and runtime limits for one run."""
 
     project_root: Path
+    request_budget: int = 200
+    llm_budget: int = 500
+    enabled_sources: tuple[str, ...] = ("ba",)
 
     @classmethod
     def load(cls, project_root: Path) -> Settings:
-        return cls(project_root=Path(project_root))
+        project_root = Path(project_root)
+        overrides = cls._read_config_file(project_root / CONFIG_FILENAME)
+        if "enabled_sources" in overrides:
+            overrides["enabled_sources"] = tuple(overrides["enabled_sources"])
+        return cls(project_root=project_root, **overrides)
+
+    @classmethod
+    def _read_config_file(cls, path: Path) -> dict:
+        if not path.exists():
+            return {}
+        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        allowed = {f.name for f in fields(cls)} - {"project_root"}
+        unknown = sorted(set(raw) - allowed)
+        if unknown:
+            raise ValueError(
+                f"{path.name}: unknown setting(s) {', '.join(unknown)}. "
+                f"Valid settings are: {', '.join(sorted(allowed))}."
+            )
+        return raw
 
     @property
     def data_dir(self) -> Path:
