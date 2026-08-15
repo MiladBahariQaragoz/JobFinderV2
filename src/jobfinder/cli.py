@@ -91,7 +91,34 @@ def _cmd_profile_show(path: Path) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def _cache_size_line(settings: Settings) -> str:
+    """One plain-English line about the answer cache."""
+    path = settings.llm_cache_path
+    if not path.exists():
+        return "Cache: no cache yet — nothing has been enriched."
+    import sqlite3
+
+    with sqlite3.connect(path) as db:
+        count = db.execute("SELECT COUNT(*) FROM llm_cache").fetchone()[0]
+    plural = "" if count == 1 else "s"
+    return f"Cache: {count} cached answer{plural} in {path.name}."
+
+
+def _run_llmpool_doctor(settings: Settings) -> int:
+    """Delegate to the llmpool CLI, which pings providers (hits the network)."""
+    import subprocess
+    import sys
+
+    return subprocess.run([sys.executable, "-m", "llmpool", "doctor"], check=False).returncode
+
+
+def _cmd_llm_doctor(settings: Settings, *, _run_doctor=None) -> int:
+    print(_cache_size_line(settings))
+    doctor = _run_doctor or _run_llmpool_doctor
+    return doctor(settings)
+
+
+def main(argv: list[str] | None = None, *, _run_doctor=None) -> int:
     parser = argparse.ArgumentParser(prog="jobfinder", description="Local job-search assistant")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -101,6 +128,12 @@ def main(argv: list[str] | None = None) -> int:
         "--path", type=Path, default=None, help="path to pool.yaml (default: ./pool.yaml)"
     )
 
+    llm = sub.add_parser("llm", help="LLM backend health")
+    llm.add_argument("action", choices=["doctor"])
+    llm.add_argument(
+        "--root", type=Path, default=None, help="project root (default: current directory)"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "profile":
@@ -108,6 +141,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.action == "validate":
             return _cmd_profile_validate(path)
         return _cmd_profile_show(path)
+
+    if args.command == "llm":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_llm_doctor(settings, _run_doctor=_run_doctor)
 
     parser.error(f"unknown command {args.command!r}")  # pragma: no cover
     return 2  # pragma: no cover

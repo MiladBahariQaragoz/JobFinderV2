@@ -24,6 +24,9 @@ class Settings:
     request_budget: int = 200
     llm_budget: int = 500
     enabled_sources: tuple[str, ...] = ("ba",)
+    # Bounds for every Pool built this run — see docs/llm-backend.md.
+    llm_max_wait_seconds: float = 3600
+    llm_run_deadline_seconds: float = 7200
 
     @classmethod
     def load(cls, project_root: Path) -> Settings:
@@ -73,3 +76,7 @@ class Settings:
     @property
     def pool_state_path(self) -> Path:
         return self.data_dir / "pool_state.json"
+
+    @property
+    def llm_cache_path(self) -> Path:
+        return self.data_dir / "llm-cache.db"

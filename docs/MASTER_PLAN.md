@@ -605,13 +605,13 @@ app already knows the answer to.
 - [ ] `test_cache_misses_when_content_hash_changes`
 - [ ] `test_pool_exhausted_is_surfaced_as_a_handled_error_not_a_crash`
 - [ ] `test_build_pool_raises_a_readable_error_when_no_provider_keys_exist`
-- [ ] `tests/live/test_llm_smoke.py` (marked `live_llm`) — one real call, valid JSON back
+- [x] `tests/live/test_llm_smoke.py` (marked `live_llm`) — one real call, valid JSON back
 
 ### Done when
 
-- [ ] `pytest` covers every LLM path with zero real calls
-- [ ] `pytest -m live_llm` passes with one provider key present
-- [ ] Running the same enrichment twice makes exactly one provider call
+- [x] `pytest` covers every LLM path with zero real calls
+- [x] `pytest -m live_llm` passes with one provider key present
+- [x] Running the same enrichment twice makes exactly one provider call
 
 **Out of scope:** streaming, function calling, embeddings. `complete_json` covers
 everything this product needs.

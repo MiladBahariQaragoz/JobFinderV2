@@ -4,6 +4,7 @@ If `pytest` with no arguments ever picks up a live test, the suite starts
 spending API quota and failing on someone else's outage.
 """
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -30,8 +31,11 @@ def test_live_markers_are_registered():
 def test_default_run_deselects_live_tests():
     result = _run_pytest("tests/live", "--collect-only", "-q")
 
-    assert "no tests ran" in result.stdout or "1 deselected" in result.stdout
+    # however many live tests exist, the default run deselects every one of them
+    match = re.search(r"(\d+) deselected", result.stdout)
+    assert match and int(match.group(1)) >= 1, result.stdout
     assert "live_probe" not in result.stdout
+    assert "error" not in result.stdout.lower()
 
 
 def test_live_marker_selects_the_live_test():
