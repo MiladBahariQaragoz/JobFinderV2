@@ -501,8 +501,8 @@ That sentence has to mean something before Phase 1.
       names itself and the valid settings
 - [x] `test_settings_reads_secrets_from_env_not_config` — a key in `config.yaml` is
       rejected outright, `.env` is loaded, and an already-set variable wins over it
-- [ ] `test_no_network_fixture_blocks_outbound_socket` — proves the guard actually bites
-      (attempt a connection inside a test, assert it raises)
+- [x] `test_no_network_fixture_blocks_outbound_socket` — proves the guard actually bites:
+      `create_connection`, raw `connect`, the host named in the error, localhost still allowed
 - [ ] `test_live_marker_is_registered` — `pytest -m live` selects only `tests/live/`
 - [ ] `test_record_fixture_writes_pretty_json_to_expected_path`
 
