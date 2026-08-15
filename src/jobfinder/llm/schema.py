@@ -8,8 +8,9 @@ a different provider instead of storing junk.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from jobfinder.search_spec import EMPLOYMENT_TYPES, GERMAN_LEVELS
 
@@ -25,7 +26,7 @@ class FieldRule:
     min_value: float | None = None
     max_value: float | None = None
     item_enum: tuple[str, ...] = ()
-    item_spec: dict[str, "FieldRule"] = field(default_factory=dict)
+    item_spec: dict[str, FieldRule] = field(default_factory=dict)
     item_label: str = "item"
     required: bool = True
     allow_empty: bool = False
