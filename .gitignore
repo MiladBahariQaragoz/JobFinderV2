@@ -27,3 +27,6 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Crash dumps
+*.stackdump
