@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
+import pytest
+
 from jobfinder.search_spec import SearchSpec
 
 
@@ -111,6 +115,146 @@ class TestBuildQueries:
 
         query = build_queries(spec())[0]
         url = query.url()
-        assert url.startswith("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?")
+        assert url.startswith(
+            "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?"
+        )
         assert "umkreis=25" in url
         assert "page=1" in url
+
+
+# -- parsing recorded pages ----------------------------------------------------
+
+
+def load_search_fixture(fixture_path) -> dict:
+    path = fixture_path("ba", "jobs_werkstudent_ingolstadt.json")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+class TestParsePage:
+    def test_ba_fixture_parses_into_raw_postings_with_expected_fields(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        postings = parse_page(load_search_fixture(fixture_path))
+        assert len(postings) == 5
+        first = postings[0]
+        assert first.title == "Werkstudent (m/w/d)"
+        assert first.company == "DEKRA Arbeit GmbH"
+        assert first.city == "Ingolstadt, Donau"
+        assert first.plz == "85051"
+        assert first.lat == pytest.approx(48.7258019)
+        assert first.lon == pytest.approx(11.4118102)
+        assert first.published_at == "2026-08-11"
+        assert first.source_url == (
+            "https://www.arbeitsagentur.de/jobsuche/jobdetail/11119-4913285274-S"
+        )
+        assert first.apply_url == "https://jobboard.compleet.com/?externalId=4913285274"
+
+    def test_ba_posting_id_is_source_prefixed_referenznummer(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        first = parse_page(load_search_fixture(fixture_path))[0]
+        assert first.job_id == "BA:11119-4913285274-S"
+        assert first.source == "BA"
+        assert first.source_id == "11119-4913285274-S"
+
+    def test_ba_minijob_flag_is_read_from_istGeringfuegigeBeschaeftigung(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        payload = load_search_fixture(fixture_path)
+        assert parse_page(payload)[0].is_minijob is False
+        payload["ergebnisliste"][0]["istGeringfuegigeBeschaeftigung"] = True
+        assert parse_page(payload)[0].is_minijob is True
+
+    def test_fulltime_and_parttime_flags_follow_the_arbeitszeit_fields(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        payload = load_search_fixture(fixture_path)
+        first = parse_page(payload)[0]
+        assert first.is_fulltime is True  # arbeitszeitVollzeit
+        assert first.is_parttime is False
+
+        payload["ergebnisliste"][0]["arbeitszeitVollzeit"] = False
+        payload["ergebnisliste"][0]["arbeitszeitTeilzeitAbend"] = True
+        again = parse_page(payload)[0]
+        assert again.is_fulltime is False
+        assert again.is_parttime is True
+
+    def test_homeoffice_flag_is_read_from_homeofficemoeglich(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        payload = load_search_fixture(fixture_path)
+        assert parse_page(payload)[0].homeoffice is False
+        payload["ergebnisliste"][0]["homeofficemoeglich"] = True
+        assert parse_page(payload)[0].homeoffice is True
+
+    def test_werkstudent_in_the_title_sets_the_werkstudent_flag(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        payload = load_search_fixture(fixture_path)
+        payload["ergebnisliste"][0]["stellenangebotsTitel"] = "Praktikum Umweltschutz (m/w/d)"
+        posting = parse_page(payload)[0]
+        assert posting.is_werkstudent is False
+        assert posting.is_internship is True
+
+    def test_entries_without_a_location_still_parse(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        payload = load_search_fixture(fixture_path)
+        del payload["ergebnisliste"][0]["stellenlokationen"]
+        posting = parse_page(payload)[0]
+        assert posting.city is None and posting.plz is None
+
+    def test_search_results_never_claim_a_description(self, fixture_path):
+        from jobfinder.sources.ba import parse_page
+
+        postings = parse_page(load_search_fixture(fixture_path))
+        assert all(posting.description is None for posting in postings)
+
+
+class RecordingClient:
+    """Stands in for the PoliteClient: serves scripted payloads, records calls."""
+
+    def __init__(self, payloads):
+        self.payloads = list(payloads)
+        self.calls: list[dict] = []
+
+    def get_json(self, url, params=None, headers=None):
+        self.calls.append({"url": url, "params": dict(params or {}), "headers": headers or {}})
+        return self.payloads.pop(0)
+
+
+class TestSearchPagination:
+    def test_search_paginates_until_max_ergebnisse_is_reached(self, fixture_path):
+        from jobfinder.sources.ba import BAApi
+
+        page_one = load_search_fixture(fixture_path)
+        page_two = json.loads(json.dumps(page_one))
+        page_two["maxErgebnisse"] = 10
+        client = RecordingClient([page_one, page_two])
+        postings = list(BAApi(client).search(spec()))
+
+        assert len(postings) == 10
+        assert len(client.calls) == 2
+        assert client.calls[0]["params"]["page"] == 1
+        assert client.calls[1]["params"]["page"] == 2
+        assert client.calls[0]["url"].endswith("/pc/v6/jobs")
+
+    def test_search_stops_when_a_page_comes_back_empty(self, fixture_path):
+        from jobfinder.sources.ba import BAApi
+
+        page_one = load_search_fixture(fixture_path)
+        page_one["maxErgebnisse"] = 999  # would keep going — the empty page must stop it
+        empty = {"ergebnisliste": [], "maxErgebnisse": 999, "page": 2, "size": 50}
+        client = RecordingClient([page_one, empty])
+        postings = list(BAApi(client).search(spec()))
+        assert len(postings) == 5
+        assert len(client.calls) == 2
+
+    def test_search_carries_the_api_key_header(self, fixture_path):
+        from jobfinder.sources.ba import API_HEADERS, BAApi
+
+        payload = load_search_fixture(fixture_path)
+        payload["maxErgebnisse"] = 5  # one page is the whole result set
+        client = RecordingClient([payload])
+        list(BAApi(client).search(spec()))
+        assert client.calls[0]["headers"] == API_HEADERS

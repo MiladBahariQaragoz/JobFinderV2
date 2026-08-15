@@ -13,6 +13,7 @@ import urllib.parse
 from dataclasses import dataclass
 
 from jobfinder.search_spec import SearchSpec
+from jobfinder.sources.base import RawPosting
 
 BASE_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
 SEARCH_URL = f"{BASE_URL}/pc/v6/jobs"
@@ -117,3 +118,98 @@ def build_queries(spec: SearchSpec) -> list[BAQuery]:
         for city in spec.cities
     ]
     return queries
+
+
+DETAIL_PAGE_URL = "https://www.arbeitsagentur.de/jobsuche/jobdetail/{ref}"
+
+_WERKSTUDENT_HINTS = ("werkstudent", "studentische hilfskraft", "hiw")
+_PRACTIKUM_HINTS = ("praktikum", "internship")
+
+
+def _title_flags(title: str) -> tuple[bool, bool]:
+    folded = (title or "").casefold()
+    is_werkstudent = any(hint in folded for hint in _WERKSTUDENT_HINTS)
+    is_internship = any(hint in folded for hint in _PRACTIKUM_HINTS)
+    return is_werkstudent, is_internship
+
+
+def parse_page(payload: dict) -> list[RawPosting]:
+    """One search page — `ergebnisliste` entries — into raw postings."""
+    postings: list[RawPosting] = []
+    for entry in payload.get("ergebnisliste") or []:
+        reference = entry.get("referenznummer")
+        if not reference:
+            continue  # an entry without identity cannot be stored or re-found
+        location = (entry.get("stellenlokationen") or [{}])[0]
+        adresse = location.get("adresse") or {}
+        is_werkstudent, is_internship = _title_flags(entry.get("stellenangebotsTitel", ""))
+        postings.append(
+            RawPosting(
+                job_id=f"BA:{reference}",
+                source="BA",
+                source_id=reference,
+                title=entry.get("stellenangebotsTitel") or "",
+                company=entry.get("firma"),
+                city=adresse.get("ort"),
+                plz=adresse.get("plz"),
+                lat=location.get("breite"),
+                lon=location.get("laenge"),
+                employment_type_raw=_employment_type_raw(entry),
+                is_minijob=bool(entry.get("istGeringfuegigeBeschaeftigung")),
+                is_parttime=any(
+                    bool(entry.get(flag))
+                    for flag in entry
+                    if flag.startswith("arbeitszeitTeilzeit")
+                ),
+                is_fulltime=bool(entry.get("arbeitszeitVollzeit")),
+                is_internship=is_internship,
+                is_werkstudent=is_werkstudent,
+                homeoffice=bool(entry.get("homeofficemoeglich")),
+                published_at=(entry.get("veroeffentlichungszeitraum") or {}).get("von")
+                or entry.get("datumErsteVeroeffentlichung"),
+                apply_url=entry.get("externeURL"),
+                source_url=DETAIL_PAGE_URL.format(ref=reference),
+            )
+        )
+    return postings
+
+
+def _employment_type_raw(entry: dict) -> str | None:
+    words = []
+    if entry.get("arbeitszeitVollzeit"):
+        words.append("Vollzeit")
+    if any(flag.startswith("arbeitszeitTeilzeit") and entry.get(flag) for flag in entry):
+        words.append("Teilzeit")
+    if entry.get("istGeringfuegigeBeschaeftigung"):
+        words.append("Geringfügig")
+    return ", ".join(words) or None
+
+
+class BAApi:
+    """SourceAdapter over the Jobsuche REST endpoints."""
+
+    source = "BA"
+
+    def __init__(self, client):
+        self._client = client
+
+    def search(self, spec: SearchSpec):
+        for query in build_queries(spec):
+            page = 1
+            found_for_query = 0
+            while True:
+                payload = self._client.get_json(
+                    SEARCH_URL, params=query.for_page(page).params(), headers=API_HEADERS
+                )
+                postings = parse_page(payload)
+                if not postings:
+                    break
+                yield from postings
+                found_for_query += len(postings)
+                try:
+                    total = int(payload.get("maxErgebnisse", 0))
+                except (TypeError, ValueError):
+                    total = 0
+                if found_for_query >= total:
+                    break
+                page += 1
