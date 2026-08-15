@@ -34,6 +34,36 @@ def test_settings_override_from_config_yaml(tmp_path):
     assert settings.enabled_sources == ("ba", "arbeitnow")
 
 
+def test_secrets_are_read_from_env_not_config_yaml(tmp_path, monkeypatch):
+    (tmp_path / "config.yaml").write_text("groq_api_key: leaked-into-config\n", encoding="utf-8")
+    monkeypatch.setenv("GROQ_API_KEY", "from-the-environment")
+
+    with pytest.raises(ValueError, match="groq_api_key"):
+        Settings.load(project_root=tmp_path)
+
+
+def test_env_file_next_to_the_project_is_loaded(tmp_path, monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    (tmp_path / ".env").write_text('GROQ_API_KEY="key-from-dotenv"\n', encoding="utf-8")
+
+    Settings.load(project_root=tmp_path)
+
+    import os
+
+    assert os.environ["GROQ_API_KEY"] == "key-from-dotenv"
+
+
+def test_existing_environment_wins_over_the_env_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "already-set")
+    (tmp_path / ".env").write_text("GROQ_API_KEY=from-dotenv\n", encoding="utf-8")
+
+    Settings.load(project_root=tmp_path)
+
+    import os
+
+    assert os.environ["GROQ_API_KEY"] == "already-set"
+
+
 def test_unknown_config_key_names_itself_and_the_valid_keys(tmp_path):
     (tmp_path / "config.yaml").write_text("reqeust_budget: 40\n", encoding="utf-8")
 

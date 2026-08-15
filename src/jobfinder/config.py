@@ -10,8 +10,10 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 
 CONFIG_FILENAME = "config.yaml"
+ENV_FILENAME = ".env"
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,9 @@ class Settings:
     @classmethod
     def load(cls, project_root: Path) -> Settings:
         project_root = Path(project_root)
+        # Secrets only ever come from the environment. An already-set variable wins,
+        # so a shell export beats a stale .env.
+        load_dotenv(project_root / ENV_FILENAME, override=False)
         overrides = cls._read_config_file(project_root / CONFIG_FILENAME)
         if "enabled_sources" in overrides:
             overrides["enabled_sources"] = tuple(overrides["enabled_sources"])
