@@ -457,3 +457,148 @@ class TestValidation:
         assert exit_code == 1
         assert "nightshift" in out
         assert "Traceback" not in out
+
+
+class TestSearchWithEnrich:
+    """§9: `--enrich` runs both, and neither command alone changes because of it."""
+
+    @staticmethod
+    def _root(tmp_path):
+        import yaml
+
+        (tmp_path / "pool.yaml").write_text(
+            yaml.safe_dump(
+                {
+                    "basics": {
+                        "name": "Jane Doe",
+                        "email": "j@example.com",
+                        "location": "Neuburg an der Donau, Germany",
+                    },
+                    "skills": {"Programming Languages": ["Python"]},
+                },
+                allow_unicode=True,
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        return tmp_path
+
+    @staticmethod
+    def _storing_runner(tmp_path, count=2):
+        """A fake search that commits jobs, exactly as the real one does."""
+        from jobfinder.sources.base import RawPosting
+        from jobfinder.store.db import connect, migrate
+        from jobfinder.store.jobs import upsert_job
+
+        def runner(connection, adapter_factory, spec, **kwargs):
+            worker = connect(tmp_path / "data" / "jobfinder.db")
+            migrate(worker)
+            for index in range(count):
+                upsert_job(
+                    worker,
+                    RawPosting(
+                        job_id=f"BA:{index:03d}",
+                        source="BA",
+                        source_id=f"{index:03d}",
+                        title=f"Aushilfe Bäckerei {index} (m/w/d)",
+                        company="Bäckerei Musterle",
+                        city="Ingolstadt",
+                        description=(
+                            f"Wir suchen eine Aushilfe für Filiale {index}. "
+                            "Gute Deutschkenntnisse in Wort und Schrift "
+                            "sind erforderlich."
+                        ),
+                    ),
+                )
+            worker.close()
+            return summary(found=count, new=count, duplicates=0)
+
+        return runner
+
+    @staticmethod
+    def _answer():
+        return {
+            "category": "retail",
+            "seniority": "entry",
+            "skills_required": ["customer service"],
+            "skills_nice": [],
+            "german_level": "B1",
+            "german_evidence": "Gute Deutschkenntnisse in Wort und Schrift",
+            "english_sufficient": False,
+            "employment_type_norm": "minijob",
+            "duties_en": ["Serve customers at the counter"],
+            "requirements_en": ["Reliable"],
+            "summary_en": "A weekend job at a bakery counter in Ingolstadt.",
+            "fit_score": 62,
+            "fit_reasons": ["Her retail experience matches"],
+            "missing_for_fit": ["Stronger spoken German"],
+            "red_flags": [],
+            "application_method": "email",
+            "contact_email": "jobs@example.de",
+            "contact_phone": "",
+            "deadline": "",
+        }
+
+    def test_the_jobs_a_search_stores_come_back_explained_in_the_same_command(
+        self, tmp_path, capsys
+    ):
+        from tests.fakes import FakePool
+
+        root = self._root(tmp_path)
+        pool = FakePool([self._answer()] * 2)
+
+        exit_code = main(
+            ["search", "--root", str(root), "--enrich"],
+            _client_factory=no_adapters,
+            _runner=self._storing_runner(root),
+            _pool_factory=lambda: pool,
+        )
+
+        out = capsys.readouterr().out
+        assert exit_code == 0
+        assert len(pool.calls) == 2
+        assert "explained" in out.lower()
+        assert (root / "data" / "jobs-enriched.csv").exists()
+
+    def test_search_alone_and_enrich_alone_are_unchanged_by_the_combined_command(
+        self, tmp_path, capsys
+    ):
+        from tests.fakes import FakePool
+
+        root = self._root(tmp_path)
+
+        def pool_factory():
+            raise AssertionError("a plain search must never build an LLM pool")
+
+        exit_code = main(
+            ["search", "--root", str(root)],
+            _client_factory=no_adapters,
+            _runner=self._storing_runner(root),
+            _pool_factory=pool_factory,
+        )
+
+        out = capsys.readouterr().out
+        assert exit_code == 0
+        assert "Search finished" in out
+        assert "explained" not in out.lower()
+        assert not (root / "data" / "jobs-enriched.csv").exists()
+
+        # And `jobfinder enrich` afterwards behaves exactly as it does alone.
+        pool = FakePool([self._answer()] * 2)
+        assert main(["enrich", "--root", str(root)], _pool_factory=lambda: pool) == 0
+        assert len(pool.calls) == 2
+
+    def test_a_missing_pool_yaml_stops_the_command_before_it_searches(self, tmp_path, capsys):
+        def runner(*args, **kwargs):
+            raise AssertionError("the search must not start without her CV")
+
+        exit_code = main(
+            ["search", "--root", str(tmp_path), "--enrich"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+
+        out = capsys.readouterr().out
+        assert exit_code == 1
+        assert "pool.yaml" in out
+        assert "Traceback" not in out

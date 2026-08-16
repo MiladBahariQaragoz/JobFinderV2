@@ -96,3 +96,161 @@ def test_make_validator_composes_from_field_rules():
     assert validator({"name": "x"})[0]  # optional key absent is fine
     assert not validator({"name": "x", "count": 500})[0]
     assert not validator({})[0]
+
+
+# --- Phase 7: the enrichment answer ------------------------------------------
+
+
+def enrichment_answer(**overrides) -> dict:
+    """A well-formed answer, as the model is asked to produce it."""
+    answer = {
+        "category": "retail",
+        "seniority": "entry",
+        "skills_required": ["customer service", "German A2"],
+        "skills_nice": ["cash handling"],
+        "german_level": "B1",
+        "german_evidence": "Gute Deutschkenntnisse in Wort und Schrift",
+        "english_sufficient": False,
+        "employment_type_norm": "minijob",
+        "hours_per_week": 10,
+        "duties_en": ["Serve customers at the counter", "Refill shelves"],
+        "requirements_en": ["Reliable", "Weekend availability"],
+        "summary_en": "A small weekend job at a bakery counter in Ingolstadt.",
+        "fit_score": 62,
+        "fit_reasons": ["Her retail experience matches"],
+        "missing_for_fit": ["Stronger spoken German"],
+        "red_flags": [],
+        "application_method": "email",
+        "contact_email": "jobs@example.de",
+        "contact_phone": "",
+        "deadline": "",
+    }
+    answer.update(overrides)
+    return answer
+
+
+def check(answer) -> tuple[bool, str]:
+    from jobfinder.llm.schema import enrichment_answer_validator
+
+    return enrichment_answer_validator(answer)
+
+
+class TestEnrichmentContract:
+    def test_a_well_formed_answer_is_accepted(self):
+        assert check(enrichment_answer())[0] is True
+
+    def test_a_missing_key_is_named(self):
+        answer = enrichment_answer()
+        del answer["summary_en"]
+        ok, reason = check(answer)
+        assert ok is False
+        assert "summary_en" in reason
+
+    def test_a_german_level_outside_the_enum_is_rejected(self):
+        ok, reason = check(enrichment_answer(german_level="fluent"))
+        assert ok is False
+        assert "fluent" in reason
+
+    def test_a_german_level_without_evidence_is_rejected(self):
+        # §5: the level must be backed by the phrase in the ad that justifies
+        # it. A third of her store is teaser-only, so the temptation to guess
+        # is the danger this rule exists for.
+        ok, reason = check(enrichment_answer(german_evidence=""))
+        assert ok is False
+        assert "german_evidence" in reason
+
+    def test_unclear_is_the_honest_answer_and_needs_no_evidence(self):
+        assert check(enrichment_answer(german_level="unclear", german_evidence=""))[0] is True
+
+    def test_an_answer_written_in_german_is_rejected(self):
+        ok, reason = check(
+            enrichment_answer(
+                summary_en=(
+                    "Eine kleine Aushilfe an der Theke einer Bäckerei, und die "
+                    "Arbeitszeiten sind am Wochenende mit flexiblen Schichten."
+                )
+            )
+        )
+        assert ok is False
+        assert "English" in reason
+
+    def test_a_german_job_title_inside_an_english_sentence_is_fine(self):
+        # She needs the German words that name things — Werkstudent, Minijob —
+        # and a language check that forbade them would be useless.
+        assert (
+            check(
+                enrichment_answer(
+                    summary_en="A Werkstudent role at Bäckerei Müller, paid as a Minijob."
+                )
+            )[0]
+            is True
+        )
+
+    def test_a_fit_score_outside_zero_to_a_hundred_is_rejected(self):
+        assert check(enrichment_answer(fit_score=140))[0] is False
+        assert check(enrichment_answer(fit_score=-1))[0] is False
+
+    def test_a_list_field_sent_as_a_string_is_rejected(self):
+        ok, reason = check(enrichment_answer(duties_en="Serve customers"))
+        assert ok is False
+        assert "duties_en" in reason
+
+    def test_english_sufficient_must_be_a_boolean(self):
+        ok, reason = check(enrichment_answer(english_sufficient="maybe"))
+        assert ok is False
+        assert "english_sufficient" in reason
+
+    def test_an_empty_red_flags_list_is_allowed(self):
+        assert check(enrichment_answer(red_flags=[]))[0] is True
+
+    def test_prose_instead_of_an_object_is_rejected(self):
+        assert check("Here is the enrichment you asked for")[0] is False
+
+
+class TestEvidenceMustBeInTheAd:
+    """§5's rule, enforced against the ad rather than against emptiness.
+
+    The field-level rule can only see that the evidence is not empty, so it
+    cannot tell a copied phrase from a plausible-sounding one — and she plans
+    her week around the level it justifies.
+
+    Normalising first is not politeness: a live Bundesagentur ad writes "Gute
+    Deutschkenntnisse (mindestens B1-Niveau)" with a non-breaking space and the
+    model copies it back with an ordinary one, so a naive substring test calls
+    a faithful quotation a fabrication.
+    """
+
+    AD = (
+        "Bei Hunkemöller motivieren und bestärken wir Frauen. Du berätst unsere "
+        "Kundinnen im Verkauf und sorgst für ein schönes Einkaufserlebnis. "
+        "Sehr gute Deutschkenntnisse in Wort und Schrift sind erforderlich."
+    )
+
+    def check(self, **overrides):
+        from jobfinder.llm.schema import evidence_supports_the_level
+
+        return evidence_supports_the_level(enrichment_answer(**overrides), self.AD)
+
+    def test_a_phrase_quoted_from_the_ad_is_accepted(self):
+        assert self.check(
+            german_level="B2", german_evidence="Sehr gute Deutschkenntnisse in Wort und Schrift"
+        )
+
+    def test_a_phrase_the_ad_never_contains_is_refused(self):
+        assert not self.check(
+            german_level="B1", german_evidence="Gute Deutschkenntnisse (mindestens B1-Niveau)"
+        )
+
+    def test_unclear_needs_no_evidence_at_all(self):
+        assert self.check(german_level="unclear", german_evidence="")
+
+    def test_case_and_spacing_differences_do_not_make_a_real_quote_invented(self):
+        # Models re-wrap and re-case what they copy; that is not a fabrication.
+        assert self.check(
+            german_level="B2", german_evidence="sehr  gute\nDeutschkenntnisse in Wort und Schrift"
+        )
+
+    def test_an_empty_ad_supports_no_level_at_all(self):
+        from jobfinder.llm.schema import evidence_supports_the_level
+
+        assert not evidence_supports_the_level(enrichment_answer(), "")

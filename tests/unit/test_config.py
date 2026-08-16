@@ -89,3 +89,12 @@ def test_unknown_config_key_names_itself_and_the_valid_keys(tmp_path):
     message = str(excinfo.value)
     assert "reqeust_budget" in message
     assert "request_budget" in message
+
+
+def test_enrichment_worker_count_has_a_default_and_can_be_tuned(tmp_path):
+    """How many jobs are in flight at once. Free tiers are the reason it is low."""
+    assert Settings(project_root=tmp_path).llm_workers == 4
+
+    (tmp_path / "config.yaml").write_text("llm_workers: 2\n", encoding="utf-8", newline="\n")
+
+    assert Settings.load(tmp_path).llm_workers == 2

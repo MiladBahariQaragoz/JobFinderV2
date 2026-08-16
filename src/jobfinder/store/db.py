@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # How long a writer waits for another writer before giving up (§8 rule 2).
 # Enrichment is meant to run while a search is still storing jobs, and WAL
@@ -19,6 +19,12 @@ SCHEMA_VERSION = 4
 # happens to default to 5 s; a rule her data depends on is stated here rather
 # than inherited, with room for a laptop that is busy doing something else.
 BUSY_TIMEOUT_MS = 15_000
+
+# The timeout in force while a connection is only setting itself up. The two
+# durability pragmas can block on a database still in rollback-journal mode,
+# and waiting the full BUSY_TIMEOUT_MS to find that out would make opening a
+# second connection feel like a hang. Losing that race is handled below.
+SETUP_TIMEOUT_MS = 500
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -67,6 +73,11 @@ CREATE TABLE IF NOT EXISTS enrichment (
     prompt_version TEXT NOT NULL,
     answer         TEXT NOT NULL,
     enriched_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    -- v5: the hash of the ad text this answer was read from. Without it the
+    -- skip rule can only ask "already enriched?", never "still the same ad?".
+    content_hash   TEXT,
+    -- v5: who answered, when the runner could tell. §5's CSV asks for it.
+    provider_used  TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (job_id, prompt_version)
 );
 
@@ -140,6 +151,12 @@ ADDED_COLUMNS = {
         # summary can name it instead of saying "a source failed".
         "last_error": "TEXT",
     },
+    "enrichment": {
+        # v5 (Phase 7): the two columns the skip rule and §5's CSV need. Her
+        # database already holds hundreds of jobs, so both arrive by ALTER.
+        "content_hash": "TEXT",
+        "provider_used": "TEXT NOT NULL DEFAULT ''",
+    },
 }
 
 
@@ -153,11 +170,33 @@ def connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA journal_mode = WAL")
-    connection.execute("PRAGMA synchronous = NORMAL")
+    # Short first, so a lost race costs a moment rather than BUSY_TIMEOUT_MS.
+    connection.execute(f"PRAGMA busy_timeout = {SETUP_TIMEOUT_MS}")
+    _apply_durability(connection)
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
     return connection
+
+
+def _apply_durability(connection: sqlite3.Connection) -> None:
+    """Set WAL and synchronous, tolerating a database another writer holds.
+
+    Both of these need a lock while the file is still in rollback-journal mode,
+    and `search --enrich` opens two connections at once — so on a first run,
+    before anything has switched the file to WAL, one of them can lose that
+    race. Raising there would break the one run that must work.
+
+    Losing is survivable and raising is not: the connection that won sets WAL
+    for the whole file, every later connection re-applies these, and a
+    connection that never manages falls back to the rollback journal — slower,
+    not unsafe.
+    """
+    for pragma in ("journal_mode = WAL", "synchronous = NORMAL"):
+        try:
+            connection.execute(f"PRAGMA {pragma}")
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower() and "busy" not in str(exc).lower():
+                raise
 
 
 def migrate(connection: sqlite3.Connection) -> None:

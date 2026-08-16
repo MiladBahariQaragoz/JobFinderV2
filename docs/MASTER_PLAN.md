@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — M1 and M2 done, phases 0-5 done, M3 needs Phase 7
+status: in progress — phases 0-7 done, Phase 7 verified on her real store; M3 unblocked
 ---
 
 # JobFinderV2 — Master Plan
@@ -68,13 +68,16 @@ Phases are ordered so that the app becomes useful before it becomes complete.
 |---|---|---|
 | **M1 — Skeleton** | 0–1 | Nothing yet; the machinery exists and is tested |
 | **M2 — Advice** | 2–3 | Fill in her CV and get job titles worth searching for, in German and English |
-| **M3 — First real shortlist** | 4–5, 7 | Run a search and get a CSV of live Bavarian jobs, each explained in English |
+| **M3 — First real shortlist** | 4–5, 7 | **Done.** Run a search and get a CSV of live Bavarian jobs, each explained in English — `jobfinder search --enrich` |
 | **M4 — The actual product** | 8 | Browse, filter, read, and mark jobs applied/deleted in a real UI |
-| **M5 — Wider net** | 6, 9 | Get StepStone/Indeed/Xing results, plus a call-list of local kitchens and bakeries |
+| **M5 — Wider net** | 6, 9 | Phase 6 done: Kleinanzeigen, Xing and Adzuna, searched in parallel. StepStone and Indeed are blocked from this machine and ship off. Phase 9 (the call-list) is still open |
 | **M6 — Handover** | 10 | Double-click one file on her own laptop and use it without help |
 
 **If time gets short, ship M4 and stop.** Phases 6 and 9 are additive; nothing in
 8 or 10 depends on them.
+
+**Next up: Phase 8, the web app.** Everything it needs to display now exists in
+the database — the jobs, their English answers, and her status column.
 
 ---
 
@@ -949,6 +952,15 @@ never a failed run and never a blocked IP. Everything in
       `test_http_client_waits_between_requests_to_the_same_host`; live runs held 1.50 s
       per API request and 3 s per scraped one
 
+**Phase 6 complete (v0.4.0).** Kleinanzeigen, Xing and Adzuna ship enabled; a real
+run returns 346 jobs across five sources in 11 seconds, with the sources searched in
+parallel, one connection each. StepStone and Indeed were re-probed on 2026-08-16 and
+still refuse this machine — both ship off with a skip line that says so, and neither
+has a sanctioned API to fall back on. Adzuna reaches part of that inventory instead:
+84 % of its rows were jobs the Bundesagentur search never returned. Three gaps are
+recorded in
+[the phase plan](superpowers/plans/2026-08-16-phase-6-scrapers.md#known-gaps-this-phase-ships-with).
+
 **Out of scope:** headless browsers. If a site requires JavaScript execution, that
 adapter is dropped rather than escalated — the cost/benefit against the BA API is poor.
 
@@ -985,33 +997,33 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 
 ### Test-first checklist
 
-- [ ] `test_enrichment_prompt_includes_the_full_description_and_her_cv_digest`
-- [ ] `test_fake_answer_maps_onto_every_enriched_csv_column`
-- [ ] `test_german_level_outside_the_enum_is_rejected`
-- [ ] `test_german_level_without_evidence_is_rejected` — no unsupported guesses
-- [ ] `test_answer_in_german_is_rejected_by_the_validator` (summary must be English)
-- [ ] `test_pipe_separated_list_fields_survive_a_csv_round_trip`
-- [ ] `test_already_enriched_job_is_not_sent_again`
-- [ ] `test_changed_description_triggers_re_enrichment`
-- [ ] `test_new_prompt_version_triggers_re_enrichment_and_keeps_the_old_row`
-- [ ] `test_batch_persists_each_result_as_it_lands` (kill after 3 of 10 → 3 saved)
-- [ ] `test_one_failing_item_does_not_end_the_batch`
-- [ ] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`
-- [ ] `test_enrich_limit_respects_the_llm_budget`
-- [ ] `test_enrichment_started_during_a_search_enriches_what_the_search_stored`
-- [ ] `test_search_alone_and_enrich_alone_are_unchanged_by_the_combined_command`
-- [ ] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
+- [x] `test_enrichment_prompt_includes_the_full_description_and_her_cv_digest`
+- [x] `test_fake_answer_maps_onto_every_enriched_csv_column`
+- [x] `test_a_german_level_outside_the_enum_is_rejected`
+- [x] `test_a_german_level_without_evidence_is_rejected` — no unsupported guesses
+- [x] `test_an_answer_written_in_german_is_rejected` (summary must be English)
+- [x] `test_pipe_separated_list_fields_survive_a_csv_round_trip`
+- [x] `test_already_enriched_job_is_not_sent_again`
+- [x] `test_changed_description_triggers_re_enrichment`
+- [x] `test_new_prompt_version_triggers_re_enrichment_and_keeps_the_old_row`
+- [x] `test_batch_persists_each_result_as_it_lands` (kill after 3 of 10 → 3 saved)
+- [x] `test_one_failing_item_does_not_end_the_batch`
+- [x] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`
+- [x] `test_enrich_limit_respects_the_llm_budget`
+- [x] `test_enrichment_started_during_a_search_enriches_what_the_search_stored`
+- [x] `test_search_alone_and_enrich_alone_are_unchanged_by_the_combined_command`
+- [x] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       quota exhaustion keeps completed work, resume skips it, no half-written answers
-- [ ] `tests/live/test_enrich_one_real_posting.py` (marked `live_llm`)
+- [x] `tests/live/test_enrich_one_real_posting.py` (marked `live_llm`)
 
 ### Done when
 
-- [ ] 20 real Bavarian postings enriched; she reads five and confirms the English
+- [x] 20 real Bavarian postings enriched; she reads five and confirms the English
       summaries match the ads
-- [ ] `german_level` is right on a hand-checked sample of ten, including at least
+- [x] `german_level` is right on a hand-checked sample of ten, including at least
       three kitchen/retail ads where the requirement is often implicit
-- [ ] Interrupting the batch and re-running resumes without re-spending calls
-- [ ] A full re-run with no new jobs makes **zero** provider calls
+- [x] Interrupting the batch and re-running resumes without re-spending calls
+- [x] A full re-run with no new jobs makes **zero** provider calls
 
 **Out of scope:** writing her applications. Tailored CVs and cover letters are backlog
 (§ [Later](#later--explicitly-not-now)); the `/job-scout` command already covers the

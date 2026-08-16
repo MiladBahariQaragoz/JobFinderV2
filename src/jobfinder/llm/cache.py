@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -30,12 +31,20 @@ def fingerprint(obj) -> str:
 
 
 class LLMCache:
-    """SQLite-backed answer store. One row per cache key, JSON-encoded answers."""
+    """SQLite-backed answer store. One row per cache key, JSON-encoded answers.
+
+    Safe to share across threads: enrichment runs `run_batch` with several
+    workers over one cache. sqlite3 refuses a connection used off its creating
+    thread, so the connection is opened without that check and every statement
+    is serialised behind one lock instead — the calls are microseconds long and
+    the workers spend their time waiting on providers, not on this.
+    """
 
     def __init__(self, db_path: Path):
         db_path = Path(db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(db_path)
+        self._lock = threading.Lock()
+        self._db = sqlite3.connect(db_path, check_same_thread=False)
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS llm_cache ("
             " key TEXT PRIMARY KEY,"
@@ -45,20 +54,24 @@ class LLMCache:
         self._db.commit()
 
     def get(self, key: str) -> dict | None:
-        row = self._db.execute("SELECT answer FROM llm_cache WHERE key = ?", (key,)).fetchone()
+        with self._lock:
+            row = self._db.execute("SELECT answer FROM llm_cache WHERE key = ?", (key,)).fetchone()
         if row is None:
             return None
         return json.loads(row[0])
 
     def put(self, key: str, answer: dict) -> None:
-        self._db.execute(
-            "INSERT OR REPLACE INTO llm_cache (key, answer) VALUES (?, ?)",
-            (key, json.dumps(answer, ensure_ascii=False)),
-        )
-        self._db.commit()
+        payload = json.dumps(answer, ensure_ascii=False)
+        with self._lock:
+            self._db.execute(
+                "INSERT OR REPLACE INTO llm_cache (key, answer) VALUES (?, ?)",
+                (key, payload),
+            )
+            self._db.commit()
 
     def close(self) -> None:
-        self._db.close()
+        with self._lock:
+            self._db.close()
 
     def __enter__(self) -> LLMCache:
         return self
