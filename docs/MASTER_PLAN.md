@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — M1 and M2 done (phases 0-3)
+status: in progress — M1 and M2 done, Phase 4 done (phases 0-4), M3 under way
 ---
 
 # JobFinderV2 — Master Plan
