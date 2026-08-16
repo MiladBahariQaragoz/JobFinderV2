@@ -1003,10 +1003,10 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 - [x] `test_already_enriched_job_is_not_sent_again`
 - [x] `test_changed_description_triggers_re_enrichment`
 - [x] `test_new_prompt_version_triggers_re_enrichment_and_keeps_the_old_row`
-- [ ] `test_batch_persists_each_result_as_it_lands` (kill after 3 of 10 → 3 saved)
-- [ ] `test_one_failing_item_does_not_end_the_batch`
-- [ ] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`
-- [ ] `test_enrich_limit_respects_the_llm_budget`
+- [x] `test_batch_persists_each_result_as_it_lands` (kill after 3 of 10 → 3 saved)
+- [x] `test_one_failing_item_does_not_end_the_batch`
+- [x] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`
+- [x] `test_enrich_limit_respects_the_llm_budget`
 - [ ] `test_enrichment_started_during_a_search_enriches_what_the_search_stored`
 - [ ] `test_search_alone_and_enrich_alone_are_unchanged_by_the_combined_command`
 - [ ] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):

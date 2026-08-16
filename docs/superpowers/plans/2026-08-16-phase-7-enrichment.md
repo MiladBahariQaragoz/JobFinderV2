@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T5 done, T6 (the runner) next
+status: in progress — T1-T6 done, T7 (the CLI) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -122,7 +122,7 @@ itself. Verified against a copy of her real 674-job database.
 `tests/store/test_enrichment.py`.
 Commit: `feat: store an enrichment and know which jobs still need one`.
 
-### T6 — `enrich/runner.py`: the batch, resumable by construction
+### T6 — `enrich/runner.py`: the batch, resumable by construction ✅
 `run_enrichment(connection, pool, settings, limit)` over `run_batch`:
 `on_result` writes the row **and** appends the CSV line before the next answer
 lands; a failing item is recorded and the batch continues; `PoolExhausted`
@@ -131,6 +131,16 @@ many are sent. `tests/enrich/test_runner.py` with `FakePool`:
 - kill after 3 of 10 → exactly 3 rows and 3 CSV lines on disk;
 - one junk answer does not end the batch and leaves that job unenriched;
 - a second run enriches nothing and makes zero calls.
+Two things the writing found, both now tested:
+- `LLMCache` opened a thread-bound SQLite connection, so every call made from
+  a `run_batch` worker failed before reaching a provider. It is now shared
+  safely behind one lock.
+- The answer cache is keyed on the **whole prompt**, not the ad text. Measured
+  on her store: 60 of 674 postings are identical down to the title and company
+  and cost one call between them; keying on the text alone would have "saved"
+  166 by answering one shop's ad with another shop's answer. `--force` reads
+  past the cache, or it would re-save yesterday's answer.
+
 Commit: `feat: enrich in batches, saving each answer as it lands`.
 
 ### T7 — `jobfinder enrich [--limit N] [--force]`

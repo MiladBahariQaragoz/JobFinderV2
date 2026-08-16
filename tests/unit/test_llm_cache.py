@@ -81,3 +81,24 @@ def test_cache_keys_differ_on_every_component():
 
     assert len(keys) == 4
     assert all(len(key) == 40 for key in keys)  # sha1 hex digest
+
+
+def test_the_cache_can_be_read_and_written_from_a_worker_thread(tmp_path):
+    """Enrichment runs `run_batch` with several workers, all sharing one cache.
+
+    sqlite3 refuses a connection used off its creating thread, so without this
+    every enrichment call fails before it ever reaches a provider.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    with LLMCache(tmp_path / "cache.db") as cache:
+
+        def store_and_read(index: int):
+            key = f"key-{index}"
+            cache.put(key, {"answer": index})
+            return cache.get(key)
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            answers = list(executor.map(store_and_read, range(8)))
+
+    assert answers == [{"answer": index} for index in range(8)]
