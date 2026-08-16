@@ -21,7 +21,7 @@ def test_settings_defaults_when_no_config_file_exists(tmp_path):
     assert settings.request_budget == 800
     assert settings.max_search_legs == 6
     assert settings.llm_budget == 500
-    assert settings.enabled_sources == ("ba",)
+    assert settings.enabled_sources == ("ba", "arbeitnow")  # the free, keyless APIs
 
 
 def test_settings_override_from_config_yaml(tmp_path):

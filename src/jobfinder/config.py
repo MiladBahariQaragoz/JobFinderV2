@@ -27,7 +27,7 @@ class Settings:
     request_budget: int = 800
     max_search_legs: int = 6
     llm_budget: int = 500
-    enabled_sources: tuple[str, ...] = ("ba",)
+    enabled_sources: tuple[str, ...] = ("ba", "arbeitnow")
     # Bounds for every Pool built this run — see docs/llm-backend.md.
     llm_max_wait_seconds: float = 3600
     llm_run_deadline_seconds: float = 7200

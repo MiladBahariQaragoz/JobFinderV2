@@ -10,7 +10,7 @@ from jobfinder.search_spec import SearchSpec
 
 
 def no_adapters(_settings):
-    """A factory that builds no adapters — the fake runner never needs them."""
+    """A client factory that is never reached — the fake runner never builds adapters."""
     return []
 
 
@@ -141,13 +141,16 @@ class TestRun:
 
 
 class TestAutoContinue:
-    def test_each_leg_gets_a_freshly_built_client(self, tmp_path):
-        # A leg only gets a new budget because it gets a new client.
+    def test_every_leg_and_source_gets_its_own_fresh_client(self, tmp_path):
+        # A leg gets a new budget because it gets a new client — and each
+        # source gets its own client too, so one source cannot spend another's
+        # politeness budget.
         built = []
 
         def client_factory(_settings):
-            built.append(object())
-            return []
+            marker = object()
+            built.append(marker)
+            return marker
 
         def runner(connection, adapter_factory, spec, **kwargs):
             adapter_factory()
@@ -155,7 +158,7 @@ class TestAutoContinue:
             return summary()
 
         main(["search", "--root", str(tmp_path)], _client_factory=client_factory, _runner=runner)
-        assert len(built) == 2
+        assert len(built) == 4  # 2 legs × 2 default sources
 
     def test_the_leg_cap_comes_from_settings(self, tmp_path):
         seen = {}

@@ -206,13 +206,17 @@ def _build_search_spec(args):
 
 
 def _default_client_factory(settings: Settings):
-    from jobfinder.sources.ba import BAApi
+    """One polite client — the registry gives each adapter its own."""
     from jobfinder.sources.http import PoliteClient
 
-    client = PoliteClient(
-        cache_dir=settings.data_dir / "http-cache", budget=settings.request_budget
-    )
-    return [BAApi(client)]
+    return PoliteClient(cache_dir=settings.data_dir / "http-cache", budget=settings.request_budget)
+
+
+def _adapter_factory(settings: Settings, client_factory):
+    """Build one leg's adapters — fresh clients, so fresh budgets (§8)."""
+    from jobfinder.sources.registry import build_adapters
+
+    return lambda: build_adapters(settings, client_factory).adapters
 
 
 def _print_search_summary(result, csv_path: Path | None) -> None:
@@ -265,7 +269,7 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
         migrate(connection)
         result = runner(
             connection,
-            lambda: client_factory(settings),  # one fresh client, and budget, per leg
+            _adapter_factory(settings, client_factory),
             spec,
             resume=args.resume,
             csv_path=settings.jobs_init_csv,
