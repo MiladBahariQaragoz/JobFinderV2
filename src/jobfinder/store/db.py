@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 # How long a writer waits for another writer before giving up (§8 rule 2).
 # Enrichment is meant to run while a search is still storing jobs, and WAL
@@ -124,6 +124,21 @@ CREATE TABLE IF NOT EXISTS runs (
     errors           TEXT
 );
 
+-- v6 (Phase 8): one row per source per search run, written as pages land.
+-- §10 promises progress read from the database, so the per-source lines the
+-- CLI prints ("Bundesagentur — 42 found, 7 new") live here too, and a browser
+-- reload mid-run shows the same state.
+CREATE TABLE IF NOT EXISTS run_sources (
+    run_id          INTEGER NOT NULL REFERENCES runs(id),
+    source          TEXT NOT NULL,
+    found_count     INTEGER NOT NULL DEFAULT 0,
+    new_count       INTEGER NOT NULL DEFAULT 0,
+    duplicate_count INTEGER NOT NULL DEFAULT 0,
+    state           TEXT NOT NULL DEFAULT 'running',
+    last_event_at   TEXT,
+    PRIMARY KEY (run_id, source)
+);
+
 -- Per-source cursors so a resumed search re-enters at the right page.
 CREATE TABLE IF NOT EXISTS source_state (
     source               TEXT PRIMARY KEY,
@@ -156,6 +171,16 @@ ADDED_COLUMNS = {
         # database already holds hundreds of jobs, so both arrive by ALTER.
         "content_hash": "TEXT",
         "provider_used": "TEXT NOT NULL DEFAULT ''",
+    },
+    "status": {
+        # v6 (Phase 8): the day she applied — the job page's "you applied on
+        # …" line reads it, set once, never rewritten.
+        "applied_on": "TEXT",
+    },
+    "runs": {
+        # v6 (Phase 8): answers landed in an enrichment run, journalled per
+        # answer so the web app's progress panel can read it mid-run.
+        "enriched_count": "INTEGER NOT NULL DEFAULT 0",
     },
 }
 
