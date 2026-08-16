@@ -76,6 +76,20 @@ class RawPosting:
         return hashlib.sha1(self.description.encode("utf-8")).hexdigest()
 
 
+@dataclass(frozen=True)
+class PageResult:
+    """One page of one query — the unit the search runner persists per fetch.
+
+    `query_index` + `page` are the resume cursor: the runner records the last
+    completed pair in `source_state` and re-enters there on `--resume`.
+    """
+
+    source: str
+    query_index: int
+    page: int
+    postings: list[RawPosting]
+
+
 class SourceAdapter(Protocol):
     """What every source — API or scraper — must provide."""
 

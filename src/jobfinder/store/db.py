@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS runs (
 CREATE TABLE IF NOT EXISTS source_state (
     source               TEXT PRIMARY KEY,
     query_hash           TEXT,
+    last_query_index     INTEGER NOT NULL DEFAULT 0,
     last_completed_page  INTEGER NOT NULL DEFAULT 0,
     last_success_at      TEXT,
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
@@ -118,6 +119,7 @@ def connect(db_path: Path) -> sqlite3.Connection:
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA journal_mode = WAL")
     connection.execute("PRAGMA synchronous = NORMAL")
     connection.execute("PRAGMA foreign_keys = ON")

@@ -14,7 +14,7 @@ import urllib.parse
 from dataclasses import dataclass, replace
 
 from jobfinder.search_spec import SearchSpec
-from jobfinder.sources.base import RawPosting
+from jobfinder.sources.base import PageResult, RawPosting
 from jobfinder.sources.extract import extract_readable_text
 
 BASE_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
@@ -196,8 +196,17 @@ class BAApi:
         self._client = client
 
     def search(self, spec: SearchSpec):
-        for query in build_queries(spec):
-            page = 1
+        for page in self.search_pages(spec):
+            yield from page.postings
+
+    def search_pages(
+        self, spec: SearchSpec, *, start_query_index: int = 0, start_page: int = 1
+    ):
+        """Yield `PageResult`s, re-entering at the resume cursor when given one."""
+        for query_index, query in enumerate(build_queries(spec)):
+            if query_index < start_query_index:
+                continue  # this query finished before the interruption
+            page = start_page if query_index == start_query_index else 1
             found_for_query = 0
             while True:
                 payload = self._client.get_json(
@@ -206,7 +215,9 @@ class BAApi:
                 postings = parse_page(payload)
                 if not postings:
                     break
-                yield from postings
+                yield PageResult(
+                    source=self.source, query_index=query_index, page=page, postings=postings
+                )
                 found_for_query += len(postings)
                 try:
                     total = int(payload.get("maxErgebnisse", 0))
