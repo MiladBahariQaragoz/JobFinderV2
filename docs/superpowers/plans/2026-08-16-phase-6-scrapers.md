@@ -2,7 +2,7 @@
 title: "Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing"
 date: 2026-08-16
 type: phase-plan
-status: in progress
+status: in progress — T1-T8 done, T9 (registry) under way
 master-plan: docs/MASTER_PLAN.md#phase-6--scrapers-kleinanzeigen-stepstone-indeed-xing
 ---
 
@@ -118,28 +118,28 @@ becomes the honest way to ask "does StepStone answer from here today?".
 Shared groundwork, then sources in the master plan's order (Kleinanzeigen
 first — it is the one that pays rent).
 
-- [ ] T1 `record_fixture.py --html` — flag that saves a page byte-for-byte
+- [x] T1 `record_fixture.py --html` — flag that saves a page byte-for-byte
       and prints a warning when the body is not HTML (the JSON path stays
       as is). Test first.
-- [ ] T2 Record fixtures: `kleinanzeigen/list_ingolstadt.html`,
+- [x] T2 Record fixtures: `kleinanzeigen/list_ingolstadt.html`,
       `kleinanzeigen/detail_minijob.html`, `xing/list_aushilfe_ingolstadt.html`,
       `xing/detail_aushilfe.html`, `indeed/blocked.html` (the 403 body).
-- [ ] T3 `sources/extract.py`: `jsonld_jobpostings(html)`, `html_to_text`,
+- [x] T3 `sources/extract.py`: `jsonld_jobpostings(html)`, `html_to_text`,
       `looks_like_login_wall`. Tests against the recorded Xing detail page
       and a real blocked page.
-- [ ] T4 `sources/wording.py`: employment-type word lists (the Phase 6
+- [x] T4 `sources/wording.py`: employment-type word lists (the Phase 6
       minijob vocabulary: `Minijob`, `450 €`, `520 €`, `Aushilfe`,
       `geringfügig`) + `search_term_for(employment_type)` + slugs. Tests.
-- [ ] T5 `cities.py`: `KLEINANZEIGEN_LOCATIONS` map + lookup. Test: unknown
+- [x] T5 `cities.py`: `KLEINANZEIGEN_LOCATIONS` map + lookup. Test: unknown
       city has no id and is skipped loudly (the adapter's job, tested there;
       here: the map covers every `CITY_NAMES` entry, so a new city cannot
       be added silently without an id).
-- [ ] T6 `sources/kleinanzeigen.py`: list parsing (25+ urls from one page),
+- [x] T6 `sources/kleinanzeigen.py`: list parsing (25+ urls from one page),
       detail parsing, minijob flag from wording, gesuche excluded, unknown
       city skipped loudly, pagination via `pagination-next`, MAX_PAGES cap.
-- [ ] T7 `sources/xing.py`: SEO URL building, list anchors → (url, title),
+- [x] T7 `sources/xing.py`: SEO URL building, list anchors → (url, title),
       detail via JSON-LD, no pagination.
-- [ ] T8 `sources/stepstone.py` + `sources/indeed.py`: URL building tested
+- [x] T8 `sources/stepstone.py` + `sources/indeed.py`: URL building tested
       as pure logic; parsing over the shared extractor; the recorded 403
       drives `test_unparseable_page_records_a_failure_and_returns_nothing`.
 - [ ] T9 Registry: four new sources, kinds `scraper`, labels, defaults,
