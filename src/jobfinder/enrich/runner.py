@@ -28,7 +28,11 @@ from llmpool import PoolExhausted, run_batch
 from jobfinder.enrich.fields import enriched_row
 from jobfinder.llm.cache import LLMCache, cache_key, fingerprint
 from jobfinder.llm.prompting import load_prompt, render_enrichment_prompt
-from jobfinder.llm.schema import ENRICHMENT_SPEC, enrichment_answer_validator
+from jobfinder.llm.schema import (
+    ENRICHMENT_SPEC,
+    enrichment_answer_validator,
+    evidence_supports_the_level,
+)
 from jobfinder.store.enrichment import jobs_needing_enrichment, save_enrichment
 from jobfinder.store.export import append_enriched_row
 
@@ -53,6 +57,10 @@ class EnrichmentRun:
     failed: int = 0
     remaining: int = 0  # still unexplained when the run ended
     quota_spent: bool = False
+    # Answers whose German level was not backed by the ad and was recorded as
+    # `unclear` instead. Counted rather than hidden — a provider that invents
+    # quotes should be visible in the summary.
+    unevidenced_levels: int = 0
     errors: list[str] = field(default_factory=list)
     # §9: a job that fails is retried on the next *run*. A caller that asks
     # again within the same run — the companion polls every couple of seconds —
@@ -101,7 +109,7 @@ def run_enrichment(
         for job in queue
     }
 
-    enriched = failed = 0
+    enriched = failed = unevidenced = 0
     errors: list[str] = []
     failed_ids: list[str] = []
     quota_spent = False
@@ -125,19 +133,28 @@ def run_enrichment(
             errors.append(f"{job['job_id']}: unusable answer ({reason})")
             return
 
+        answer = _grounded_in_the_ad(result.answer, job["description"])
+        if answer is not result.answer:
+            nonlocal unevidenced
+            unevidenced += 1
+            errors.append(
+                f"{job['job_id']}: german_level {result.answer['german_level']!r} was "
+                f"justified by a phrase that is not in the ad — recorded as 'unclear'"
+            )
+
         enriched_at = save_enrichment(
             connection,
             job["job_id"],
             version,
             job["content_hash"],
-            result.answer,
+            answer,
             provider_used=answering.provider_for(prompts[job["job_id"]]),
         )
         if csv_path is not None:
             append_enriched_row(
                 csv_path,
                 enriched_row(
-                    result.answer,
+                    answer,
                     job_id=job["job_id"],
                     prompt_version=version,
                     provider_used=answering.provider_for(prompts[job["job_id"]]),
@@ -177,9 +194,24 @@ def run_enrichment(
         failed=failed,
         remaining=len(jobs_needing_enrichment(connection, version)),
         quota_spent=quota_spent,
+        unevidenced_levels=unevidenced,
         errors=errors,
         failed_job_ids=tuple(failed_ids),
     )
+
+
+def _grounded_in_the_ad(answer: dict[str, Any], description: str) -> dict[str, Any]:
+    """Return the answer unchanged, or a copy whose unbacked level reads `unclear`.
+
+    §5 allows an evidenced level or `unclear`, and nothing else. When the quoted
+    phrase is not in the posting, the level is not evidenced — so `unclear` is
+    the correct value, not a compromise. The rest of the answer is kept: the
+    summary, the duties and the fit are still what she asked for, and throwing
+    them away over one field would cost her a job she can read.
+    """
+    if evidence_supports_the_level(answer, description):
+        return answer
+    return {**answer, "german_level": "unclear", "german_evidence": ""}
 
 
 class _AnsweringPool:

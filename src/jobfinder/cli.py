@@ -312,6 +312,11 @@ def _print_enrichment_summary(result, csv_path: Path) -> None:
             f"  {result.failed} could not be explained this time — they stay on the "
             f"list and the next run picks them up."
         )
+    if result.unevidenced_levels:
+        print(
+            f"  {result.unevidenced_levels} German levels were not actually quoted from "
+            f"their ad, so they read 'unclear' rather than a number you cannot check."
+        )
     if result.errors:
         # Printed even when nothing was counted as failed: a worker that died
         # before it sent anything reports here and nowhere else.

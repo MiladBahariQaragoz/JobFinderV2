@@ -75,7 +75,10 @@ def store_job(db_path, index: int) -> None:
             title=f"Aushilfe Bäckerei {index} (m/w/d)",
             company="Bäckerei Musterle",
             city="Ingolstadt",
-            description=f"Wir suchen eine Aushilfe für Filiale {index}.",
+            description=(
+                f"Wir suchen eine Aushilfe für Filiale {index}. "
+                "Gute Deutschkenntnisse in Wort und Schrift sind erforderlich."
+            ),
         ),
     )
     connection.close()

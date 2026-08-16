@@ -200,6 +200,34 @@ def reads_as_german(text: str) -> bool:
     return len(words & set(_GERMAN_MARKERS)) >= _MARKERS_THAT_MEAN_GERMAN
 
 
+def evidence_supports_the_level(answer: Any, description: str) -> bool:
+    """True when the quoted `german_evidence` is really in the ad.
+
+    The field rules can only see that the evidence is non-empty, so they cannot
+    tell a copied phrase from a plausible-sounding one. §5 asks for the phrase
+    *in the ad*, and this is the only check that can hold it: a level she plans
+    her week around must be traceable to the text.
+
+    Case and spacing are normalised first, because real postings demand it. A
+    live Bundesagentur ad writes "Gute Deutschkenntnisse (mindestens
+    B1-Niveau)" with a non-breaking space; the model copies it faithfully with
+    an ordinary one. A model that re-spaces or re-cases what it copied has
+    still copied it, and a naive substring test would call that a fabrication.
+    """
+    if not isinstance(answer, dict):
+        return False
+    if answer.get("german_level") == "unclear":
+        return True  # nothing is being claimed, so nothing needs backing
+
+    evidence = _flatten(str(answer.get("german_evidence") or ""))
+    return bool(evidence) and evidence in _flatten(description or "")
+
+
+def _flatten(text: str) -> str:
+    """Casefolded, with every run of whitespace reduced to one space."""
+    return " ".join(text.split()).casefold()
+
+
 def enrichment_answer_validator(answer: Any) -> tuple[bool, str]:
     """The field rules, plus the two promises §5 makes to her."""
     ok, reason = _ENRICHMENT_FIELDS(answer)

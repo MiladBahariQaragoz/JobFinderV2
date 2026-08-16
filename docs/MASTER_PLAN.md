@@ -1009,9 +1009,9 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 - [x] `test_enrich_limit_respects_the_llm_budget`
 - [x] `test_enrichment_started_during_a_search_enriches_what_the_search_stored`
 - [x] `test_search_alone_and_enrich_alone_are_unchanged_by_the_combined_command`
-- [ ] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
+- [x] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       quota exhaustion keeps completed work, resume skips it, no half-written answers
-- [ ] `tests/live/test_enrich_one_real_posting.py` (marked `live_llm`)
+- [x] `tests/live/test_enrich_one_real_posting.py` (marked `live_llm`)
 
 ### Done when
 

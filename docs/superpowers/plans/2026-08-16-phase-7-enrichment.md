@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T8 done, T9 (one real posting) next
+status: in progress — T1-T9 done, T10 (her real data) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -172,10 +172,22 @@ Three things the writing found, all now tested:
 
 Commit: `feat: enrich while the search is still running`.
 
-### T9 — one real posting, end to end
+### T9 — one real posting, end to end ✅
 `tests/live/test_enrich_one_real_posting.py`, marked `live_llm`: one stored
 Bundesagentur ad through the real pool, answer passes the validator, the
 German level is evidenced by a phrase that appears in the ad.
+What the live run taught, and what it did not:
+- A real BA posting writes "Gute Deutschkenntnisse (mindestens B1-Niveau)"
+  with a **non-breaking space**, and the model copies it back with an ordinary
+  one. A naive substring check calls that faithful quotation a fabrication, so
+  the evidence comparison normalises case and whitespace on both sides.
+- `evidence_supports_the_level(answer, description)` now enforces the half of
+  §5 the field rules cannot see: evidence must be traceable to the ad, not
+  merely non-empty. An answer whose level is not backed is stored with
+  `german_level: "unclear"` rather than discarded — the summary, duties and fit
+  are still what she asked for — and the downgrade is counted in
+  `EnrichmentRun.unevidenced_levels` and reported, never done silently.
+
 Commit: `test: one real posting enriched end to end`.
 
 ### T10 — done-when on her real data

@@ -57,6 +57,12 @@ ONE JSON object of exactly this shape:
   phrase from the ad, copied word for word, that shows it. If you cannot copy
   such a phrase out of the text below, the answer is `unclear` and
   `german_evidence` is an empty string.
+- `german_evidence` is a **verbatim quotation**, and it is checked against the
+  ad after you answer. Do not paraphrase it and do not compose a
+  plausible-sounding requirement: a phrase that cannot be found in the text is
+  discarded and the level is recorded as `unclear`, so a summarised quotation
+  only loses the answer you meant to give. Differences in capitalisation, line
+  breaks or spacing are fine — the check ignores those.
 - Do not infer a level from the job type. A kitchen job is not automatically
   `A2`, and an IT job is not automatically `none`. Only the ad decides.
 - Phrases that *are* evidence: "Deutschkenntnisse erforderlich",

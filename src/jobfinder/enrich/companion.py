@@ -73,6 +73,7 @@ class EnrichmentCompanion:
         self._enriched = 0
         self._failed = 0
         self._quota_spent = False
+        self._unevidenced = 0
         self._errors: list[str] = []
         # §9: a job that fails is retried on the next run, not on the next
         # poll two seconds from now. One unanswerable ad would otherwise be
@@ -142,6 +143,7 @@ class EnrichmentCompanion:
         self._sent += result.sent
         self._enriched += result.enriched
         self._failed += result.failed
+        self._unevidenced += result.unevidenced_levels
         self._errors.extend(result.errors)
         self._already_tried.update(result.failed_job_ids)
         if result.quota_spent:
@@ -164,6 +166,7 @@ class EnrichmentCompanion:
             failed=self._failed,
             remaining=remaining,
             quota_spent=self._quota_spent,
+            unevidenced_levels=self._unevidenced,
             errors=self._errors,
         )
 

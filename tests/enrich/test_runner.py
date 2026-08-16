@@ -76,7 +76,11 @@ def store_jobs(connection, count: int, *, text: str | None = None) -> list[str]:
                 title=f"Aushilfe Bäckerei {index} (m/w/d)",
                 company="Bäckerei Musterle",
                 city="Ingolstadt",
-                description=text or f"Wir suchen eine Aushilfe für Filiale {index}.",
+                description=text
+                or (
+                    f"Wir suchen eine Aushilfe für Filiale {index}. "
+                    "Gute Deutschkenntnisse in Wort und Schrift sind erforderlich."
+                ),
             ),
         )
         ids.append(job_id)
@@ -395,3 +399,66 @@ class TestSkippingWhatAlreadyFailed:
 
         assert pool.calls == []
         assert result.total == 0
+
+
+class TestAnInventedQuoteIsNotStored:
+    """A level the ad does not back is recorded as `unclear`, not as fact.
+
+    The validator can only see that the evidence is non-empty. When the phrase
+    turns out not to be in the posting, the rest of the answer — the summary,
+    the duties, the fit — is usually still good, so throwing it away would cost
+    her a job she could read. Downgrading the one unsupported field keeps the
+    rest and keeps §5's promise: an evidenced level, or `unclear`.
+    """
+
+    def test_a_level_quoting_a_phrase_the_ad_lacks_becomes_unclear(self, db, settings):
+        store_jobs(db, 1)
+        invented = answer(german_level="B1", german_evidence="Verhandlungssicheres Deutsch")
+
+        enrich(db, FakePool([invented]), settings)
+
+        stored = db.execute("SELECT answer FROM enrichment").fetchone()[0]
+        assert '"german_level": "unclear"' in stored
+        assert '"german_evidence": ""' in stored
+
+    def test_the_rest_of_that_answer_is_kept(self, db, settings):
+        store_jobs(db, 1)
+        invented = answer(german_level="B1", german_evidence="Verhandlungssicheres Deutsch")
+
+        result = enrich(db, FakePool([invented]), settings)
+
+        stored = db.execute("SELECT answer FROM enrichment").fetchone()[0]
+        assert result.enriched == 1
+        assert "A weekend job at a bakery counter" in stored
+
+    def test_the_downgrade_is_reported_rather_than_done_silently(self, db, settings):
+        store_jobs(db, 1)
+        invented = answer(german_level="B1", german_evidence="Verhandlungssicheres Deutsch")
+
+        result = enrich(db, FakePool([invented]), settings)
+
+        assert result.unevidenced_levels == 1
+        assert any("not in the ad" in error for error in result.errors)
+
+    def test_a_level_the_ad_really_does_back_is_left_alone(self, db, settings):
+        upsert_job(
+            db,
+            RawPosting(
+                job_id="BA:evidenced",
+                source="BA",
+                source_id="evidenced",
+                title="Aushilfe Bäckerei (m/w/d)",
+                company="Bäckerei Musterle",
+                city="Ingolstadt",
+                description=(
+                    "Wir suchen eine Aushilfe für unsere Theke. "
+                    "Gute Deutschkenntnisse in Wort und Schrift sind erforderlich."
+                ),
+            ),
+        )
+
+        result = enrich(db, FakePool([answer()]), settings)
+
+        stored = db.execute("SELECT answer FROM enrichment").fetchone()[0]
+        assert result.unevidenced_levels == 0
+        assert '"german_level": "B1"' in stored

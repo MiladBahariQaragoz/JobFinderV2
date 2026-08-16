@@ -205,3 +205,52 @@ class TestEnrichmentContract:
 
     def test_prose_instead_of_an_object_is_rejected(self):
         assert check("Here is the enrichment you asked for")[0] is False
+
+
+class TestEvidenceMustBeInTheAd:
+    """§5's rule, enforced against the ad rather than against emptiness.
+
+    The field-level rule can only see that the evidence is not empty, so it
+    cannot tell a copied phrase from a plausible-sounding one — and she plans
+    her week around the level it justifies.
+
+    Normalising first is not politeness: a live Bundesagentur ad writes "Gute
+    Deutschkenntnisse (mindestens B1-Niveau)" with a non-breaking space and the
+    model copies it back with an ordinary one, so a naive substring test calls
+    a faithful quotation a fabrication.
+    """
+
+    AD = (
+        "Bei Hunkemöller motivieren und bestärken wir Frauen. Du berätst unsere "
+        "Kundinnen im Verkauf und sorgst für ein schönes Einkaufserlebnis. "
+        "Sehr gute Deutschkenntnisse in Wort und Schrift sind erforderlich."
+    )
+
+    def check(self, **overrides):
+        from jobfinder.llm.schema import evidence_supports_the_level
+
+        return evidence_supports_the_level(enrichment_answer(**overrides), self.AD)
+
+    def test_a_phrase_quoted_from_the_ad_is_accepted(self):
+        assert self.check(
+            german_level="B2", german_evidence="Sehr gute Deutschkenntnisse in Wort und Schrift"
+        )
+
+    def test_a_phrase_the_ad_never_contains_is_refused(self):
+        assert not self.check(
+            german_level="B1", german_evidence="Gute Deutschkenntnisse (mindestens B1-Niveau)"
+        )
+
+    def test_unclear_needs_no_evidence_at_all(self):
+        assert self.check(german_level="unclear", german_evidence="")
+
+    def test_case_and_spacing_differences_do_not_make_a_real_quote_invented(self):
+        # Models re-wrap and re-case what they copy; that is not a fabrication.
+        assert self.check(
+            german_level="B2", german_evidence="sehr  gute\nDeutschkenntnisse in Wort und Schrift"
+        )
+
+    def test_an_empty_ad_supports_no_level_at_all(self):
+        from jobfinder.llm.schema import evidence_supports_the_level
+
+        assert not evidence_supports_the_level(enrichment_answer(), "")
