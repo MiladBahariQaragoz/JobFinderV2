@@ -1000,9 +1000,9 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 - [x] `test_a_german_level_without_evidence_is_rejected` — no unsupported guesses
 - [x] `test_an_answer_written_in_german_is_rejected` (summary must be English)
 - [x] `test_pipe_separated_list_fields_survive_a_csv_round_trip`
-- [ ] `test_already_enriched_job_is_not_sent_again`
-- [ ] `test_changed_description_triggers_re_enrichment`
-- [ ] `test_new_prompt_version_triggers_re_enrichment_and_keeps_the_old_row`
+- [x] `test_already_enriched_job_is_not_sent_again`
+- [x] `test_changed_description_triggers_re_enrichment`
+- [x] `test_new_prompt_version_triggers_re_enrichment_and_keeps_the_old_row`
 - [ ] `test_batch_persists_each_result_as_it_lands` (kill after 3 of 10 → 3 saved)
 - [ ] `test_one_failing_item_does_not_end_the_batch`
 - [ ] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`

@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # How long a writer waits for another writer before giving up (§8 rule 2).
 # Enrichment is meant to run while a search is still storing jobs, and WAL
@@ -67,6 +67,11 @@ CREATE TABLE IF NOT EXISTS enrichment (
     prompt_version TEXT NOT NULL,
     answer         TEXT NOT NULL,
     enriched_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    -- v5: the hash of the ad text this answer was read from. Without it the
+    -- skip rule can only ask "already enriched?", never "still the same ad?".
+    content_hash   TEXT,
+    -- v5: who answered, when the runner could tell. §5's CSV asks for it.
+    provider_used  TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (job_id, prompt_version)
 );
 
@@ -139,6 +144,12 @@ ADDED_COLUMNS = {
         # v4 (Phase 6): what the source said the last time it failed, so the
         # summary can name it instead of saying "a source failed".
         "last_error": "TEXT",
+    },
+    "enrichment": {
+        # v5 (Phase 7): the two columns the skip rule and §5's CSV need. Her
+        # database already holds hundreds of jobs, so both arrive by ALTER.
+        "content_hash": "TEXT",
+        "provider_used": "TEXT NOT NULL DEFAULT ''",
     },
 }
 

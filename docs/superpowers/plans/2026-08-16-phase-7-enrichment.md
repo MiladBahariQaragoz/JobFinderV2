@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T4 done, T5 (the store) next
+status: in progress — T1-T5 done, T6 (the runner) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -108,8 +108,11 @@ fields survive a CSV round trip; a missing optional field becomes empty, not
 the string "None".
 Commit: `feat: map an enrichment answer onto the CSV contract`.
 
-### T5 — `store/enrichment.py`: save one answer, know what to skip
-Schema v5 adds `enrichment.content_hash` through the ALTER path.
+### T5 — `store/enrichment.py`: save one answer, know what to skip ✅
+Schema v5 adds `enrichment.content_hash` **and `enrichment.provider_used`**
+through the ALTER path — §5's CSV asks who answered, and llmpool has no
+per-call provider attribution, so the runner has to carry it onto the row
+itself. Verified against a copy of her real 674-job database.
 - `save_enrichment(connection, job_id, prompt_version, content_hash, answer)`
   inserts one row and commits;
 - `jobs_needing_enrichment(connection, prompt_version, limit)` returns jobs
