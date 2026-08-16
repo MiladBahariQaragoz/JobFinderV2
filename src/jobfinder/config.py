@@ -33,6 +33,10 @@ class Settings:
     api_delay_seconds: float = 1.0
     scraper_delay_seconds: float = 3.0
     llm_budget: int = 500
+    # How many jobs are enriched at once. Free tiers are the reason this is 4
+    # and not 32: the pool paces itself per provider anyway, and more workers
+    # only means more of them waiting in a queue.
+    llm_workers: int = 4
     # The sources that answer this machine: two free APIs and the two scraped
     # sites that serve her market. StepStone and Indeed stay opt-in — both
     # refused this client in testing, and enabling them by default would spend

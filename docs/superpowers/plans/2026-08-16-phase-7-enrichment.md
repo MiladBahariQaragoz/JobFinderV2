@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T6 done, T7 (the CLI) next
+status: in progress — T1-T7 done, T8 (search --enrich) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -143,10 +143,12 @@ Two things the writing found, both now tested:
 
 Commit: `feat: enrich in batches, saving each answer as it lands`.
 
-### T7 — `jobfinder enrich [--limit N] [--force]`
+### T7 — `jobfinder enrich [--limit N] [--force]` ✅
 Progress in her words (`143 of 400 jobs explained`), the per-run summary, the
 final export, and a readable line for a spent quota. `--force` re-enriches at
-the current version. `tests/unit/test_cli_enrich.py` with fakes.
+the current version. `tests/unit/test_cli_enrich.py` with fakes. `llm_workers`
+joins Settings (default 4) — the pool paces itself per provider, so more
+workers would only mean more of them queueing.
 Commit: `feat: jobfinder enrich, narrated and resumable`.
 
 ### T8 — `jobfinder search --enrich`

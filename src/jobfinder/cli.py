@@ -291,6 +291,106 @@ def _print_search_summary(
         print(f"jobs-init.csv: {csv_path}")
 
 
+def _print_enrichment_progress(done: int, total: int, job) -> None:
+    """§10: real counts and the job she is waiting on, never a bare spinner."""
+    where = " · ".join(part for part in (job["company"], job["city"]) if part)
+    line = f"  {done} of {total} explained — {job['title']}"
+    if where:
+        line += f" ({where})"
+    print(line, flush=True)  # unflushed output would leave the screen frozen
+
+
+def _print_enrichment_summary(result, csv_path: Path) -> None:
+    if result.total == 0:
+        print("Every stored job is already explained — nothing to do, nothing spent.")
+        print(f"jobs-enriched.csv: {csv_path}")
+        return
+
+    print(f"Done: {result.enriched} of {result.total} jobs explained in English.")
+    if result.failed:
+        print(
+            f"  {result.failed} could not be explained this time — they stay on the "
+            f"list and the next run picks them up."
+        )
+        for error in result.errors[:5]:
+            print(f"    - {error}")
+        if len(result.errors) > 5:
+            print(f"    … and {len(result.errors) - 5} more.")
+    if result.quota_spent:
+        print(
+            "The free LLM quota ran out, so the run stopped here. Everything above "
+            "is saved — pick up where it stopped with: jobfinder enrich"
+        )
+    if result.remaining:
+        print(f"{result.remaining} jobs are still waiting to be explained.")
+    print(f"jobs-enriched.csv: {csv_path}")
+
+
+def _cmd_enrich(settings: Settings, args, *, _pool_factory=None) -> int:
+    """Explain every stored job in English, saving each answer as it lands."""
+    from contextlib import closing
+
+    from jobfinder.enrich.runner import run_enrichment
+    from jobfinder.llm.pool import LLMConfigError, build_pool
+    from jobfinder.llm.schema import enrichment_answer_validator
+    from jobfinder.profile import load_profile
+    from jobfinder.roles import build_cv_digest
+    from jobfinder.store.db import connect, migrate
+    from jobfinder.store.enrichment import already_enriched_count, jobs_needing_enrichment
+    from jobfinder.store.export import export_jobs_enriched
+
+    try:
+        resume = load_profile(args.path or settings.pool_path)
+    except ProfileError as exc:
+        print(exc)
+        return 1
+
+    from jobfinder.llm.prompting import load_prompt
+
+    version = load_prompt("enrich").version
+
+    with closing(connect(settings.db_path)) as connection:
+        migrate(connection)
+        waiting = len(jobs_needing_enrichment(connection, version, force=args.force))
+        if waiting == 0:
+            done = already_enriched_count(connection, version)
+            if done == 0:
+                print("There are no stored jobs yet — run `jobfinder search` first.")
+            else:
+                print(f"All {done} stored jobs are already explained. Nothing was spent.")
+            export_jobs_enriched(connection, settings.jobs_enriched_csv, version)
+            print(f"jobs-enriched.csv: {settings.jobs_enriched_csv}")
+            return 0
+
+        print(f"{waiting} jobs to explain. Each answer is saved the moment it arrives.")
+
+        pool_factory = _pool_factory or (lambda: build_pool(settings, enrichment_answer_validator))
+        try:
+            pool = pool_factory()
+        except LLMConfigError as exc:
+            print(exc)
+            return 1
+
+        result = run_enrichment(
+            connection,
+            pool,
+            settings,
+            cv_digest=build_cv_digest(resume),
+            limit=args.limit,
+            force=args.force,
+            csv_path=settings.jobs_enriched_csv,
+            on_progress=_print_enrichment_progress,
+            workers=settings.llm_workers,
+            prompt_version=version,
+        )
+        # The appended file holds arrival order and, after --force, the same job
+        # twice. This is the tidy-up pass — one row per job, sorted.
+        export_jobs_enriched(connection, settings.jobs_enriched_csv, version)
+
+    _print_enrichment_summary(result, settings.jobs_enriched_csv)
+    return 0
+
+
 CHECK_SPEC_CITY = "Ingolstadt"
 
 
@@ -428,6 +528,16 @@ def main(
     sources.add_argument("action", choices=["check"])
     sources.add_argument("--root", type=Path, default=None, help="project root")
 
+    enrich = sub.add_parser("enrich", help="explain the stored jobs in English")
+    enrich.add_argument("--root", type=Path, default=None, help="project root")
+    enrich.add_argument("--path", type=Path, default=None, help="path to pool.yaml")
+    enrich.add_argument("--limit", type=int, default=None, help="explain at most N jobs this run")
+    enrich.add_argument(
+        "--force",
+        action="store_true",
+        help="explain jobs again even when they already have an answer",
+    )
+
     search = sub.add_parser("search", help="collect jobs into jobs-init.csv")
     search.add_argument("--root", type=Path, default=None, help="project root")
     search.add_argument(
@@ -473,6 +583,10 @@ def main(
         return _cmd_sources_check(
             settings, args, _client_factory=_client_factory, _sources=_sources
         )
+
+    if args.command == "enrich":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_enrich(settings, args, _pool_factory=_pool_factory)
 
     if args.command == "search":
         settings = Settings.load(args.root or Path.cwd())
