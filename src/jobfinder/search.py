@@ -229,12 +229,24 @@ def _merge_legs(earlier: SearchSummary | None, leg: SearchSummary) -> SearchSumm
     )
 
 
+def _is_known(connection: sqlite3.Connection, job_id: str) -> bool:
+    row = connection.execute("SELECT 1 FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+    return row is not None
+
+
 def _store_page(connection: sqlite3.Connection, adapter, page) -> tuple[int, int, int]:
     """Upsert one page's postings — each in its own committed transaction."""
     found = new = duplicates = 0
     fetch_detail = getattr(adapter, "fetch_detail", None)
     for posting in page.postings:
-        if posting.description is None and fetch_detail is not None:
+        # A detail fetch is a request at §8 pacing and the dominant cost of a
+        # run. For a job already stored the answer is thrown away anyway: the
+        # re-run rule moves `last_seen_at` and touches nothing else.
+        if (
+            posting.description is None
+            and fetch_detail is not None
+            and not _is_known(connection, posting.job_id)
+        ):
             posting = fetch_detail(posting)
         outcome = upsert_job(connection, posting)
         found += 1

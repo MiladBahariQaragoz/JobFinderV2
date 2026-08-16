@@ -183,6 +183,13 @@ an export test, so they are settled here rather than per phase.
 or the prompt version changed. This is what stops the app from spending her free LLM
 quota on the same 200 jobs every morning.
 
+The same rule governs requests: a job already stored **is not fetched in detail
+again**, because the answer would be discarded. Detail fetches stay in the search
+rather than moving into enrichment — Phase 5's cross-source merge needs the
+description at search time to decide which sighting is the richest, and
+`has_description` is a Phase 4 contract. Phase 7 revisits that only if live budgets
+prove it necessary.
+
 ### SQLite tables
 
 | Table | Holds | Notes |

@@ -138,11 +138,19 @@ Not defects in what Phase 4 promised, but known and deliberately left:
   search had already finished and everything it found is in her list, and a
   `--resume` with no stored cursor says nothing was interrupted and a fresh
   search ran instead.
-- **A detail fetch per posting dominates the cost of a search.** Roughly 51
-  requests per page of 50: one search call and one detail call each. Phase 7
-  reads those descriptions anyway, so moving the fetch into enrichment would
-  cut a search to a few dozen requests. Deferred rather than decided — it
-  changes what `has_description` means at the end of Phase 4.
+- ~~**A detail fetch per posting dominates the cost of a search.**~~ Decided in
+  Phase 5 (T11): the fetch **stays in the search**, because the cross-source
+  merge needs the description at search time to pick the richest sighting and
+  `has_description` is a Phase 4 contract. What was actually wasteful is
+  fixed instead — a posting whose `job_id` is already stored is no longer
+  fetched at all, since the re-run rule would discard the answer. A second run
+  over the same pages now costs its search calls and nothing else. Phase 7
+  revisits the move only if live budgets prove it necessary.
+
+  Still uncovered: a posting that was merged away as a cross-source duplicate
+  has no row of its own, so it is fetched again on every run. Free for
+  Arbeitnow (the listing carries its text), a real page fetch for the Phase 6
+  scrapers — worth revisiting there.
 
 ## For Phase 5
 
