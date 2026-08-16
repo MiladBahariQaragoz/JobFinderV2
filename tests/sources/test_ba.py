@@ -57,11 +57,16 @@ class TestBuildQueries:
         assert queries[0].params()["wo"] == "München"
         assert "wo=M%C3%BCnchen" in queries[0].url()
 
-    def test_multiple_employment_types_stack_arbeitszeit_codes(self):
+    def test_each_arbeitszeit_code_gets_its_own_query(self):
+        # Verified live 2026-08-16: repeated `arbeitszeit` keys (and comma-joined
+        # values) are dropped silently and answer 0 results. One code per request.
         from jobfinder.sources.ba import build_queries
 
         queries = build_queries(spec(employment_types=["minijob", "parttime", "fulltime"]))
-        assert queries[0].params()["arbeitszeit"] == ["mj", "tz", "vz"]
+        assert len(queries) == 3
+        assert [q.params()["arbeitszeit"] for q in queries] == [["mj"], ["tz"], ["vz"]]
+        for query in queries:
+            assert len(query.params()["arbeitszeit"]) == 1  # never stacked
 
     def test_werkstudent_has_no_arbeitszeit_code_so_it_rides_in_was(self):
         from jobfinder.sources.ba import build_queries

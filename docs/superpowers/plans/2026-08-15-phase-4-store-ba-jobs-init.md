@@ -18,7 +18,10 @@ the MASTER_PLAN box ticked in the same commit, pushed immediately.
   values are already canonical — send them as-is through `urlencode`.
 - `arbeitszeit` codes are **short**: `mj` (minijob), `tz` (Teilzeit), `vz` (Vollzeit),
   `snw` (Schicht/Nacht/Wochenende). Unknown values are silently dropped (0 results),
-  so never guess codes.
+  so never guess codes. **Exactly one code per request** — repeated keys or
+  comma-joined values (`mj,tz`) also answer 0 results silently (probed live
+  2026-08-16 after a real run silently found nothing), so multi-type specs become
+  one query per code.
 - `angebotsart=1` = ARBEIT. Every result carries `stellenangebotsart: "ARBEIT"`.
 - Search: `GET pc/v6/jobs` returns `ergebnisliste` (no description field),
   `maxErgebnisse` = total, `page` starts at 1.

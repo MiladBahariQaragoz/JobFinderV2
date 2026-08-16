@@ -104,20 +104,27 @@ def _search_terms(spec: SearchSpec) -> list[str | None]:
 
 
 def build_queries(spec: SearchSpec) -> list[BAQuery]:
-    """One query per search term per city — the exact requests a run will make."""
+    """One query per search term per city per arbeitszeit code.
+
+    The API accepts exactly one `arbeitszeit` value per request — repeated
+    keys or comma-joined values are dropped silently and answer 0 results
+    (verified live 2026-08-16) — so each code becomes its own query. Overlap
+    costs nothing: postings upsert under their job_id.
+    """
     codes = tuple(
         ARBEITSZEIT_FOR_TYPE[t] for t in spec.employment_types if t in ARBEITSZEIT_FOR_TYPE
-    )
+    ) or (None,)  # types without a code (werkstudent…) ride in `was` instead
     terms = _search_terms(spec)  # always at least one entry, possibly with was=None
     queries: list[BAQuery] = [
         BAQuery(
             wo=city.name,
             umkreis=city.radius_km,
             was=term,
-            arbeitszeit=codes,
+            arbeitszeit=(code,) if code else (),
         )
         for term in terms
         for city in spec.cities
+        for code in codes
     ]
     return queries
 
