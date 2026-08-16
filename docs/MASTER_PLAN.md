@@ -995,11 +995,11 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 ### Test-first checklist
 
 - [x] `test_enrichment_prompt_includes_the_full_description_and_her_cv_digest`
-- [ ] `test_fake_answer_maps_onto_every_enriched_csv_column`
+- [x] `test_fake_answer_maps_onto_every_enriched_csv_column`
 - [x] `test_a_german_level_outside_the_enum_is_rejected`
 - [x] `test_a_german_level_without_evidence_is_rejected` — no unsupported guesses
 - [x] `test_an_answer_written_in_german_is_rejected` (summary must be English)
-- [ ] `test_pipe_separated_list_fields_survive_a_csv_round_trip`
+- [x] `test_pipe_separated_list_fields_survive_a_csv_round_trip`
 - [ ] `test_already_enriched_job_is_not_sent_again`
 - [ ] `test_changed_description_triggers_re_enrichment`
 - [ ] `test_new_prompt_version_triggers_re_enrichment_and_keeps_the_old_row`

@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T2 done, T3 (the prompt) next
+status: in progress — T1-T4 done, T5 (the store) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -99,7 +99,7 @@ is English. `tests/unit/test_llm_prompting.py`: the rendered prompt contains
 the description and the digest, and never her address, email or phone.
 Commit: `feat: the enrichment prompt — one German ad, one English answer`.
 
-### T4 — `enrich/fields.py`: answer → the `jobs-enriched.csv` row
+### T4 — `enrich/fields.py`: answer → the `jobs-enriched.csv` row ✅
 Pure mapping, no I/O. Lists join with `|` (§5: never commas). Every column in
 §5's `jobs-enriched.csv` line is produced, in that order, including
 `provider_used` and `prompt_version`.
