@@ -9,11 +9,13 @@ docs/superpowers/plans/2026-08-15-phase-4-store-ba-jobs-init.md.
 
 from __future__ import annotations
 
+import base64
 import urllib.parse
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from jobfinder.search_spec import SearchSpec
 from jobfinder.sources.base import RawPosting
+from jobfinder.sources.extract import extract_readable_text
 
 BASE_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
 SEARCH_URL = f"{BASE_URL}/pc/v6/jobs"
@@ -213,3 +215,25 @@ class BAApi:
                 if found_for_query >= total:
                     break
                 page += 1
+
+    def fetch_detail(self, posting: RawPosting) -> RawPosting:
+        """Full description from the details endpoint; externeURL as the fallback."""
+        payload = self._client.get_json(detail_url(posting.source_id), headers=API_HEADERS)
+        description = (payload.get("stellenangebotsBeschreibung") or "").strip()
+        if description:
+            return replace(posting, description=description)
+
+        if posting.apply_url:
+            response = self._client.get(posting.apply_url, headers={"Accept": "text/html"})
+            markup = response.body.decode("utf-8", errors="replace")
+            extracted = extract_readable_text(markup)
+            if extracted:
+                return replace(posting, description=extracted)
+
+        return posting
+
+
+def detail_url(reference: str) -> str:
+    """The details endpoint takes the reference number standard-base64-encoded."""
+    encoded = base64.b64encode(reference.encode("utf-8")).decode("ascii")
+    return f"{DETAIL_URL}/{encoded}"

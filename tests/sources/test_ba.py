@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import pytest
@@ -216,11 +217,19 @@ class RecordingClient:
 
     def __init__(self, payloads):
         self.payloads = list(payloads)
+        self.html_responses: list[bytes] = []
         self.calls: list[dict] = []
+        self.get_calls: list[dict] = []
 
     def get_json(self, url, params=None, headers=None):
         self.calls.append({"url": url, "params": dict(params or {}), "headers": headers or {}})
         return self.payloads.pop(0)
+
+    def get(self, url, params=None, headers=None):
+        from jobfinder.sources.http import Response
+
+        self.get_calls.append({"url": url, "params": dict(params or {}), "headers": headers or {}})
+        return Response(status=200, body=self.html_responses.pop(0), headers={})
 
 
 class TestSearchPagination:
@@ -258,3 +267,96 @@ class TestSearchPagination:
         client = RecordingClient([payload])
         list(BAApi(client).search(spec()))
         assert client.calls[0]["headers"] == API_HEADERS
+
+
+# -- details and the external-URL fallback --------------------------------------
+
+
+class TestFetchDetail:
+    def test_detail_fetch_base64_encodes_the_reference_number(self, fixture_path):
+        from jobfinder.sources.ba import BAApi, parse_page
+
+        details = json.loads(
+            fixture_path("ba", "jobdetails_4913285274.json").read_text(encoding="utf-8")
+        )
+        posting = parse_page(load_search_fixture(fixture_path))[0]
+        client = RecordingClient([details])
+        enriched = BAApi(client).fetch_detail(posting)
+
+        url = client.calls[0]["url"]
+        assert url.startswith("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/")
+        assert url.endswith("MTExMTktNDkxMzI4NTI3NC1T")  # base64("11119-4913285274-S")
+
+        assert enriched.description is not None
+        assert "DEKRA Arbeit GmbH" in enriched.description
+        assert enriched.job_id == posting.job_id
+        assert enriched.title == posting.title
+
+    def test_detail_headers_carry_the_api_key(self, fixture_path):
+        from jobfinder.sources.ba import API_HEADERS, BAApi, parse_page
+
+        details = json.loads(
+            fixture_path("ba", "jobdetails_4913285274.json").read_text(encoding="utf-8")
+        )
+        posting = parse_page(load_search_fixture(fixture_path))[0]
+        client = RecordingClient([details])
+        BAApi(client).fetch_detail(posting)
+        assert client.calls[0]["headers"] == API_HEADERS
+
+    def test_empty_description_triggers_external_url_fallback(self, fixture_path):
+        from jobfinder.sources.ba import BAApi, parse_page
+
+        details = json.loads(
+            fixture_path("ba", "jobdetails_4913285274.json").read_text(encoding="utf-8")
+        )
+        details["stellenangebotsBeschreibung"] = ""  # ~1 in 3 ads looks like this
+        external_html = fixture_path("ba", "external_compleet_4913285274.html").read_bytes()
+        posting = parse_page(load_search_fixture(fixture_path))[0]
+        assert posting.apply_url  # the fixture's first ad has an externeURL
+
+        client = RecordingClient([details])
+        client.html_responses = [external_html]
+        enriched = BAApi(client).fetch_detail(posting)
+
+        # The external page was fetched…
+        assert client.get_calls[0]["url"] == "https://jobboard.compleet.com/?externalId=4913285274"
+        # …but it is a client-rendered SPA with no static text, so nothing is
+        # invented: the posting survives without a description.
+        assert enriched.description is None
+        assert enriched.has_description is False
+
+    def test_external_fallback_text_becomes_the_description(self, fixture_path):
+        from jobfinder.sources.ba import BAApi, parse_page
+
+        details = json.loads(
+            fixture_path("ba", "jobdetails_4913285274.json").read_text(encoding="utf-8")
+        )
+        details["stellenangebotsBeschreibung"] = ""
+        static_page = (
+            "<html><body><h1>Küchenhilfe (m/w/d)</h1><p>Bäckerei Müller & Söhne sucht "
+            "eine Küchenhilfe für Samstag und Sonntag. Wir bieten ein freundliches "
+            "Team, Schichtzulagen und kostenlose Getränke während der Arbeit.</p>"
+            "</body></html>"
+        ).encode("utf-8")
+        posting = parse_page(load_search_fixture(fixture_path))[0]
+        client = RecordingClient([details])
+        client.html_responses = [static_page]
+        enriched = BAApi(client).fetch_detail(posting)
+
+        assert enriched.description is not None
+        assert "Bäckerei Müller & Söhne" in enriched.description
+        assert enriched.has_description is True
+
+    def test_no_description_and_no_external_url_leaves_the_posting_as_is(self, fixture_path):
+        from jobfinder.sources.ba import BAApi, parse_page
+
+        details = json.loads(
+            fixture_path("ba", "jobdetails_4913285274.json").read_text(encoding="utf-8")
+        )
+        details["stellenangebotsBeschreibung"] = ""
+        posting = parse_page(load_search_fixture(fixture_path))[0]
+        posting = dataclasses.replace(posting, apply_url=None)
+        client = RecordingClient([details])
+        enriched = BAApi(client).fetch_detail(posting)
+        assert enriched.description is None
+        assert len(client.calls) == 1  # details only, nothing else fetched
