@@ -16,17 +16,35 @@ from dataclasses import dataclass, field
 from jobfinder.config import Settings
 from jobfinder.sources.arbeitnow import ArbeitnowApi
 from jobfinder.sources.ba import BAApi
+from jobfinder.sources.indeed import IndeedScraper
+from jobfinder.sources.kleinanzeigen import KleinanzeigenScraper
+from jobfinder.sources.stepstone import StepStoneScraper
+from jobfinder.sources.xing import XingScraper
 
-# The order results are searched in. Fixed on purpose: the backbone first.
-KNOWN_SOURCES = ("ba", "arbeitnow", "adzuna")
+# The order results are searched in. Fixed on purpose: the backbone first,
+# then the other APIs, then the scraped sites.
+KNOWN_SOURCES = ("ba", "arbeitnow", "adzuna", "kleinanzeigen", "xing", "stepstone", "indeed")
 
 # What kind of host each source talks to, which is what decides its pacing
-# (§8 rule 1). Every source today is a documented API; Phase 6's scrapers
-# arrive as "scraper" and are paced three times more carefully.
+# (§8 rule 1): a documented API gets the 1 s gap, a scraped site the careful
+# 3 s one.
 SOURCE_KINDS = {
     "ba": "api",
     "arbeitnow": "api",
     "adzuna": "api",
+    "kleinanzeigen": "scraper",
+    "xing": "scraper",
+    "stepstone": "scraper",
+    "indeed": "scraper",
+}
+
+# Both boards refused this project's politely-identified client during Phase 6
+# recon, so they ship off. Enabling them costs a run minutes of timeouts and
+# earns nothing until their fixtures can be recorded from a network they
+# answer on — the skip line says so rather than leaving her guessing.
+BLOCKED_BY_DEFAULT = {
+    "stepstone": "blocked this client in testing — enable once it answers again",
+    "indeed": "blocked this client in testing — enable once it answers again",
 }
 
 # What she sees, not what the adapter calls itself. Keys are both the config
@@ -38,6 +56,14 @@ SOURCE_LABELS = {
     "AN": "Arbeitnow",
     "adzuna": "Adzuna",
     "AZ": "Adzuna",
+    "kleinanzeigen": "Kleinanzeigen",
+    "KA": "Kleinanzeigen",
+    "xing": "Xing",
+    "XI": "Xing",
+    "stepstone": "StepStone",
+    "SS": "StepStone",
+    "indeed": "Indeed",
+    "ID": "Indeed",
 }
 
 
@@ -59,7 +85,7 @@ def skipped_sources(settings: Settings) -> tuple[tuple[str, str], ...]:
     skipped: list[tuple[str, str]] = []
     for name in KNOWN_SOURCES:
         if name not in settings.enabled_sources:
-            skipped.append((name, "disabled in config.yaml"))
+            skipped.append((name, BLOCKED_BY_DEFAULT.get(name, "disabled in config.yaml")))
         elif name == "adzuna" and not adzuna_keys_present():
             skipped.append((name, "no API key in .env"))
     return tuple(skipped)
@@ -101,6 +127,10 @@ _ADAPTERS_FOR = {
     "ba": lambda client: BAApi(client),
     "arbeitnow": lambda client: ArbeitnowApi(client),
     "adzuna": lambda client: _adzuna_adapter(client),
+    "kleinanzeigen": lambda client: KleinanzeigenScraper(client),
+    "xing": lambda client: XingScraper(client),
+    "stepstone": lambda client: StepStoneScraper(client),
+    "indeed": lambda client: IndeedScraper(client),
 }
 
 

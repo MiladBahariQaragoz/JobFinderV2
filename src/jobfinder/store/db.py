@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # How long a writer waits for another writer before giving up (§8 rule 2).
 # Enrichment is meant to run while a search is still storing jobs, and WAL
@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS source_state (
     last_completed_page  INTEGER NOT NULL DEFAULT 0,
     last_success_at      TEXT,
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
-    cooldown_until       TEXT
+    cooldown_until       TEXT,
+    last_error           TEXT
 );
 """
 
@@ -133,6 +134,11 @@ ADDED_COLUMNS = {
     "jobs": {
         # v3 (Phase 5): the other sites the same ad was seen on, comma-joined.
         "also_seen_on": "TEXT",
+    },
+    "source_state": {
+        # v4 (Phase 6): what the source said the last time it failed, so the
+        # summary can name it instead of saying "a source failed".
+        "last_error": "TEXT",
     },
 }
 

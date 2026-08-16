@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from jobfinder.cities import CITY_COORDS, resolve_city
+from jobfinder.cities import (
+    CITY_COORDS,
+    CITY_NAMES,
+    KLEINANZEIGEN_LOCATIONS,
+    kleinanzeigen_location,
+    resolve_city,
+)
 
 
 def test_unknown_city_lists_the_valid_ones():
@@ -38,3 +44,45 @@ def test_every_city_has_plausible_coordinates():
     for name, (lat, lon) in CITY_COORDS.items():
         assert 47 < lat < 51, f"{name}: latitude {lat} is not in Bavaria"
         assert 8 < lon < 14, f"{name}: longitude {lon} is not in Bavaria"
+
+
+# -- the Kleinanzeigen location map (Phase 6) -------------------------------------
+#
+# Ids recorded by hand from their location picker's own links on 2026-08-16
+# (Bayern page -> Landkreis page -> city). A wrong id silently returns jobs
+# in the wrong part of Germany, which is worse than an error — so every city
+# must have one, and the live test asserts each id still resolves to its city.
+
+
+def test_every_searchable_city_has_a_kleinanzeigen_location():
+    missing = [name for name in CITY_NAMES if name not in KLEINANZEIGEN_LOCATIONS]
+    assert not missing, f"no Kleinanzeigen location id recorded for: {missing}"
+
+
+def test_each_entry_pairs_a_slug_with_a_numeric_id():
+    for name, (slug, location_id) in KLEINANZEIGEN_LOCATIONS.items():
+        assert slug == slug.lower() and " " not in slug, name
+        assert location_id.isdigit(), name
+
+
+def test_lookup_returns_the_recorded_pair():
+    assert kleinanzeigen_location("Ingolstadt") == ("ingolstadt", "7586")
+
+
+def test_lookup_folds_umluats_the_way_she_types_them():
+    assert kleinanzeigen_location("Muenchen") == ("muenchen", "6411")
+
+
+def test_a_city_outside_the_map_has_no_location(self=None):
+    assert kleinanzeigen_location("Leipzig") is None
+
+
+def test_every_mapped_location_has_a_recorded_postcode_prefix():
+    """A typo'd city name in one map and not the other would go unnoticed."""
+    from jobfinder.cities import KLEINANZEIGEN_LOCATIONS, KLEINANZEIGEN_PLZ_PREFIXES
+
+    unknown = set(KLEINANZEIGEN_PLZ_PREFIXES) - set(KLEINANZEIGEN_LOCATIONS)
+    assert not unknown, f"postcode prefixes for cities that have no location id: {unknown}"
+    # Erlangen is the one deliberate gap: its browse had no ads the day the
+    # prefixes were recorded, and a guessed prefix is worse than none.
+    assert set(KLEINANZEIGEN_LOCATIONS) - set(KLEINANZEIGEN_PLZ_PREFIXES) == {"Erlangen"}

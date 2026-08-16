@@ -1,0 +1,1538 @@
+{
+ "mean": 39520,
+ "__CLASS__": "Adzuna::API::Response::JobSearchResults",
+ "count": 204,
+ "results": [
+  {
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Dein Promoter Job mit Sinn: Reisen, Menschen begeistern & gut verdienen! Suchst du einen abwechslungsreichen Job mit Sinn, der wirklich was bewegt? Du willst sofort starten , was Gutes tun , dabei gutes Geld verdienen und quer durchs Land reisen ? Dann lies unbedingt weiter! Was dich erwartet: Du bist Teil eines jungen, dynamischen Teams und tourst durch verschiedene Städte in Deutschland Du sprichst mit Menschen über Themen wie Menschenrechte & globale Gerechtigkeit Du sorgst mit deiner Stimme…",
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt",
+     "Pettenhofen"
+    ],
+    "display_name": "Pettenhofen, Ingolstadt"
+   },
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/land/ad/5770531031?se=hCQTZIWZ8RG7fdfqWniv8w&utm_medium=api&utm_source=APP_ID_REDACTED&v=10BC41FC2607CFC6A15C6F725CACDA58E138AB62",
+   "created": "2026-06-20T12:20:44Z",
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Apollon Dialogmarketing GmbH"
+   },
+   "longitude": 11.28507,
+   "latitude": 48.77669,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTc3MDUzMTAzMSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.DJK6Va0fG--b6Rixwa8apN07QIWQhPo0fHIiwRySCio",
+   "title": "Ausbildung zum Kommunikationsprofi! Promoter als Minijob (m/w/d)",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "id": "5770531031"
+  },
+  {
+   "latitude": 48.67094,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1ODA5NjM0MjMyIn0.m-NGl6ptf-tNc4dkIHNbIZMvjQZXn_BLMc4eVltWUeQ",
+   "title": "Servicekraft für Gastronomie, Bar, Pausenservice auf Minijob-Basis (w/m/d)",
+   "longitude": 11.47115,
+   "company": {
+    "display_name": "E.ON Gastronomie GmbH",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "category": {
+    "label": "Sonstige/Allgemeine Stellen",
+    "tag": "other-general-jobs",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5809634232",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "E.ON Gastronomie GmbH Als Servicemitarbeiter (w/m/d) im Hotel und Kongresszentrum Wanderath am Standort Wanderath (Eifel, Deutschland) , Teil der E.ON Gastronomie GmbH , bist du in unserem Pausenbereich und in unserer Abendgastronomie Gastgeber für unsere Gäste und trägst damit als Gesicht unseres Hotels maßgeblich zum Wohlfühlfaktor für unsere Gäste bei. Dein Einsatzbereich umfasst den Pausenbereich unserer 12 Tagungsräume, zwei Restaurants mit bis zu 180 Sitzplätzen und einen Barbereich. Zusä…",
+   "location": {
+    "display_name": "Baar-Ebenhausen, Pfaffenhofen an der Ilm (Kreis)",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Pfaffenhofen an der Ilm (Kreis)",
+     "Baar-Ebenhausen"
+    ]
+   },
+   "redirect_url": "https://www.adzuna.de/land/ad/5809634232?se=hCQTZIWZ8RG7fdfqWniv8w&utm_medium=api&utm_source=APP_ID_REDACTED&v=8A33D52C5A8838B902DD2C79049E0D4BC4C00094",
+   "salary_is_predicted": "0",
+   "created": "2026-07-21T21:38:42Z"
+  },
+  {
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "id": "5770531730",
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Apollon Dialogmarketing GmbH"
+   },
+   "longitude": 11.28507,
+   "latitude": 48.77669,
+   "title": "Promoter (m/w/d) als Quereinsteiger oder Minijob und 1200€ pro Woche verdienen",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NzcwNTMxNzMwIn0.kBELRyPgQs3cIuZR8SU4U8hiaEwdpqJzpd2-SR5_lfc",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/land/ad/5770531730?se=hCQTZIWZ8RG7fdfqWniv8w&utm_medium=api&utm_source=APP_ID_REDACTED&v=ADAC255554EB748C056FA226499510712FBFBCF2",
+   "created": "2026-06-20T12:20:52Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Dein Promoter Job mit Sinn: Reisen, Menschen begeistern & gut verdienen! Suchst du einen abwechslungsreichen Job mit Sinn, der wirklich was bewegt? Du willst sofort starten , was Gutes tun , dabei gutes Geld verdienen und quer durchs Land reisen ? Dann lies unbedingt weiter! Was dich erwartet: Du bist Teil eines jungen, dynamischen Teams und tourst durch verschiedene Städte in Deutschland Du sprichst mit Menschen über Themen wie Menschenrechte & globale Gerechtigkeit Du sorgst mit deiner Stimme…",
+   "location": {
+    "display_name": "Pettenhofen, Ingolstadt",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt",
+     "Pettenhofen"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   }
+  },
+  {
+   "longitude": 11.40543,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "latitude": 48.754702,
+   "title": "Minijob (m/w/d) Musik-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg0NDMzIn0.s2hJYkHQnZ-m20rnLEfTajMNHbkIIbYeiHv9xskDNzk",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   },
+   "id": "5567984433",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Musik geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984433?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:05:19Z"
+  },
+  {
+   "id": "5567984435",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.40543,
+   "title": "Minijob (m/w/d) Italienisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQzNSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.xdLXusNUK-ti2hLJ1SHPb3RqLO2yW-NFgYOpX5DEmLI",
+   "latitude": 48.754702,
+   "created": "2026-01-05T16:05:19Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984435?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Ingolstadt, Bayern"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Italienisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Ger…"
+  },
+  {
+   "id": "5567984444",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "title": "Minijob (m/w/d) Tennis-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0NCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.qmPacMYpvN0qd6kiF8fEFTW1GLzp6tH7xAXnHJlj2eo",
+   "latitude": 48.754702,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.40543,
+   "created": "2026-01-05T16:05:19Z",
+   "redirect_url": "https://www.adzuna.de/details/5567984444?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Tennis geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mi…",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "display_name": "Ingolstadt, Bayern"
+   }
+  },
+  {
+   "id": "5567984432",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg0NDMyIn0.OxofKyzwVj0Y7HjP-1wL8fX96qAPcQe1iPKjwAH5QJY",
+   "title": "Minijob (m/w/d) Englisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "longitude": 11.40543,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "created": "2026-01-05T16:05:19Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984432?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Englisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   }
+  },
+  {
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.40543,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ1NCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.IdXBgswRvuMfSMvjck55IP25M7_dFafGVPFmjvQCjt0",
+   "title": "Minijob (m/w/d) Wirtschaft-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "id": "5567984454",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Wirtschaft geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerä…",
+   "created": "2026-01-05T16:05:19Z",
+   "redirect_url": "https://www.adzuna.de/details/5567984454?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0"
+  },
+  {
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg0NDQyIn0.5mgG8ouxNFMxzTP2jD7lK9DXHAYFsWXdClO3a6mqNls",
+   "title": "Minijob (m/w/d) Biologie-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "longitude": 11.40543,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "id": "5567984442",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Biologie geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ]
+   },
+   "created": "2026-01-05T16:05:19Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984442?utm_medium=api&utm_source=APP_ID_REDACTED"
+  },
+  {
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984436?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:05:19Z",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Physik geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mi…",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   },
+   "id": "5567984436",
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.40543,
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQzNiIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.LqQsDlMxcDwIt2yAJHno-JM6Tof-9H-X0DLCy3P5NSA",
+   "title": "Minijob (m/w/d) Physik-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office"
+  },
+  {
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.40543,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQyOSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.UPDjR0O5lk7RA34mMsoBiniBjWm3yHwxcmlEy3rpRHA",
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "id": "5567984429",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ]
+   },
+   "created": "2026-01-05T16:05:19Z",
+   "redirect_url": "https://www.adzuna.de/details/5567984429?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0"
+  },
+  {
+   "id": "5567984445",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "longitude": 11.40543,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0NSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.VgYWpvXb9k41ly5l_baf9z4CvGUqxRrr86nMPlFNXHI",
+   "title": "Minijob (m/w/d) Russisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "created": "2026-01-05T16:05:19Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984445?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Russisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …"
+  },
+  {
+   "longitude": 11.40543,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg0NDMwIn0.Ywi1TI2bxrwwbKiLSQPZEWXjmd5J7z0MkR8zIe3V60A",
+   "title": "Minijob (m/w/d) Französisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "id": "5567984430",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Ingolstadt, Bayern"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Französisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Ger…",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984430?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:05:19Z"
+  },
+  {
+   "redirect_url": "https://www.adzuna.de/details/5567984440?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:05:19Z",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Gitarre geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät m…",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "id": "5567984440",
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0MCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.QBBmWIsisRJB51VOqhaCY1Km4_biQ2bRTHxHJXFKVgk",
+   "title": "Minijob (m/w/d) Gitarre-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.40543
+  },
+  {
+   "longitude": 11.40543,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0NiIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.v43NEY6Pg12vZVkG7vP5FiePN_KqjlsVpkmc7q4eEnM",
+   "title": "Minijob (m/w/d) Yoga-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "id": "5567984446",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Yoga geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit …",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ]
+   },
+   "created": "2026-01-05T16:05:19Z",
+   "redirect_url": "https://www.adzuna.de/details/5567984446?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0"
+  },
+  {
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.36742,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2ODAwMDkxOCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.GuelZeBqZhnHY1yoqbczveaQtdXz9clz4flsT0aQcPo",
+   "title": "Minijob (m/w/d) Mathe-Privatlehrer in Böhmfeld – bis 50€/Std., Home Office",
+   "latitude": 48.86112,
+   "id": "5568000918",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Böhmfeld"
+    ],
+    "display_name": "Böhmfeld, Eichstätt (Kreis)"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Mathe geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Böhmfeld und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit I…",
+   "created": "2026-01-05T16:10:35Z",
+   "redirect_url": "https://www.adzuna.de/details/5568000918?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0"
+  },
+  {
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5567998751",
+   "latitude": 48.73162,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk5ODc1MSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.41EdR-K6OCy-rZG09C9kKXuKIcsHwcxMpu6NeNXF-u8",
+   "title": "Minijob (m/w/d) Englisch-Privatlehrer in Ernsgaden – bis 50€/Std., Home Office",
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.57468,
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567998751?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:09:56Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Englisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ernsgaden und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät m…",
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Pfaffenhofen an der Ilm (Kreis)",
+     "Ernsgaden"
+    ],
+    "display_name": "Ernsgaden, Pfaffenhofen an der Ilm (Kreis)"
+   }
+  },
+  {
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk4NzQ3In0.q1-vyXWgvSNv4XpgXgbsqpnzi585edz8JmE9KqBOOIE",
+   "title": "Minijob (m/w/d) Yoga-Privatlehrer in Ernsgaden – bis 50€/Std., Home Office",
+   "latitude": 48.73162,
+   "longitude": 11.57468,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "id": "5567998747",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Yoga geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ernsgaden und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit I…",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "display_name": "Ernsgaden, Pfaffenhofen an der Ilm (Kreis)",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Pfaffenhofen an der Ilm (Kreis)",
+     "Ernsgaden"
+    ]
+   },
+   "created": "2026-01-05T16:09:55Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567998747?utm_medium=api&utm_source=APP_ID_REDACTED"
+  },
+  {
+   "created": "2026-01-05T16:09:54Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567998692?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "location": {
+    "display_name": "Hitzhofen, Eichstätt (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Hitzhofen"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Englisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Hitzhofen und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät m…",
+   "id": "5567998692",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk5ODY5MiIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.sHb-SGPcABBVQAo7ptIOH4hjlGvAp22eSRH_6O8mW2A",
+   "title": "Minijob (m/w/d) Englisch-Privatlehrer in Hitzhofen – bis 50€/Std., Home Office",
+   "latitude": 48.848,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.32307
+  },
+  {
+   "created": "2026-01-05T16:08:29Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567994248?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Eitensheim"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Eitensheim, Eichstätt (Kreis)"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Eitensheim und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "id": "5567994248",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk5NDI0OCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.k7H0pWyUWms5ufhUIj8BcaiJwD-sIhH1s_bSYgq7OaE",
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Eitensheim – bis 50€/Std., Home Office",
+   "latitude": 48.81943,
+   "longitude": 11.32024,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   }
+  },
+  {
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk2ODQyIn0.O1-7SGli5D-24ygUAXuf3ss5OH6vLrgEqHjtlMDxWEE",
+   "title": "Minijob (m/w/d) Portugiesisch-Privatlehrer in Buxheim – bis 50€/Std., Home Office",
+   "latitude": 48.80432,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.28991,
+   "id": "5567996842",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Portugiesisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Buxheim und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerä…",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Buxheim"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Buxheim, Eichstätt (Kreis)"
+   },
+   "created": "2026-01-05T16:09:23Z",
+   "redirect_url": "https://www.adzuna.de/details/5567996842?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0"
+  },
+  {
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Buxheim und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Buxheim"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Buxheim, Eichstätt (Kreis)"
+   },
+   "created": "2026-01-05T16:09:23Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567996841?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk2ODQxIn0.zsRb62Ev3CN223r0Zaz6p9duHGvWTajvIk0L1oavIGU",
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Buxheim – bis 50€/Std., Home Office",
+   "latitude": 48.80432,
+   "longitude": 11.28991,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "id": "5567996841",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   }
+  },
+  {
+   "id": "5567988231",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   },
+   "title": "Minijob (m/w/d) Psychologie-Privatlehrer in Lenting – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg4MjMxIn0.6Azb-QY24psDwnIdqA3kDIfk0M8Y1GjMhH6s7Qcb66Y",
+   "latitude": 48.80507,
+   "longitude": 11.45981,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "created": "2026-01-05T16:06:24Z",
+   "redirect_url": "https://www.adzuna.de/details/5567988231?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Psychologie geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Lenting und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Lenting"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Lenting, Eichstätt (Kreis)"
+   }
+  },
+  {
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Lenting"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Lenting, Eichstätt (Kreis)"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Grafikdesign geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Lenting und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät…",
+   "created": "2026-01-05T16:06:24Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567988234?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "longitude": 11.45981,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg4MjM0In0.AgrrFbOadp6o5O4hw41a3BfWVJx30GKlUqfHa4US6Gc",
+   "title": "Minijob (m/w/d) Grafikdesign-Privatlehrer in Lenting – bis 50€/Std., Home Office",
+   "latitude": 48.80507,
+   "id": "5567988234",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   }
+  },
+  {
+   "longitude": 11.45981,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "title": "Minijob (m/w/d) Französisch-Privatlehrer in Lenting – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4ODIxNyIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.bTr5pAN8PyRR_3-9YTxeZ91Xmj6-2auPh-FvychouRY",
+   "latitude": 48.80507,
+   "id": "5567988217",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "location": {
+    "display_name": "Lenting, Eichstätt (Kreis)",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Lenting"
+    ]
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Französisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Lenting und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "created": "2026-01-05T16:06:24Z",
+   "redirect_url": "https://www.adzuna.de/details/5567988217?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0"
+  },
+  {
+   "id": "5567988227",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.45981,
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Lenting – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg4MjI3In0.JqUcWiiHHfzkxnEji_n0wnIRgswVWwqaGWDNh3wynyE",
+   "latitude": 48.80507,
+   "created": "2026-01-05T16:06:24Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567988227?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Lenting und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "location": {
+    "display_name": "Lenting, Eichstätt (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Lenting"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   }
+  },
+  {
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567988216?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:06:24Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "display_name": "Lenting, Eichstätt (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Lenting"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Mathe geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Lenting und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit In…",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "id": "5567988216",
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.45981,
+   "latitude": 48.80507,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg4MjE2In0.7mwmw5KtqWIJBxftxU_CyEG54XGKzb0cbAp4enKm0iA",
+   "title": "Minijob (m/w/d) Mathe-Privatlehrer in Lenting – bis 50€/Std., Home Office"
+  },
+  {
+   "id": "5567984438",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg0NDM4In0.Z3NsGqPT7tTKe0AaPn6FoPs1vi5rY-1IC5FjBT9DmBw",
+   "title": "Minijob (m/w/d) Informatik-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.40543,
+   "created": "2026-01-05T16:05:19Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984438?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Informatik geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerä…",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   }
+  },
+  {
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984437?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:05:19Z",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ]
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Arabisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "id": "5567984437",
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.40543,
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQzNyIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.UKtz7UFBJwcQiGwYrK4WTd5bxuZU27yEjEla0gGea8U",
+   "title": "Minijob (m/w/d) Arabisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office"
+  },
+  {
+   "id": "5567984449",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "title": "Minijob (m/w/d) Psychologie-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0OSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.2NN_jejjuet498oevJgV22U0z8AB43sFG9T7_fmOt2o",
+   "latitude": 48.754702,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.40543,
+   "created": "2026-01-05T16:05:19Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567984449?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Psychologie geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Ger…",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   }
+  },
+  {
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Kunstgeschichte geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein…",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Ingolstadt, Bayern"
+   },
+   "created": "2026-01-05T16:05:19Z",
+   "redirect_url": "https://www.adzuna.de/details/5567984443?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "longitude": 11.40543,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0MyIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.AARQTWmN0h-_cP8VAAa7B-h9ZwT3STlx133ssG6RZ0s",
+   "title": "Minijob (m/w/d) Kunstgeschichte-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "latitude": 48.754702,
+   "id": "5567984443",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   }
+  },
+  {
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5567984448",
+   "longitude": 11.40543,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ0OCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.zIHTfSHCy_uvShlf9gCse8iRSgygM8sfXN1wFLx4F9E",
+   "title": "Minijob (m/w/d) Portugiesisch-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "redirect_url": "https://www.adzuna.de/details/5567984448?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:05:19Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Portugiesisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein G…",
+   "location": {
+    "display_name": "Ingolstadt, Bayern",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ]
+   }
+  },
+  {
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQyNyIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.BZYV8wPvb6DP5keNHknAmE4s-QFQAJHVH9_zP75q_-w",
+   "title": "Minijob (m/w/d) Mathe-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office",
+   "longitude": 11.40543,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "id": "5567984427",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Mathe geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "display_name": "Ingolstadt, Bayern"
+   },
+   "redirect_url": "https://www.adzuna.de/details/5567984427?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:05:19Z"
+  },
+  {
+   "redirect_url": "https://www.adzuna.de/details/5567984455?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:05:19Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Ingolstadt"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Ingolstadt, Bayern"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Latein geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Ingolstadt und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mi…",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5567984455",
+   "longitude": 11.40543,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "latitude": 48.754702,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4NDQ1NSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.5B7XWgB3U36JQ53LGKF5PmwByXbJY89dh7LI0JKb6xA",
+   "title": "Minijob (m/w/d) Latein-Privatlehrer in Ingolstadt – bis 50€/Std., Home Office"
+  },
+  {
+   "redirect_url": "https://www.adzuna.de/details/5567998693?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:09:54Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Hitzhofen"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Hitzhofen, Eichstätt (Kreis)"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Hitzhofen und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät m…",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5567998693",
+   "longitude": 11.32307,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "latitude": 48.848,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk4NjkzIn0.mtBlTdyp676nveEQ3LKcQ2dLUdL893kTU9Ds2GhaKDc",
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Hitzhofen – bis 50€/Std., Home Office"
+  },
+  {
+   "id": "5567998695",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.32307,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk4Njk1In0.7K4dRsIlMM2Slw8uaXDwssC-ntxc-68NYlLB_p_chzg",
+   "title": "Minijob (m/w/d) Mathe-Privatlehrer in Hitzhofen – bis 50€/Std., Home Office",
+   "latitude": 48.848,
+   "created": "2026-01-05T16:09:54Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567998695?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Hitzhofen"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Hitzhofen, Eichstätt (Kreis)"
+   },
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Mathe geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Hitzhofen und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit …"
+  },
+  {
+   "longitude": 11.28991,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "latitude": 48.80432,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk5Njg0MCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.bCOF_H6MWmsFOfS4jTp4h8JDcsiUljd-e3z4BVDU1uM",
+   "title": "Minijob (m/w/d) Englisch-Privatlehrer in Buxheim – bis 50€/Std., Home Office",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   },
+   "id": "5567996840",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Englisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Buxheim und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "location": {
+    "display_name": "Buxheim, Eichstätt (Kreis)",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Buxheim"
+    ]
+   },
+   "redirect_url": "https://www.adzuna.de/details/5567996840?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:09:23Z"
+  },
+  {
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.23306,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk0OTk3In0.9FOhjqqE-v1_EOEmWmmWASKlrNrFGPExufpGvIPBeF8",
+   "title": "Minijob (m/w/d) Portugiesisch-Privatlehrer in Egweil – bis 50€/Std., Home Office",
+   "latitude": 48.78673,
+   "id": "5567994997",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "location": {
+    "display_name": "Egweil, Eichstätt (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Egweil"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Portugiesisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Egweil und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät…",
+   "created": "2026-01-05T16:08:44Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567994997?utm_medium=api&utm_source=APP_ID_REDACTED"
+  },
+  {
+   "id": "5567994246",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.22346,
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Adelschlag – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk5NDI0NiIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.5dR7y9VBkmYm7xiiSi93azNU9k4Idue-VF3UlFL-vaA",
+   "latitude": 48.84025,
+   "created": "2026-01-05T16:08:29Z",
+   "redirect_url": "https://www.adzuna.de/details/5567994246?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Adelschlag und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Adelschlag"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Adelschlag, Eichstätt (Kreis)"
+   }
+  },
+  {
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "id": "5567994242",
+   "latitude": 48.84025,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk5NDI0MiIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.ftlVlYOPOZeTDjb0vrYZCdXSd1G2SpMa79_PZ1tpMcY",
+   "title": "Minijob (m/w/d) Französisch-Privatlehrer in Adelschlag – bis 50€/Std., Home Office",
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.22346,
+   "redirect_url": "https://www.adzuna.de/details/5567994242?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:08:29Z",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Französisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Adelschlag und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Ger…",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Adelschlag"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Adelschlag, Eichstätt (Kreis)"
+   }
+  },
+  {
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Biologie geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Schrobenhausen und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Ge…",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "display_name": "Schrobenhausen, Neuburg-Schrobenhausen (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Neuburg-Schrobenhausen (Kreis)",
+     "Schrobenhausen"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "created": "2026-01-05T16:08:31Z",
+   "redirect_url": "https://www.adzuna.de/details/5567994309?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk0MzA5In0.y-9ruXxc5yd_UnE5EDlSzfrnW1PML27-XFIvILscRDk",
+   "title": "Minijob (m/w/d) Biologie-Privatlehrer in Schrobenhausen – bis 50€/Std., Home Office",
+   "latitude": 48.56144,
+   "longitude": 11.26468,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "id": "5567994309",
+   "category": {
+    "label": "Unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown"
+   }
+  },
+  {
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTk0MzA0In0.ZXyo6eGo6S2hhH1m68Xl8EgzrPhNkGfQUk9pDNFz2zs",
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Geisenfeld – bis 50€/Std., Home Office",
+   "latitude": 48.68386,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.6102,
+   "id": "5567994304",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Geisenfeld und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Pfaffenhofen an der Ilm (Kreis)",
+     "Geisenfeld"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Geisenfeld, Pfaffenhofen an der Ilm (Kreis)"
+   },
+   "created": "2026-01-05T16:08:31Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567994304?utm_medium=api&utm_source=APP_ID_REDACTED"
+  },
+  {
+   "id": "5634563671",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTYzNDU2MzY3MSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.n0pRpHg4he7yyBQyG5CaXO4g1CXDsxpOq_dxfZ0_ljs",
+   "title": "Minijob (m/w/d) Biologie-Privatlehrer in Oberdolling – bis 50€/Std., Home Office",
+   "latitude": 48.82843,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "longitude": 11.59356,
+   "created": "2026-02-18T13:23:37Z",
+   "redirect_url": "https://www.adzuna.de/details/5634563671?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Biologie geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Oberdolling und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät…",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Oberdolling"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Oberdolling, Eichstätt (Kreis)"
+   }
+  },
+  {
+   "longitude": 11.29868,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "latitude": 48.91251,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2ODAwMzgwNCIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.-El2DgHVUVwfEBAjkHfUe4v97a80lCRIRZonEx8CezE",
+   "title": "Minijob (m/w/d) Englisch-Privatlehrer in Walting – bis 50€/Std., Home Office",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "id": "5568003804",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Englisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Walting und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "location": {
+    "display_name": "Walting, Eichstätt (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Walting"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "redirect_url": "https://www.adzuna.de/details/5568003804?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:11:26Z"
+  },
+  {
+   "longitude": 11.7129,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "latitude": 48.6919,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2ODAwMzkzMSIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.b20XL2HI48cs4GnZB0XhM9nFu_o8i9TPYqHRASkf1Sg",
+   "title": "Minijob (m/w/d) Mathe-Privatlehrer in Aiglsbach – bis 50€/Std., Home Office",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5568003931",
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Mathe geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Aiglsbach und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit …",
+   "location": {
+    "display_name": "Aiglsbach, Kelheim (Kreis)",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Kelheim (Kreis)",
+     "Aiglsbach"
+    ]
+   },
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5568003931?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:11:28Z"
+  },
+  {
+   "location": {
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Denkendorf"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "display_name": "Denkendorf, Eichstätt (Kreis)"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Mathe geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Denkendorf und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567989820?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "created": "2026-01-05T16:06:53Z",
+   "longitude": 11.45807,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "latitude": 48.92814,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg5ODIwIn0.Pw7-A1sXsrpgG6W9xVeMxiKmDJZPyeS3_ZSlqeLhBr0",
+   "title": "Minijob (m/w/d) Mathe-Privatlehrer in Denkendorf – bis 50€/Std., Home Office",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "id": "5567989820"
+  },
+  {
+   "latitude": 48.92814,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4OTgyNiIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.uac1JfeO8qCycrzZ6VEy3vLlb17LOKKiOq6RkEDDV7U",
+   "title": "Minijob (m/w/d) Spanisch-Privatlehrer in Denkendorf – bis 50€/Std., Home Office",
+   "longitude": 11.45807,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   },
+   "id": "5567989826",
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Denkendorf"
+    ],
+    "display_name": "Denkendorf, Eichstätt (Kreis)"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Spanisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Denkendorf und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät …",
+   "redirect_url": "https://www.adzuna.de/details/5567989826?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:06:53Z"
+  },
+  {
+   "id": "5567989822",
+   "category": {
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "label": "Unknown"
+   },
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg5ODIyIn0._zzdGMHx2JBKklvQttedJXpcZRt-i-3_s7MjvlukfQE",
+   "title": "Minijob (m/w/d) Französisch-Privatlehrer in Denkendorf – bis 50€/Std., Home Office",
+   "latitude": 48.92814,
+   "company": {
+    "display_name": "Nachhilfeunterricht",
+    "__CLASS__": "Adzuna::API::Response::Company"
+   },
+   "longitude": 11.45807,
+   "created": "2026-01-05T16:06:53Z",
+   "redirect_url": "https://www.adzuna.de/details/5567989822?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "location": {
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Denkendorf"
+    ],
+    "display_name": "Denkendorf, Eichstätt (Kreis)"
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Französisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Denkendorf und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Ger…"
+  },
+  {
+   "redirect_url": "https://www.adzuna.de/details/5567989616?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "salary_is_predicted": "0",
+   "created": "2026-01-05T16:06:49Z",
+   "location": {
+    "display_name": "Wettstetten, Eichstätt (Kreis)",
+    "__CLASS__": "Adzuna::API::Response::Location",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Wettstetten"
+    ]
+   },
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Yoga geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Wettstetten und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät mit…",
+   "category": {
+    "__CLASS__": "Adzuna::API::Response::Category",
+    "tag": "unknown",
+    "label": "Unknown"
+   },
+   "id": "5567989616",
+   "latitude": 48.8241,
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJzIjoiaENRVFpJV1o4Ukc3ZmRmcVduaXY4dyIsImkiOiI1NTY3OTg5NjE2In0.pF3-vbsUweo_0hfHt1tuI25Nl9ZpwT-xbDoXM-eH-mU",
+   "title": "Minijob (m/w/d) Yoga-Privatlehrer in Wettstetten – bis 50€/Std., Home Office",
+   "longitude": 11.41391,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   }
+  },
+  {
+   "__CLASS__": "Adzuna::API::Response::Job",
+   "description": "Möchtest du deine Freizeit optimal nutzen und Privatunterricht für Englisch geben? Möchtest du eine Sprache unterrichten, die du kennst oder beherrschst? Kannst du in andere Sprachen übersetzen oder Schülern in Not helfen? Wenn du in Wettstetten und an diesem Angebot interessiert bist, zögere nicht länger und schließe dich unserem Team an! Anforderungen: Minimale Kenntnisse in dem zu unterrichtenden Fach bzw. übersetzende Sprache. Du musst über gute Kommunikationsfähigkeiten verfügen. Ein Gerät…",
+   "location": {
+    "display_name": "Wettstetten, Eichstätt (Kreis)",
+    "area": [
+     "Deutschland",
+     "Bayern",
+     "Eichstätt (Kreis)",
+     "Wettstetten"
+    ],
+    "__CLASS__": "Adzuna::API::Response::Location"
+   },
+   "created": "2026-01-05T16:06:49Z",
+   "salary_is_predicted": "0",
+   "redirect_url": "https://www.adzuna.de/details/5567989613?utm_medium=api&utm_source=APP_ID_REDACTED",
+   "title": "Minijob (m/w/d) Englisch-Privatlehrer in Wettstetten – bis 50€/Std., Home Office",
+   "adref": "eyJhbGciOiJIUzI1NiJ9.eyJpIjoiNTU2Nzk4OTYxMyIsInMiOiJoQ1FUWklXWjhSRzdmZGZxV25pdjh3In0.anGqF3DFel8Am7O6g8vLS7F6hCGY7us7fFamwbXqUKQ",
+   "latitude": 48.8241,
+   "longitude": 11.41391,
+   "company": {
+    "__CLASS__": "Adzuna::API::Response::Company",
+    "display_name": "Nachhilfeunterricht"
+   },
+   "id": "5567989613",
+   "category": {
+    "label": "Unknown",
+    "tag": "unknown",
+    "__CLASS__": "Adzuna::API::Response::Category"
+   }
+  }
+ ]
+}

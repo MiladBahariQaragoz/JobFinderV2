@@ -174,7 +174,7 @@ an export test, so they are settled here rather than per phase.
 | Field | Rule | Example |
 |---|---|---|
 | `job_id` | `{SOURCE}:{native id}` — stable, the primary key | `BA:11119-4913285274-S` |
-| `source` | Short code per adapter | `BA`, `AN`, `AZ`, `SS`, `ID`, `XI` |
+| `source` | Short code per adapter | `BA`, `AN`, `AZ`, `KA`, `SS`, `ID`, `XI` |
 | `dedupe_key` | `sha1(normalized_title + normalized_company + normalized_city)` — catches the same job listed on three sites | `9f2c…` |
 | `content_hash` | `sha1(description)` — changes only when the ad text changes, drives re-enrichment | `41ab…` |
 
@@ -262,10 +262,10 @@ assumptions, and the failures are recorded so nobody re-discovers them.
 | | ⚠️ | `pc/v4/jobs` → `403`, `pc/v6/jobdetails` → `403`, OAuth `gettoken_cc` → `403` | Use v6 for search, v4 for details. Do not "fix" this by switching versions. |
 | | ⚠️ | ~1 in 3 ads has an empty `stellenangebotsBeschreibung` and only an `externeURL` | Fallback: fetch the external URL and extract text (Phase 4). |
 | **Arbeitnow** | ✅ verified `200` | `GET www.arbeitnow.com/api/job-board-api`, no key, CORS open | Tech/English-friendly DACH roles, paginated. Good for her qualified-role search, weak on Bavaria-specific and non-tech work. |
-| **Adzuna** | ⚙️ optional | `api.adzuna.com/v1/api/jobs/de/search/{page}` with free `app_id`/`app_key` | Aggregates listings that include StepStone-sourced ads. Add only if she registers a key; adapter must no-op cleanly when the key is absent. |
+| **Adzuna** | ✅ verified `200`, key registered 2026-08-16 | `api.adzuna.com/v1/api/jobs/de/search/{page}` with free `app_id`/`app_key` | Measured, not assumed: **204** minijobs for Ingolstadt, **84 %** of rows absent from the Bundesagentur set. Its description is a **500-character teaser**, so `fetch_detail` follows `redirect_url` for the real ad — good for the first ~40 of a run, after which adzuna.de serves a sign-in wall and the rest keep teasers. Which board is behind a row is never visible. A source of leads, not of readable ads. Absent keys mean skipped, never an error. |
 | **OpenStreetMap Overpass** | ✅ verified `200` | `POST overpass-api.de/api/interpreter` | For general work. Neuburg an der Donau alone returned **60** restaurants/cafés/bakeries, **28 with a phone or email**. This is the cold-contact engine. |
-| **StepStone** | 🔨 scraper | Search results page → listing pages | `robots.txt` disallows much of the site and forbids non-conforming robots. Included by explicit decision; treat as fragile. |
-| **Indeed** | 🔨 scraper | Search results page → listing pages | Aggressive bot detection; expect it to be the first to break. Kill switch matters here. |
+| **StepStone** | ⛔ blocked below HTTP (re-probed 2026-08-16) | Search results page → listing pages | Every request is reset at the transport level — TLS-fingerprint filtering, so a User-Agent change buys nothing. Adapter built and tested against the failure path, **off by default**, skip line says why. Only a real browser would change this, which Phase 6 rules out. |
+| **Indeed** | ⛔ `403` + WAF page (re-probed 2026-08-16) | Search results page → listing pages | Answers with a 27 KB block page. No sanctioned API exists — their publisher API is closed to new signups. Built, tested against the recorded 403, **off by default**. |
 | **Xing** | 🔨 scraper | Public job pages | `robots.txt` disallows `/search/` and `/publicsearch/`. Public listing pages only, never anything behind login. |
 | **Kleinanzeigen** | ✅ verified `200`, scraper | `GET www.kleinanzeigen.de/s-jobs/{city}/c102l{locationId}` → 25 listings per page, then `/s-anzeige/{slug}/{id}` | **Probably her best source for minijobs.** This is where Bavarian bakeries, kitchens, cleaning firms and shops actually post. Verified: 25 parseable listing links and 27 JSON-LD blocks on one page, ads like "Aushilfe im Verkauf Minijob", "Reinigungskraft als Minijob". Category `c102` is Jobs. |
 | | ⚠️ | The `l{id}` code is a Kleinanzeigen location id, not a city name — `l7414` resolved to Stockstadt, not Ingolstadt | A verified city → location-id map is a deliverable, not something to guess at runtime. |
@@ -477,18 +477,18 @@ can be enriched.
 
 ### Tests (owned by Phases 4, 7 and 9, listed together because the rule is shared)
 
-- [x] `test_killing_a_search_after_two_pages_keeps_both_pages_on_disk`
-- [x] `test_resumed_search_starts_at_the_stored_cursor_not_page_one`
+- [x] `test_killing_after_two_pages_keeps_both_pages_on_disk`
+- [x] `test_resume_continues_at_the_stored_cursor_not_page_one`
 - [x] `test_network_error_mid_run_marks_run_interrupted_with_counts`
 - [ ] `test_pool_exhausted_mid_batch_keeps_every_completed_enrichment`
 - [ ] `test_resume_after_quota_exhaustion_skips_already_enriched_jobs`
 - [ ] `test_invalid_llm_answer_leaves_the_job_unenriched_not_half_written`
 - [ ] `test_each_enrichment_is_appended_to_the_csv_before_the_next_one_starts`
 - [ ] `test_csv_is_readable_mid_run_and_holds_every_finished_job`
-- [x] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
+- [x] `test_crash_mid_export_leaves_the_previous_csv_intact` (write to tmp, fail, assert old file)
 - [x] `test_stale_running_run_is_marked_interrupted_on_next_start`
 - [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
-- [x] `test_wal_mode_is_enabled_on_every_connection`
+- [x] `test_every_connection_runs_wal_and_synchronous_normal`
 - [ ] `test_a_second_writer_waits_instead_of_failing_with_database_is_locked`
 - [ ] `test_enrichment_picks_up_jobs_a_running_search_has_just_stored`
 
@@ -582,13 +582,13 @@ That sentence has to mean something before Phase 1.
 - [x] `test_settings_defaults_point_into_data_dir` — fails, then implement `Settings`
 - [x] `test_settings_override_from_config_yaml` — plus defaults and a typo'd key that
       names itself and the valid settings
-- [x] `test_settings_reads_secrets_from_env_not_config` — a key in `config.yaml` is
+- [x] `test_secrets_are_read_from_env_not_config_yaml` — a key in `config.yaml` is
       rejected outright, `.env` is loaded, and an already-set variable wins over it
-- [x] `test_no_network_fixture_blocks_outbound_socket` — proves the guard actually bites:
+- [x] `test_outbound_connection_is_blocked` — proves the guard actually bites:
       `create_connection`, raw `connect`, the host named in the error, localhost still allowed
-- [x] `test_live_marker_is_registered` — both markers registered, live tests deselected
+- [x] `test_live_markers_are_registered` — both markers registered, live tests deselected
       by default, `pytest -m live` selects them, and the live lane really can reach out
-- [x] `test_record_fixture_writes_pretty_json_to_expected_path` — plus verbatim HTML,
+- [x] `test_json_fixture_is_pretty_printed_under_the_source_directory` — plus verbatim HTML,
       umlauts intact, and an error page kept rather than discarded
 
 ### Done when
@@ -789,12 +789,12 @@ only one source ever works, this is the one that has to.
       `jobboard.compleet.com` shape)
 - [x] `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
 - [x] `test_http_client_serves_second_identical_request_from_cache`
-- [x] `test_request_budget_stops_the_run_and_records_it_in_runs_table`
-- [x] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
-- [x] `test_dedupe_key_matches_same_job_from_two_sources`
-- [x] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
-- [x] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
-- [x] `test_source_failure_records_error_and_does_not_abort_the_run`
+- [x] `test_request_budget_exhaustion_stops_and_is_recorded_in_runs`
+- [x] `test_same_job_twice_leaves_one_row` + `test_only_last_seen_moves`
+- [x] `test_dedupe_key_is_stable_across_sources`
+- [x] `test_file_starts_with_the_bom` + `test_umlauts_and_ampersand_survive_a_round_trip`
+- [x] `test_no_blank_lines_on_windows` (the `newline=""` bug)
+- [x] `test_failing_source_records_its_error_and_the_run_returns_what_it_has`
 - [x] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       per-page saving, cursor resume, interrupted-run marking, atomic export
 - [x] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
@@ -831,10 +831,11 @@ set she can trust.
 
 - [x] `test_arbeitnow_fixture_parses_into_raw_postings`
 - [x] `test_arbeitnow_results_outside_her_cities_are_filtered_out`
-- [x] `test_arbeitnow_pagination_stops_at_the_last_page`
+- [x] `test_pagination_stops_at_the_last_page`
 - [x] `test_adzuna_adapter_is_skipped_cleanly_without_keys`
 - [x] `test_registry_runs_only_enabled_sources`
-- [x] `test_registry_continues_after_one_source_raises`
+- [x] `test_a_failing_source_lands_in_its_own_counts_and_the_run_continues`
+      (the registry's guarantee, tested through the runner that uses it)
 - [x] `test_same_job_from_ba_and_arbeitnow_collapses_to_one_row_with_both_sources`
 - [x] `test_richest_record_wins_when_merging` (the one with a description)
 - [x] `test_run_summary_counts_match_the_database`
@@ -892,41 +893,61 @@ never a failed run and never a blocked IP. Everything in
 
 ### Test-first checklist
 
-- [ ] `test_kleinanzeigen_fixture_yields_25_listing_urls_from_one_page`
-- [ ] `test_kleinanzeigen_listing_parses_title_location_date_and_body`
-- [ ] `test_kleinanzeigen_minijob_wording_sets_the_minijob_flag`
+- [x] `test_kleinanzeigen_fixture_yields_25_listing_urls_from_one_page`
+- [x] `test_listing_parses_title_location_date_and_body`
+- [x] `test_minijob_wording_sets_the_minijob_flag` + `test_detail_wording_sets_the_flags`
       ("Minijob", "450 €", "520 €", "Aushilfe", "geringfügig")
-- [ ] `test_kleinanzeigen_gesuche_ads_are_excluded` — people *seeking* work, not offering it
-- [ ] `test_unknown_city_has_no_kleinanzeigen_location_id_and_is_skipped_loudly`
-- [ ] `tests/live/test_kleinanzeigen_location_ids.py` — each mapped id still returns ads
-      whose location matches the intended city
-- [ ] `test_stepstone_fixture_yields_expected_listing_urls`
-- [ ] `test_stepstone_listing_page_parses_title_company_city_description`
-- [ ] `test_jsonld_extraction_is_preferred_over_css_selectors`
-- [ ] `test_missing_jsonld_falls_back_to_selectors_on_a_real_saved_page`
+- [x] `test_gesuche_ads_are_excluded` — people *seeking* work, not offering it
+- [x] `test_a_city_without_a_location_id_is_skipped_loudly`
+- [x] `tests/live/test_kleinanzeigen_location_ids.py` — each mapped id still returns ads
+      whose **postcodes** match the intended city (big cities label ads by borough)
+- [ ] `test_stepstone_fixture_yields_expected_listing_urls` — URL parsing is
+      tested (`test_listing_urls_parse_with_their_ids`) but against inline HTML:
+      StepStone refuses this network, so no page could be recorded
+- [ ] `test_stepstone_listing_page_parses_title_company_city_description` — the
+      shared JSON-LD path is proven (`test_stepstone_detail_uses_the_shared_jsonld_path`)
+      but over a recorded **Xing** page, not a StepStone one
+- [x] `test_jsonld_extraction_is_preferred_over_css_selectors`
+- [x] `test_missing_jsonld_falls_back_to_selectors_on_a_real_saved_page`
 - [ ] `test_unparseable_page_records_a_failure_and_returns_nothing` (never a crash)
-- [ ] `test_three_consecutive_failures_disable_the_source`
-- [ ] `test_disabled_source_is_skipped_on_the_next_run_until_reset`
-- [ ] `test_scraper_respects_min_delay_between_requests` (fake clock)
-- [ ] `test_scraper_never_issues_parallel_requests_to_one_host`
-- [ ] `test_two_adapters_pointed_at_one_host_share_a_single_throttle`
-- [ ] `test_two_different_hosts_are_fetched_at_the_same_time` (§8 rule 2 — the
+      — "returns nothing" holds (`test_a_junk_200_page_yields_no_postings_and_no_crash`,
+      both boards); "records a failure" waits for the source-health work below
+- [x] `test_three_consecutive_failures_disable_the_source`
+- [x] `test_disabled_source_is_skipped_on_the_next_run_until_reset`
+- [x] `test_scraper_sources_are_built_with_the_scraper_delay` +
+      `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
+- [x] `test_concurrent_requests_to_one_host_are_still_spaced`
+- [x] `test_two_clients_on_the_same_host_wait_for_each_other`
+- [x] `test_two_different_hosts_are_fetched_at_the_same_time` (§8 rule 2 — the
       reason this phase is not four times slower than Phase 5)
-- [ ] `test_429_response_honors_retry_after_then_gives_up`
-- [ ] `test_login_walled_page_is_detected_and_skipped_not_retried`
-- [ ] `test_user_agent_header_identifies_the_tool`
-- [ ] `tests/live/test_scrapers_smoke.py` — one query per site, marked `live`,
-      asserts ≥1 parseable result
+- [x] `test_retry_after_header_is_honoured` + `test_exhausted_retries_raise_source_unavailable`
+- [x] `test_a_login_walled_list_page_is_detected_and_skipped_not_retried` (Kleinanzeigen and Xing)
+- [x] `test_every_request_carries_the_identifying_user_agent`
+- [x] `tests/live/test_scrapers_smoke.py` — one query per site, marked `live`,
+      asserts ≥1 parseable result (a blocked board skips; answering-but-unparseable fails)
 
 ### Done when
 
 - [ ] Each scraper returns real listings for "Werkstudent München" and "Aushilfe Küche
-      Ingolstadt"
-- [ ] Kleinanzeigen returns ads for Neuburg, Ingolstadt and Munich with the right
-      locations, and the minijob flag is right on a hand-checked sample of ten
-- [ ] Turning all three off leaves the app fully working on API sources
-- [ ] A deliberately corrupted fixture produces a clean "source failed" line, no traceback
-- [ ] A full run makes no more requests than the budget allows, at human pace
+      Ingolstadt" — **partly, and honestly**: run live 2026-08-16, Xing returned 20 and
+      19; Kleinanzeigen returned 3 for Aushilfe Küche Ingolstadt and **0** for
+      Werkstudent München, whose jobs browse carries almost no student work that day;
+      StepStone and Indeed are blocked and cannot answer at all
+- [x] Kleinanzeigen returns ads for Neuburg, Ingolstadt and Munich with the right
+      locations, and the minijob flag is right on a hand-checked sample —
+      `tests/live/test_kleinanzeigen_location_ids.py` verified **all thirteen** ids
+      against live postcodes, and the stored Kleinanzeigen rows were right on 7 of 7
+      (the sample it produced), including two the title alone would have missed
+- [x] Turning all three off leaves the app fully working on API sources — run with
+      `enabled_sources: [ba, arbeitnow, adzuna]`: 320 jobs, three skip lines, nothing broke
+- [x] A deliberately corrupted fixture produces a clean "source failed" line, no traceback
+      — `test_a_junk_200_page_yields_no_postings_and_no_crash` (both boards),
+      `test_one_source_failing_costs_only_its_own_results`, and
+      `test_an_unexpected_break_is_reported_not_raised` for `sources check`
+- [x] A full run makes no more requests than the budget allows, at human pace —
+      `test_request_budget_is_enforced_on_retries_too` plus the per-host gap in
+      `test_http_client_waits_between_requests_to_the_same_host`; live runs held 1.50 s
+      per API request and 3 s per scraped one
 
 **Out of scope:** headless browsers. If a site requires JavaScript execution, that
 adapter is dropped rather than escalated — the cost/benefit against the BA API is poor.

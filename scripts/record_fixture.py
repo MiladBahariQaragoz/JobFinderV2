@@ -46,6 +46,33 @@ def save_fixture(source: str, name: str, content: bytes, fixture_root: Path | No
     return path
 
 
+def is_html(content: bytes) -> bool:
+    """Does this body look like a page worth parsing, whatever its status said?"""
+    head = content.lstrip()[:256].lower()
+    return any(market in head for market in (b"<!doctype html", b"<html", b"<div", b"<body"))
+
+
+def record(
+    source: str,
+    name: str,
+    url: str,
+    headers: dict[str, str] | None = None,
+    *,
+    html: bool = False,
+    content: bytes | None = None,
+    fixture_root: Path | None = None,
+) -> int:
+    """Fetch (or take) one response and save it — the `--html` gate lives here."""
+    content = content if content is not None else fetch(url, headers or {})
+    if html and not is_html(content):
+        preview = content[:80].decode("utf-8", errors="replace").strip()
+        print(f"not HTML ({preview!r}) — a block or error page, not a fixture. Nothing saved.")
+        return 1
+    path = save_fixture(source, name, content, fixture_root)
+    print(f"recorded {len(content)} bytes -> {path}")
+    return 0
+
+
 def fetch(url: str, headers: dict[str, str]) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **headers})
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -58,6 +85,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("name", help="fixture filename, e.g. jobs_werkstudent.json")
     parser.add_argument("url", help="the URL to record")
     parser.add_argument("--header", action="append", default=[], help='"Name: value", repeatable')
+    parser.add_argument(
+        "--html",
+        action="store_true",
+        help="record an HTML page; a body that is not a page (a block page) is refused",
+    )
     args = parser.parse_args(argv)
 
     headers = {}
@@ -65,10 +97,7 @@ def main(argv: list[str] | None = None) -> int:
         key, _, value = raw.partition(":")
         headers[key.strip()] = value.strip()
 
-    content = fetch(args.url, headers)
-    path = save_fixture(args.source, args.name, content)
-    print(f"recorded {len(content)} bytes -> {path}")
-    return 0
+    return record(args.source, args.name, args.url, headers, html=args.html)
 
 
 if __name__ == "__main__":

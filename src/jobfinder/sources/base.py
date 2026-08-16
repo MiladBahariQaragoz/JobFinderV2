@@ -23,6 +23,10 @@ _WHITESPACE = re.compile(r"\s+")
 _UMLAUTS = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
 
 
+class LoginWall(Exception):
+    """The page wants an account. Skip it once; retrying a wall is hammering it."""
+
+
 def normalize_for_dedupe(text: str | None) -> str:
     """Fold a title or company name so the same job matches across sources."""
     if not text:

@@ -51,7 +51,7 @@ class FakeSource:
         self.entered.append(self.entered_at)
         while self.pages:
             item = self.pages.pop(0)
-            if isinstance(item, Exception):
+            if isinstance(item, BaseException):  # KeyboardInterrupt is not an Exception
                 raise item
             if self.entered_at == (0, 1):  # a fresh entry re-serves the script
                 pass
@@ -464,6 +464,153 @@ class TestDetailFetches:
         )
         run_search(db, [source], spec())
         assert source.details == 0
+
+
+class TestParallelSources:
+    """§8 rule 2: different hosts at the same time, one host never twice at once.
+
+    Four scrapers on four hosts is the case this exists for — serial, that is
+    the sum of their pacing; in parallel it is the slowest one.
+    """
+
+    class BlockingSource(FakeSource):
+        """Waits until released, so overlap can be observed rather than timed."""
+
+        def __init__(self, pages, source, started, release):
+            super().__init__(pages, source)
+            self._started = started
+            self._release = release
+
+        def search_pages(self, spec, *, start_query_index=0, start_page=1):
+            self._started.set()
+            self._release.wait(timeout=5)
+            yield from super().search_pages(
+                spec, start_query_index=start_query_index, start_page=start_page
+            )
+
+    def test_two_different_hosts_are_fetched_at_the_same_time(self, db, tmp_path):
+        import threading
+
+        started_a, started_b = threading.Event(), threading.Event()
+        release = threading.Event()
+        first = self.BlockingSource([page(1, page_number=1, source="KA")], "KA", started_a, release)
+        second = self.BlockingSource(
+            [page(1, page_number=1, source="XI")], "XI", started_b, release
+        )
+
+        def run():
+            # One connection per thread, including this one — the fixture's
+            # belongs to the main thread (§8 rule 2).
+            own = connect(tmp_path / "jobfinder.db")
+            try:
+                run_search(own, [first, second], spec(), db_path=tmp_path / "jobfinder.db")
+            finally:
+                own.close()
+
+        worker = threading.Thread(target=run)
+        worker.start()
+        try:
+            # Serially, the second source could not have started before the
+            # first finished — and the first cannot finish until released.
+            assert started_a.wait(timeout=5)
+            assert started_b.wait(timeout=5), "the second source waited its turn"
+        finally:
+            release.set()
+            worker.join(timeout=10)
+
+    def test_every_posting_still_lands_exactly_once(self, db, tmp_path):
+        sources = [
+            FakeSource([page(3, page_number=1, source=code)], source=code)
+            for code in ("BA", "AN", "KA", "XI")
+        ]
+        summary = run_search(db, sources, spec(), db_path=tmp_path / "jobfinder.db")
+
+        assert summary.found == 12
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 12
+        for code in ("BA", "AN", "KA", "XI"):
+            assert summary.per_source[code].found == 3
+
+    def test_one_source_failing_costs_only_its_own_results(self, db, tmp_path):
+        broken = FakeSource([SourceUnavailable("kleinanzeigen is down")], source="KA")
+        healthy = FakeSource([page(2, page_number=1)], source="BA")
+
+        summary = run_search(db, [broken, healthy], spec(), db_path=tmp_path / "jobfinder.db")
+
+        assert summary.per_source["BA"].found == 2
+        assert summary.per_source["KA"].errors
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 2
+
+
+class TestSourceHealth:
+    """§8 rule 7: a source that keeps refusing sits the next run out.
+
+    Without this a blocked board costs her minutes of timeouts on every run,
+    for nothing, until somebody edits config.yaml.
+    """
+
+    def fail_a_source(self, db, times: int, source: str = "SS"):
+        for _ in range(times):
+            broken = FakeSource([SourceUnavailable(f"{source} kept refusing")], source=source)
+            run_search(db, [broken], spec())
+
+    def test_a_failing_source_is_counted_towards_its_health(self, db):
+        from jobfinder.store.health import cooling_off
+
+        self.fail_a_source(db, 2)
+
+        assert (
+            db.execute(
+                "SELECT consecutive_failures FROM source_state WHERE source = 'SS'"
+            ).fetchone()[0]
+            == 2
+        )
+        assert cooling_off(db, "SS") is None  # two is not three
+
+    def test_three_consecutive_failures_disable_the_source(self, db):
+        from jobfinder.store.health import cooling_off
+
+        self.fail_a_source(db, 3)
+
+        assert cooling_off(db, "SS") is not None
+
+    def test_disabled_source_is_skipped_on_the_next_run_until_reset(self, db):
+        self.fail_a_source(db, 3)
+
+        fourth = FakeSource([page(2, page_number=1, source="SS")], source="SS")
+        summary = run_search(db, [fourth], spec())
+
+        assert fourth.entered == []  # not asked at all
+        assert "paused until" in summary.per_source["SS"].errors[0]
+
+    def test_a_healthy_source_in_the_same_run_is_untouched(self, db):
+        self.fail_a_source(db, 3)
+
+        cooling = FakeSource([page(1, page_number=1, source="SS")], source="SS")
+        healthy = FakeSource([page(2, page_number=1)], source="BA")
+        summary = run_search(db, [cooling, healthy], spec())
+
+        assert cooling.entered == []
+        assert summary.per_source["BA"].found == 2
+
+    def test_a_good_page_clears_the_count(self, db):
+        self.fail_a_source(db, 2)
+        run_search(db, [FakeSource([page(1, page_number=1, source="SS")], source="SS")], spec())
+
+        assert (
+            db.execute(
+                "SELECT consecutive_failures FROM source_state WHERE source = 'SS'"
+            ).fetchone()[0]
+            == 0
+        )
+
+    def test_her_ctrl_c_is_not_held_against_the_source(self, db):
+        # She stopped it. That says nothing about whether the site answers.
+        run_search(db, [FakeSource([page(1, page_number=1), KeyboardInterrupt()])], spec())
+
+        row = db.execute(
+            "SELECT consecutive_failures FROM source_state WHERE source = 'BA'"
+        ).fetchone()
+        assert row is None or row[0] == 0
 
 
 class TestSummaryReconciliation:
