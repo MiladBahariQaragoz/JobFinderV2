@@ -36,7 +36,14 @@ pytest -m live                      # opt-in tests that hit the real internet
 pytest -m live_llm                  # opt-in tests that spend a real LLM call
 ruff check . && ruff format --check .
 jobfinder profile validate          # parse her pool.yaml and print a summary
+jobfinder sources check             # ask every source whether it still answers
+jobfinder search                    # collect postings  -> data/jobs-init.csv
+jobfinder enrich [--limit N]        # explain them in English -> data/jobs-enriched.csv
+jobfinder search --enrich           # both at once, enrichment as a second worker
 ```
+
+`--limit` on `enrich` is the flag to reach for while developing: a full pass
+over the store is hundreds of real free-tier calls.
 
 ## LLM calls
 
@@ -48,6 +55,15 @@ Read [docs/llm-backend.md](docs/llm-backend.md) before writing code that calls a
 model. The short version: one `Pool` per run, always pass a `validator` and
 `state_path="data/pool_state.json"`, bound the run with `max_wait` and
 `run_deadline_seconds`, and use `run_batch` for anything over a handful of items.
+
+Two things llmpool does not do, which this repo has to handle itself:
+
+- **It cannot say which provider answered a given call.** `provider_used` is
+  inferred from the pool's stats and left empty whenever that inference is not
+  certain. Never fill it with a guess.
+- **A validator only sees the answer, never the prompt.** Any rule that needs
+  the source text — `german_level` must quote the ad — belongs in the runner,
+  after the answer lands, not in the pool's validator.
 
 ## Conventions
 

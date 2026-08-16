@@ -68,13 +68,16 @@ Phases are ordered so that the app becomes useful before it becomes complete.
 |---|---|---|
 | **M1 — Skeleton** | 0–1 | Nothing yet; the machinery exists and is tested |
 | **M2 — Advice** | 2–3 | Fill in her CV and get job titles worth searching for, in German and English |
-| **M3 — First real shortlist** | 4–5, 7 | Run a search and get a CSV of live Bavarian jobs, each explained in English |
+| **M3 — First real shortlist** | 4–5, 7 | **Done.** Run a search and get a CSV of live Bavarian jobs, each explained in English — `jobfinder search --enrich` |
 | **M4 — The actual product** | 8 | Browse, filter, read, and mark jobs applied/deleted in a real UI |
 | **M5 — Wider net** | 6, 9 | Phase 6 done: Kleinanzeigen, Xing and Adzuna, searched in parallel. StepStone and Indeed are blocked from this machine and ship off. Phase 9 (the call-list) is still open |
 | **M6 — Handover** | 10 | Double-click one file on her own laptop and use it without help |
 
 **If time gets short, ship M4 and stop.** Phases 6 and 9 are additive; nothing in
 8 or 10 depends on them.
+
+**Next up: Phase 8, the web app.** Everything it needs to display now exists in
+the database — the jobs, their English answers, and her status column.
 
 ---
 
