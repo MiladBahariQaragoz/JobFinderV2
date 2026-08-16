@@ -50,7 +50,9 @@ def make_validator(spec: dict[str, FieldRule], *, where: str = "answer") -> Vali
 
     def _check_value(value: Any, rule: FieldRule, location: str) -> str | None:
         if rule.kind == "str":
-            if not isinstance(value, str) or not value.strip():
+            if not isinstance(value, str):
+                return f"{location} must be a string"
+            if not value.strip() and not rule.allow_empty:
                 return f"{location} must be a non-empty string"
             if rule.enum and value not in rule.enum:
                 return f"{location} is '{value}', which is not one of: {', '.join(rule.enum)}"
@@ -61,6 +63,9 @@ def make_validator(spec: dict[str, FieldRule], *, where: str = "answer") -> Vali
                 return f"{location} is {value}, below the minimum {rule.min_value}"
             if rule.max_value is not None and value > rule.max_value:
                 return f"{location} is {value}, above the maximum {rule.max_value}"
+        elif rule.kind == "bool":
+            if not isinstance(value, bool):
+                return f"{location} must be true or false, not {value!r}"
         elif rule.kind == "list":
             if not isinstance(value, list):
                 return f"{location} must be a list"
@@ -112,3 +117,107 @@ ROLES_SPEC: dict[str, FieldRule] = {
 }
 
 roles_answer_validator: Validator = make_validator(ROLES_SPEC)
+
+
+# --- The enrichment answer (Phase 7) ----------------------------------------
+
+# §5's list plus the one value the others cannot express. A third of her store
+# is teaser-length, and "unclear" is the honest answer for those.
+ANSWER_GERMAN_LEVELS = (*GERMAN_LEVELS, "unclear")
+ANSWER_EMPLOYMENT_TYPES = (*EMPLOYMENT_TYPES, "unclear")
+
+ENRICHMENT_SPEC: dict[str, FieldRule] = {
+    "category": FieldRule(kind="str"),
+    "seniority": FieldRule(kind="str"),
+    "skills_required": FieldRule(kind="list", allow_empty=True),
+    "skills_nice": FieldRule(kind="list", allow_empty=True),
+    "german_level": FieldRule(kind="str", enum=ANSWER_GERMAN_LEVELS),
+    # Empty is allowed here and forbidden by the cross-field rule below, which
+    # can see the level this evidence is supposed to justify.
+    "german_evidence": FieldRule(kind="str", required=True, allow_empty=True),
+    "english_sufficient": FieldRule(kind="bool"),
+    "employment_type_norm": FieldRule(kind="str", enum=ANSWER_EMPLOYMENT_TYPES),
+    "hours_per_week": FieldRule(kind="number", min_value=0, max_value=80, required=False),
+    "duties_en": FieldRule(kind="list", allow_empty=True),
+    "requirements_en": FieldRule(kind="list", allow_empty=True),
+    "summary_en": FieldRule(kind="str"),
+    "fit_score": FieldRule(kind="number", min_value=0, max_value=100),
+    "fit_reasons": FieldRule(kind="list", allow_empty=True),
+    "missing_for_fit": FieldRule(kind="list", allow_empty=True),
+    "red_flags": FieldRule(kind="list", allow_empty=True),
+    "application_method": FieldRule(kind="str"),
+    "contact_email": FieldRule(kind="str", required=False, allow_empty=True),
+    "contact_phone": FieldRule(kind="str", required=False, allow_empty=True),
+    "deadline": FieldRule(kind="str", required=False, allow_empty=True),
+}
+
+_ENRICHMENT_FIELDS = make_validator(ENRICHMENT_SPEC, where="enrichment answer")
+
+# The English fields she actually reads. If these come back in German the
+# product has failed at the one job it exists for.
+ENGLISH_FIELDS = ("summary_en", "duties_en", "requirements_en", "fit_reasons")
+
+# German function words that stay German. A job title in an English sentence
+# ("a Werkstudent role, paid as a Minijob") must pass, so one marker proves
+# nothing — three of them means the sentence itself is German.
+_GERMAN_MARKERS = (
+    "und",
+    "oder",
+    "der",
+    "die",
+    "das",
+    "den",
+    "dem",
+    "ein",
+    "eine",
+    "einen",
+    "für",
+    "mit",
+    "nicht",
+    "sind",
+    "wir",
+    "sie",
+    "ist",
+    "sich",
+    "bei",
+    "auf",
+    "von",
+    "zu",
+    "im",
+    "am",
+    "als",
+    "auch",
+    "werden",
+    "haben",
+    "wird",
+)
+_MARKERS_THAT_MEAN_GERMAN = 3
+
+
+def reads_as_german(text: str) -> bool:
+    """True when a sentence is German rather than English with German nouns."""
+    words = {word.strip(".,;:!?()[]\"'").casefold() for word in text.split()}
+    return len(words & set(_GERMAN_MARKERS)) >= _MARKERS_THAT_MEAN_GERMAN
+
+
+def enrichment_answer_validator(answer: Any) -> tuple[bool, str]:
+    """The field rules, plus the two promises §5 makes to her."""
+    ok, reason = _ENRICHMENT_FIELDS(answer)
+    if not ok:
+        return False, reason
+
+    # A level she can act on has to be quoted from the ad. Anything else is a
+    # guess dressed as a fact, and she would plan around it.
+    if answer["german_level"] != "unclear" and not answer["german_evidence"].strip():
+        return False, (
+            f"german_level is '{answer['german_level']}' but german_evidence is empty — "
+            "quote the phrase in the ad that shows it, or answer 'unclear'"
+        )
+
+    for name in ENGLISH_FIELDS:
+        value = answer.get(name)
+        parts = value if isinstance(value, list) else [value or ""]
+        for part in parts:
+            if isinstance(part, str) and reads_as_german(part):
+                return False, f"{name} is written in German — every _en field must be English"
+    return True, "ok"
