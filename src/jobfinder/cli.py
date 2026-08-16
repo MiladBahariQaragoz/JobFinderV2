@@ -570,15 +570,29 @@ def _cmd_search(
 
 
 def _uvicorn_serve(app, *, host: str, port: int, on_ready) -> None:
-    """Run the server; `on_ready` fires once it is listening.
+    """Run the server; `on_ready` fires once, as soon as the port answers.
 
-    `callback_notify` is uvicorn's own heartbeat, invoked from the main loop
-    after startup — the first tick is the earliest honest moment to open a
-    browser tab at it.
+    A watcher thread waits for `server.started` rather than uvicorn's own
+    `callback_notify`, which looks like the obvious hook and is the wrong one
+    twice over: it repeats every heartbeat, so her browser would reopen the
+    tab every second, and it is awaited on the event loop, where opening a
+    browser blocks the server it has just announced.
     """
+    import threading
+    import time
+
     import uvicorn
 
-    uvicorn.run(app, host=host, port=port, callback_notify=on_ready, timeout_notify=0.25)
+    server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="warning"))
+
+    def announce_once_listening() -> None:
+        while not (server.started or server.should_exit):
+            time.sleep(0.05)
+        if server.started:
+            on_ready()
+
+    threading.Thread(target=announce_once_listening, daemon=True).start()
+    server.run()
 
 
 def _cmd_serve(settings: Settings, args, *, _serve=None, _browser=None) -> int:
@@ -727,3 +741,7 @@ def main(
 
     parser.error(f"unknown command {args.command!r}")  # pragma: no cover
     return 2  # pragma: no cover
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

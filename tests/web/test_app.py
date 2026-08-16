@@ -7,11 +7,13 @@ progress) is built on this skeleton.
 
 from __future__ import annotations
 
+import socket
 import threading
 import time
 
 import httpx
 import pytest
+import uvicorn
 from fastapi.testclient import TestClient
 
 from jobfinder.config import Settings
@@ -92,6 +94,64 @@ class TestServeCommand:
 
         self.call(tmp_path, ["--port", "8123", "--no-browser"], fake_serve, browser=called.append)
         assert called == []
+
+
+def free_port() -> int:
+    with socket.socket() as probe:
+        probe.bind((SERVER_HOST, 0))
+        return probe.getsockname()[1]
+
+
+def test_serve_opens_the_browser_once_against_a_server_that_answers(tmp_path, monkeypatch):
+    """The real `_uvicorn_serve`, not the injected seam the CLI tests use.
+
+    Two things have to hold at once, and only a real server can show both:
+    when `on_ready` fires the port is already answering, and it fires exactly
+    once — a browser that reopens her tab every second is as broken as one
+    that never opens it.
+    """
+    from jobfinder.cli import _uvicorn_serve
+
+    port = free_port()
+    app = create_app(Settings(project_root=tmp_path))
+
+    servers: list[uvicorn.Server] = []
+
+    class RecordingServer(uvicorn.Server):
+        """The real server, kept where the test can shut it down again."""
+
+        def __init__(self, config):
+            super().__init__(config)
+            servers.append(self)
+
+    monkeypatch.setattr(uvicorn, "Server", RecordingServer)
+
+    answers: list[int] = []
+
+    def on_ready() -> None:
+        answers.append(httpx.get(f"http://{SERVER_HOST}:{port}/", timeout=5).status_code)
+
+    thread = threading.Thread(
+        target=_uvicorn_serve,
+        args=(app,),
+        kwargs={"host": SERVER_HOST, "port": port, "on_ready": on_ready},
+        daemon=True,
+    )
+    thread.start()
+    try:
+        deadline = time.time() + 10
+        while time.time() < deadline and not answers:
+            time.sleep(0.05)
+        # Long enough for uvicorn's periodic heartbeat to come round again.
+        time.sleep(1.5)
+    finally:
+        for server in servers:
+            server.should_exit = True
+        thread.join(timeout=10)
+
+    assert servers, "_uvicorn_serve never built a uvicorn server"
+    assert answers == [200], f"expected one 200 as the tab opens, got {answers}"
+    assert not thread.is_alive(), "the server did not stop"
 
 
 def test_serve_starts_and_answers_over_http(tmp_path):
