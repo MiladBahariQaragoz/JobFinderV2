@@ -21,7 +21,11 @@ class Settings:
     """Resolved paths and runtime limits for one run."""
 
     project_root: Path
-    request_budget: int = 200
+    # Requests one leg of a search may spend. A leg that runs out is continued
+    # automatically with a fresh budget, up to `max_search_legs` — the pair is
+    # what keeps a full search unattended without making it unbounded.
+    request_budget: int = 800
+    max_search_legs: int = 6
     llm_budget: int = 500
     enabled_sources: tuple[str, ...] = ("ba",)
     # Bounds for every Pool built this run — see docs/llm-backend.md.

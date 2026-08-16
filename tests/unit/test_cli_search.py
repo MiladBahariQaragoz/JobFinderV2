@@ -140,6 +140,48 @@ class TestRun:
         assert "arbeitnow is down" in out
 
 
+class TestAutoContinue:
+    def test_each_leg_gets_a_freshly_built_client(self, tmp_path):
+        # A leg only gets a new budget because it gets a new client.
+        built = []
+
+        def client_factory(_settings):
+            built.append(object())
+            return []
+
+        def runner(connection, adapter_factory, spec, **kwargs):
+            adapter_factory()
+            adapter_factory()
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=client_factory, _runner=runner)
+        assert len(built) == 2
+
+    def test_the_leg_cap_comes_from_settings(self, tmp_path):
+        seen = {}
+
+        def runner(connection, adapter_factory, spec, **kwargs):
+            seen.update(kwargs)
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert seen["max_legs"] == 6
+
+    def test_summary_says_how_many_rounds_it_took(self, tmp_path, capsys):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            return summary(legs=3)
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert "3 rounds" in capsys.readouterr().out
+
+    def test_a_single_round_is_not_worth_mentioning(self, tmp_path, capsys):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            return summary(legs=1)
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert "rounds" not in capsys.readouterr().out
+
+
 class TestValidation:
     def test_unknown_city_is_one_sentence_and_no_traceback(self, tmp_path, capsys):
         exit_code = main(
