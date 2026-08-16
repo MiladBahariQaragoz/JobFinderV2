@@ -173,6 +173,30 @@ class TestHerActions:
         body = client.get("/jobs/BA%3A1").text
         assert "Called — come by Tuesday with a printed CV" in body
 
+    def test_a_section_the_ad_says_nothing_about_says_so(self, settings, client):
+        """A heading with an empty list under it reads as a broken page.
+
+        Found on her real store: a two-sentence ad enriched to `duties_en: []`
+        rendered "The work" with nothing beneath it. Skills already answered
+        "None stated." — §10 says every section needs its empty state, so
+        these two say it too."""
+        connection = connect(settings.db_path)
+        try:
+            store_job(
+                connection,
+                job_id="BA:88",
+                title="Studentische Aushilfe",
+                description="Aushilfe regelmäßig, fünf Stunden wöchentlich.",
+                answer=enrichment_answer(duties_en=[], requirements_en=[], skills_required=[]),
+            )
+        finally:
+            connection.close()
+
+        body = client.get("/jobs/BA%3A88").text
+        work = body.split("The work", 1)[1].split("Skills", 1)[0]
+        assert "None stated" in work, "'The work' and 'You need' render empty lists"
+        assert work.count("None stated") == 2, "each empty section says so for itself"
+
     def test_every_button_the_page_promises_exists(self, client):
         body = client.get("/jobs/BA%3A1").text
         for label in ("Applied", "Interested", "Not for me", "Delete"):

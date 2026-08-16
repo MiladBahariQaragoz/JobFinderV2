@@ -28,16 +28,24 @@
 
     <div class="section">
       <h2>The work</h2>
+      {% if answer.duties_en %}
       <ul>
-        {% for duty in answer.duties_en or [] %}<li>{{ duty }}</li>{% endfor %}
+        {% for duty in answer.duties_en %}<li>{{ duty }}</li>{% endfor %}
       </ul>
+      {% else %}
+      <p>None stated. The ad itself does not say.</p>
+      {% endif %}
     </div>
 
     <div class="section">
       <h2>You need</h2>
+      {% if answer.requirements_en %}
       <ul>
-        {% for requirement in answer.requirements_en or [] %}<li>{{ requirement }}</li>{% endfor %}
+        {% for requirement in answer.requirements_en %}<li>{{ requirement }}</li>{% endfor %}
       </ul>
+      {% else %}
+      <p>None stated. The ad itself does not say.</p>
+      {% endif %}
     </div>
 
     <div class="section">
