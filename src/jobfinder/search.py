@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -28,6 +28,10 @@ if TYPE_CHECKING:
 # have slept mid-run.
 DEFAULT_STALE_AFTER = timedelta(minutes=10)
 
+# The backstop on auto-continue: however many budgets a search would like to
+# spend, it gets this many and then stops and says so.
+DEFAULT_MAX_LEGS = 6
+
 
 @dataclass(frozen=True)
 class SearchSummary:
@@ -40,6 +44,10 @@ class SearchSummary:
     duplicates: int
     errors: list[str]
     resumed: bool
+    # A spent budget is the one interruption it is safe to continue from
+    # automatically — her Ctrl-C and a dead host are not.
+    budget_exhausted: bool = False
+    legs: int = 1  # how many budgets the search needed
 
 
 def run_search(
@@ -68,6 +76,7 @@ def run_search(
     found = new = duplicates = 0
     errors: list[str] = []
     state = "done"
+    budget_exhausted = False
 
     try:
         for adapter in adapters:
@@ -96,7 +105,8 @@ def run_search(
             except (KeyboardInterrupt, RequestBudgetExhausted) as err:
                 # Her stop or the politeness limit: halt the whole run here.
                 state = "interrupted"
-                reason = "stopped by user" if isinstance(err, KeyboardInterrupt) else str(err)
+                budget_exhausted = isinstance(err, RequestBudgetExhausted)
+                reason = str(err) if budget_exhausted else "stopped by user"
                 errors.append(f"{adapter.source}: {reason}")
                 break
             except Exception as err:  # one source down must not lose the others
@@ -115,6 +125,59 @@ def run_search(
         duplicates=duplicates,
         errors=errors,
         resumed=resumed_any,
+        budget_exhausted=budget_exhausted,
+    )
+
+
+def run_search_until_done(
+    connection: sqlite3.Connection,
+    adapter_factory,
+    spec: SearchSpec,
+    *,
+    resume: bool = False,
+    csv_path: Path | None = None,
+    max_legs: int = DEFAULT_MAX_LEGS,
+    on_leg=None,
+    **run_kwargs,
+) -> SearchSummary:
+    """Run legs until the search is finished, a fresh budget each time.
+
+    `adapter_factory()` builds the adapters for one leg — a new client, so a
+    new request budget. Only a spent budget continues automatically: her
+    Ctrl-C, a dead host and a leg that stored nothing all end the loop, and
+    `max_legs` bounds it whatever happens, so a bug cannot turn the budget
+    into "no limit at all".
+    """
+    combined: SearchSummary | None = None
+    for leg in range(1, max_legs + 1):
+        summary = run_search(
+            connection,
+            adapter_factory(),
+            spec,
+            resume=resume or leg > 1,
+            csv_path=csv_path,
+            **run_kwargs,
+        )
+        combined = _merge_legs(combined, summary)
+        if on_leg is not None:
+            on_leg(leg, summary, combined)
+        if not summary.budget_exhausted or summary.found == 0:
+            break  # finished, stopped for another reason, or making no progress
+    return combined  # type: ignore[return-value]
+
+
+def _merge_legs(earlier: SearchSummary | None, leg: SearchSummary) -> SearchSummary:
+    """One summary for the whole search — counts add up, the last state wins."""
+    if earlier is None:
+        return replace(leg, legs=1)
+    return replace(
+        leg,
+        found=earlier.found + leg.found,
+        new=earlier.new + leg.new,
+        duplicates=earlier.duplicates + leg.duplicates,
+        errors=earlier.errors + leg.errors,
+        resumed=earlier.resumed or leg.resumed,
+        legs=earlier.legs + 1,
     )
 
 

@@ -29,7 +29,11 @@ the MASTER_PLAN box ticked in the same commit, pushed immediately.
   not urlsafe) returns the same shape plus `stellenangebotsBeschreibung`.
 - Header `X-API-Key: jobboerse-jobsuche` (public constant) on both.
 - `werkstudent` / `internship` have **no arbeitszeit code** — they ride in `was`
-  ("Werkstudent" / "Praktikum") unless she already gave keywords.
+  ("Werkstudent" / "Praktikum"). Corrected 2026-08-16: each employment type gets
+  its **own** query rather than stamping its term onto the others. Sending
+  `was=Werkstudent` together with `arbeitszeit=mj` asks for a Werkstudent job
+  that is also a minijob — 1 result in Ingolstadt against 116 for the minijob
+  query alone. See `2026-08-16-phase-4-audit-and-search-shape.md`.
 - The `externeURL` fallback shape (`jobboard.compleet.com`) is a client-rendered
   Nuxt SPA: static HTML holds no job text. Recorded as
   `tests/fixtures/ba/external_compleet_4913285274.html`; the fallback must treat

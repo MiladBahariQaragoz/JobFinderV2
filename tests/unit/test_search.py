@@ -192,6 +192,20 @@ class TestFailures:
         row = run_row(db, summary.run_id)
         assert "budget" in row["errors"]
 
+    def test_budget_exhaustion_is_flagged_apart_from_other_interruptions(self, db):
+        # Only a spent budget is safe to continue automatically — see
+        # run_search_until_done. Everything else means "stop and tell her".
+        spent = FakeSource([page(2, page_number=1), RequestBudgetExhausted("budget of 200 spent")])
+        assert run_search(db, [spent], spec()).budget_exhausted is True
+
+    def test_a_network_failure_is_not_a_budget_stop(self, db):
+        flaky = FakeSource([page(1, page_number=1), SourceUnavailable("host refusing")])
+        assert run_search(db, [flaky], spec()).budget_exhausted is False
+
+    def test_her_ctrl_c_is_not_a_budget_stop(self, db):
+        stopped = FakeSource([page(1, page_number=1), KeyboardInterrupt()])
+        assert run_search(db, [stopped], spec()).budget_exhausted is False
+
     def test_failing_source_records_its_error_and_the_run_returns_what_it_has(self, db):
         broken = FakeSource([SourceUnavailable("arbeitnow is down")], source="AN")
         healthy = FakeSource([page(3, page_number=1)], source="BA")
@@ -201,6 +215,101 @@ class TestFailures:
         assert summary.new == 3
         assert any("arbeitnow" in error for error in summary.errors)
         assert "AN" in summary.errors[0]  # the error names its source
+
+
+class TestAutoContinue:
+    """A spent budget pauses a run; it should not need her to restart it by hand.
+
+    Each leg gets a client with a fresh budget, re-enters at the stored cursor,
+    and the loop stops the moment continuing would be wrong or pointless.
+    """
+
+    def legs(self, *scripts):
+        """A factory handing out one scripted adapter per leg, recording each."""
+        made: list[FakeSource] = []
+
+        def factory():
+            source = FakeSource(scripts[len(made)])
+            made.append(source)
+            return [source]
+
+        return factory, made
+
+    def test_a_spent_budget_starts_a_fresh_leg_that_resumes_at_the_cursor(self, db):
+        from jobfinder.search import run_search_until_done
+
+        factory, made = self.legs(
+            [page(2, page_number=1), RequestBudgetExhausted("budget of 200 spent")],
+            [page(2, page_number=2)],
+        )
+        summary = run_search_until_done(db, factory, spec())
+
+        assert len(made) == 2
+        assert made[1].entered_at == (0, 2)  # continued after the last completed page
+        assert summary.state == "done"
+
+    def test_a_completed_leg_does_not_start_another(self, db):
+        from jobfinder.search import run_search_until_done
+
+        factory, made = self.legs([page(2, page_number=1)], [page(2, page_number=2)])
+        run_search_until_done(db, factory, spec())
+
+        assert len(made) == 1
+
+    def test_her_ctrl_c_ends_the_loop(self, db):
+        from jobfinder.search import run_search_until_done
+
+        factory, made = self.legs(
+            [page(1, page_number=1), KeyboardInterrupt()], [page(1, page_number=2)]
+        )
+        summary = run_search_until_done(db, factory, spec())
+
+        assert len(made) == 1  # she stopped it; it stays stopped
+        assert summary.state == "interrupted"
+
+    def test_a_dead_host_ends_the_loop(self, db):
+        from jobfinder.search import run_search_until_done
+
+        factory, made = self.legs(
+            [page(1, page_number=1), SourceUnavailable("host refusing")], [page(1, page_number=2)]
+        )
+        run_search_until_done(db, factory, spec())
+
+        assert len(made) == 1  # retrying a refusing host is what §8 forbids
+
+    def test_a_leg_that_stored_nothing_ends_the_loop(self, db):
+        from jobfinder.search import run_search_until_done
+
+        factory, made = self.legs(
+            [RequestBudgetExhausted("budget of 200 spent")], [page(1, page_number=1)]
+        )
+        run_search_until_done(db, factory, spec())
+
+        assert len(made) == 1  # a budget spent on no progress would loop forever
+
+    def test_max_legs_bounds_the_loop(self, db):
+        from jobfinder.search import run_search_until_done
+
+        scripts = [
+            [page(1, page_number=n), RequestBudgetExhausted("budget of 200 spent")]
+            for n in range(1, 6)
+        ]
+        factory, made = self.legs(*scripts)
+        summary = run_search_until_done(db, factory, spec(), max_legs=3)
+
+        assert len(made) == 3
+        assert summary.state == "interrupted"  # honest: the search is not finished
+
+    def test_counts_add_up_across_legs(self, db):
+        from jobfinder.search import run_search_until_done
+
+        factory, _ = self.legs(
+            [page(2, page_number=1), RequestBudgetExhausted("budget of 200 spent")],
+            [page(3, page_number=2)],
+        )
+        summary = run_search_until_done(db, factory, spec())
+
+        assert (summary.found, summary.new, summary.legs) == (5, 5, 2)
 
 
 def seed_running_run(db, last_progress: datetime):

@@ -343,7 +343,10 @@ These are engineering constraints that keep her searches working, and they are t
    no proxy rotation. If a page needs an account, the adapter skips it.
 6. **Per-source kill switch** in config; `sources.stepstone.enabled: false` is a
    one-line fix when a site changes and she needs results today.
-7. **Total request budget per run** (default 200) so a bug cannot turn into a flood.
+7. **Request budget per leg of a run** (default 800) so a bug cannot turn into a
+   flood. A search that spends its budget is continued automatically with a fresh
+   one, which is safe only because `max_search_legs` (default 6) bounds the total
+   and any stop that is not a spent budget ends the search there.
 
 ---
 
@@ -679,11 +682,20 @@ only one source ever works, this is the one that has to.
   `pc/v4/jobdetails/{base64(referenznummer)}`, `SearchSpec` → query parameters
   (`was`, `wo`, `umkreis`, `angebotsart`, `arbeitszeit`, `page`, `size`), pagination
   until `maxErgebnisse` is reached or the budget runs out
+- **Employment types are alternatives, never one stacked filter.** Each type builds
+  its own query — a type the API can filter carries only its `arbeitszeit` code,
+  `werkstudent` and `internship` carry only their `was` term. Combining them asks
+  for a Werkstudent job that is also a minijob and loses her market: 1 result
+  against 116 in Ingolstadt, measured live. See
+  [the Phase 4 audit](superpowers/plans/2026-08-16-phase-4-audit-and-search-shape.md).
 - External-URL fallback: when `stellenangebotsBeschreibung` is empty, fetch `externeURL`
   and extract readable text
 - `src/jobfinder/store/`: schema + migrations, `upsert_job`, `touch_last_seen`,
   `export.py` writing `jobs-init.csv` as `utf-8-sig`
 - `jobfinder search --dry-run` prints the exact URLs it would call
+- A spent request budget pauses a search, it does not end it: `run_search_until_done`
+  continues with a fresh budget from the stored cursor, bounded by `max_search_legs`
+  and stopped by her Ctrl-C, a refusing host, or a leg that stored nothing
 
 ### Test-first checklist
 

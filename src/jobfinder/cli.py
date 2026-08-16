@@ -225,6 +225,8 @@ def _print_search_summary(result, csv_path: Path | None) -> None:
             f"Search finished: {result.found} jobs found — "
             f"{result.new} new, {result.duplicates} already in your list."
         )
+    if result.legs > 1:
+        print(f"It took {result.legs} rounds of requests, continued automatically.")
     if result.errors:
         print("Problems along the way (the rest of the search was kept):")
         for error in result.errors:
@@ -234,7 +236,7 @@ def _print_search_summary(result, csv_path: Path | None) -> None:
 
 
 def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None) -> int:
-    from jobfinder.search import run_search
+    from jobfinder.search import run_search_until_done
     from jobfinder.search_spec import SearchSpecError
     from jobfinder.store.db import connect, migrate
 
@@ -255,7 +257,7 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
         return 0
 
     client_factory = _client_factory or _default_client_factory
-    runner = _runner or run_search
+    runner = _runner or run_search_until_done
 
     from contextlib import closing
 
@@ -263,10 +265,11 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
         migrate(connection)
         result = runner(
             connection,
-            client_factory(settings),
+            lambda: client_factory(settings),  # one fresh client, and budget, per leg
             spec,
             resume=args.resume,
             csv_path=settings.jobs_init_csv,
+            max_legs=settings.max_search_legs,
         )
     _print_search_summary(result, settings.jobs_init_csv)
     return 0

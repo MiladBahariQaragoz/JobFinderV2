@@ -16,7 +16,10 @@ def test_settings_defaults_point_into_data_dir(tmp_path):
 def test_settings_defaults_when_no_config_file_exists(tmp_path):
     settings = Settings.load(project_root=tmp_path)
 
-    assert settings.request_budget == 200
+    # One leg's worth of requests: enough to get through a city at a polite
+    # pace, small enough that a runaway stops within the hour.
+    assert settings.request_budget == 800
+    assert settings.max_search_legs == 6
     assert settings.llm_budget == 500
     assert settings.enabled_sources == ("ba",)
 

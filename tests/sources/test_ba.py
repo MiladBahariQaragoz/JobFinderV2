@@ -88,15 +88,39 @@ class TestBuildQueries:
         queries = build_queries(spec(keywords=["umwelttechnik"]))
         assert queries[0].params()["was"] == "umwelttechnik"
 
+    def test_minijob_query_does_not_carry_the_werkstudent_term(self):
+        # Asking for werkstudent *and* minijob means either kind of job, never
+        # "a Werkstudent job that is also a minijob". Verified live 2026-08-16:
+        # `arbeitszeit=mj` in Ingolstadt answers 116 postings on its own and 1
+        # with `was=Werkstudent` attached — the intersection loses her market.
+        from jobfinder.sources.ba import build_queries
+
+        queries = build_queries(spec(employment_types=["werkstudent", "minijob"]))
+        minijob = [q for q in queries if q.params().get("arbeitszeit") == ["mj"]]
+        assert len(minijob) == 1
+        assert "was" not in minijob[0].params()
+
+    def test_each_employment_type_gets_its_own_query(self):
+        from jobfinder.sources.ba import build_queries
+
+        queries = build_queries(spec(employment_types=["werkstudent", "minijob", "parttime"]))
+        assert len(queries) == 3
+        shapes = {
+            (q.params().get("was"), tuple(q.params().get("arbeitszeit", ()))) for q in queries
+        }
+        assert shapes == {("Werkstudent", ()), (None, ("mj",)), (None, ("tz",))}
+
     def test_keyword_and_type_keyword_combine(self):
         from jobfinder.sources.ba import build_queries
 
         queries = build_queries(
             spec(employment_types=["werkstudent", "parttime"], keywords=["Datenanalyse"])
         )
-        params = queries[0].params()
-        assert params["was"] == "Datenanalyse Werkstudent"
-        assert params["arbeitszeit"] == ["tz"]
+        assert len(queries) == 2
+        werkstudent = [q for q in queries if "arbeitszeit" not in q.params()]
+        parttime = [q for q in queries if q.params().get("arbeitszeit") == ["tz"]]
+        assert werkstudent[0].params()["was"] == "Datenanalyse Werkstudent"
+        assert parttime[0].params()["was"] == "Datenanalyse"
 
     def test_werkstudent_keyword_from_her_list_is_not_duplicated(self):
         from jobfinder.sources.ba import build_queries
