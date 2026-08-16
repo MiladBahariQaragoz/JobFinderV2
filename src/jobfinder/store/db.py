@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -35,11 +35,16 @@ CREATE TABLE IF NOT EXISTS jobs (
     published_at        TEXT,
     apply_url           TEXT,
     source_url          TEXT,
+    also_seen_on        TEXT,
     has_description     INTEGER NOT NULL DEFAULT 0,
     content_hash        TEXT,
     first_seen_at       TEXT NOT NULL,
     last_seen_at        TEXT NOT NULL
 );
+
+-- Every stored posting is looked up by `dedupe_key` once (the cross-source
+-- merge), so this index is what keeps a run linear instead of quadratic.
+CREATE INDEX IF NOT EXISTS jobs_dedupe_key ON jobs(dedupe_key);
 
 -- Full German ad text, kept out of `jobs` so exports stay small.
 CREATE TABLE IF NOT EXISTS job_descriptions (
@@ -114,6 +119,17 @@ CREATE TABLE IF NOT EXISTS source_state (
 """
 
 
+# Columns added after a database was already created. `CREATE TABLE IF NOT
+# EXISTS` cannot evolve a live table, so each of these needs an ALTER path —
+# one more reason the list stays short.
+ADDED_COLUMNS = {
+    "jobs": {
+        # v3 (Phase 5): the other sites the same ad was seen on, comma-joined.
+        "also_seen_on": "TEXT",
+    },
+}
+
+
 def connect(db_path: Path) -> sqlite3.Connection:
     """Open the database with §9's durability settings, creating directories."""
     db_path = Path(db_path)
@@ -129,5 +145,15 @@ def connect(db_path: Path) -> sqlite3.Connection:
 def migrate(connection: sqlite3.Connection) -> None:
     """Bring the database up to SCHEMA_VERSION. Safe to run on every open."""
     connection.executescript(_SCHEMA)
+    _add_missing_columns(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
+
+
+def _add_missing_columns(connection: sqlite3.Connection) -> None:
+    """Evolve tables created before a column existed — idempotent by check."""
+    for table, columns in ADDED_COLUMNS.items():
+        present = {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+        for column, ddl in columns.items():
+            if column not in present:
+                connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")

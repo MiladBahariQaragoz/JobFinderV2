@@ -33,6 +33,7 @@ COLUMNS = [
     "published_at",
     "apply_url",
     "source_url",
+    "also_seen_on",
     "has_description",
     "content_hash",
     "first_seen_at",

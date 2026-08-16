@@ -175,7 +175,7 @@ an export test, so they are settled here rather than per phase.
 |---|---|---|
 | `job_id` | `{SOURCE}:{native id}` — stable, the primary key | `BA:11119-4913285274-S` |
 | `source` | Short code per adapter | `BA`, `AN`, `AZ`, `SS`, `ID`, `XI` |
-| `dedupe_key` | `sha1(normalized_title + normalized_company + plz)` — catches the same job listed on three sites | `9f2c…` |
+| `dedupe_key` | `sha1(normalized_title + normalized_company + normalized_city)` — catches the same job listed on three sites | `9f2c…` |
 | `content_hash` | `sha1(description)` — changes only when the ad text changes, drives re-enrichment | `41ab…` |
 
 **The re-run rule:** a search that finds a `job_id` already in the database updates
@@ -199,8 +199,23 @@ quota on the same 200 jobs every morning.
 
 `job_id, source, source_id, dedupe_key, title, company, city, plz, lat, lon,
 employment_type_raw, is_minijob, is_parttime, is_fulltime, is_internship,
-is_werkstudent, homeoffice, published_at, apply_url, source_url, has_description,
-content_hash, first_seen_at, last_seen_at, status`
+is_werkstudent, homeoffice, published_at, apply_url, source_url, also_seen_on,
+has_description, content_hash, first_seen_at, last_seen_at, status`
+
+`also_seen_on` (added in Phase 5) lists the other sites the same ad was seen
+on, comma-joined — cross-source dedupe keeps the first row and records every
+alternate sighting there instead of storing the job twice.
+
+Two rules the key has to obey, both learned from live data:
+
+- **The location in the key is the city, never the postcode.** The BA answers
+  with a `plz`, Arbeitnow answers with none at all, so a postcode-based key
+  could never match the same ad across those two sources. City names are
+  folded before hashing — the BA's `"Ingolstadt, Donau"` is `"Ingolstadt"`.
+- **Merging happens only across sources.** One site listing two openings with
+  the same title, company and town means two jobs she can apply to: a live BA
+  query returned two Penny-Markt Werkstudent ads in Neuburg under two
+  reference numbers, and collapsing those would delete one of them.
 
 ### `jobs-enriched.csv` (exported after every enrichment run)
 
@@ -749,16 +764,16 @@ set she can trust.
 
 ### Test-first checklist
 
-- [ ] `test_arbeitnow_fixture_parses_into_raw_postings`
-- [ ] `test_arbeitnow_results_outside_her_cities_are_filtered_out`
-- [ ] `test_arbeitnow_pagination_stops_at_the_last_page`
-- [ ] `test_adzuna_adapter_is_skipped_cleanly_without_keys`
-- [ ] `test_registry_runs_only_enabled_sources`
-- [ ] `test_registry_continues_after_one_source_raises`
-- [ ] `test_same_job_from_ba_and_arbeitnow_collapses_to_one_row_with_both_sources`
-- [ ] `test_richest_record_wins_when_merging` (the one with a description)
+- [x] `test_arbeitnow_fixture_parses_into_raw_postings`
+- [x] `test_arbeitnow_results_outside_her_cities_are_filtered_out`
+- [x] `test_arbeitnow_pagination_stops_at_the_last_page`
+- [x] `test_adzuna_adapter_is_skipped_cleanly_without_keys`
+- [x] `test_registry_runs_only_enabled_sources`
+- [x] `test_registry_continues_after_one_source_raises`
+- [x] `test_same_job_from_ba_and_arbeitnow_collapses_to_one_row_with_both_sources`
+- [x] `test_richest_record_wins_when_merging` (the one with a description)
 - [ ] `test_run_summary_counts_match_the_database`
-- [ ] `tests/live/test_arbeitnow_contract.py`
+- [x] `tests/live/test_arbeitnow_contract.py`
 
 ### Done when
 

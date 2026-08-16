@@ -33,9 +33,25 @@ def normalize_for_dedupe(text: str | None) -> str:
     return _WHITESPACE.sub(" ", without_markers).strip().casefold()
 
 
-def make_dedupe_key(*, title: str | None, company: str | None, plz: str | None) -> str:
-    """sha1 over the normalised identity — catches one ad listed on three sites."""
-    parts = "|".join(normalize_for_dedupe(part) for part in (title, company, (plz or "").strip()))
+def normalize_city_for_dedupe(city: str | None) -> str:
+    """Fold a city name: the BA writes "Ingolstadt, Donau", everyone else "Ingolstadt"."""
+    return normalize_for_dedupe((city or "").split(",")[0])
+
+
+def make_dedupe_key(*, title: str | None, company: str | None, city: str | None) -> str:
+    """sha1 over the normalised identity — catches one ad listed on three sites.
+
+    The location comes from the **city**, not the postcode: the BA reports a
+    `plz` and Arbeitnow reports none at all, so a postcode-based key could
+    never match the same ad across those two sources.
+    """
+    parts = "|".join(
+        (
+            normalize_for_dedupe(title),
+            normalize_for_dedupe(company),
+            normalize_city_for_dedupe(city),
+        )
+    )
     return hashlib.sha1(parts.encode("utf-8")).hexdigest()
 
 

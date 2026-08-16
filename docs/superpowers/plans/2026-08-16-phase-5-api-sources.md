@@ -77,6 +77,16 @@ run, the lying `--resume` message, and the detail-fetch cost decision.
 5. **`also_seen_on` is a contract change**: it is added to the `jobs` table
    (schema v3, with an `ALTER TABLE` path for existing databases) and appended
    to the `jobs-init.csv` column list in MASTER_PLAN §5.
+5b. **The `dedupe_key` itself changed with T7** (found while reviewing the
+   first draft of the merge, both problems reproduced on recorded live data):
+   the location part is the **city**, not the `plz` — the BA reports a
+   postcode and Arbeitnow reports none, so the postcode-keyed version could
+   never match one ad across the two sources it was written for. City names
+   are folded at the first comma (`"Ingolstadt, Donau"` → `ingolstadt`). And
+   the merge is **cross-source only**: the BA fixture alone holds two
+   Penny-Markt Werkstudent ads in Neuburg under different reference numbers,
+   which a same-source merge would have silently turned into one job. The
+   lookup runs once per unknown posting, so `jobs.dedupe_key` is indexed.
 6. **Per-source budget = one `PoliteClient` per adapter.** The registry builds
    each adapter with its own client, so each source spends
    `settings.request_budget` per leg independently — matching the audit's

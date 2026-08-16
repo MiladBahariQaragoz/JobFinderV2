@@ -25,8 +25,14 @@ def spec(**overrides) -> SearchSpec:
 
 
 def posting(n: int, source: str = "BA") -> RawPosting:
+    # The company varies with the source so postings from different fake
+    # sources stay distinct jobs — the merge path has its own store tests.
     return RawPosting(
-        job_id=f"{source}:{n}", source=source, source_id=str(n), title=f"Job {n}", company="ACME"
+        job_id=f"{source}:{n}",
+        source=source,
+        source_id=str(n),
+        title=f"Job {n}",
+        company=f"{source} ACME",
     )
 
 
