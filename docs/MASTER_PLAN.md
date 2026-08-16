@@ -404,7 +404,7 @@ later.
 - [ ] `test_invalid_llm_answer_leaves_the_job_unenriched_not_half_written`
 - [ ] `test_each_enrichment_is_appended_to_the_csv_before_the_next_one_starts`
 - [ ] `test_csv_is_readable_mid_run_and_holds_every_finished_job`
-- [ ] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
+- [x] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
 - [ ] `test_stale_running_run_is_marked_interrupted_on_next_start`
 - [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
 - [x] `test_wal_mode_is_enabled_on_every_connection`
@@ -700,8 +700,8 @@ only one source ever works, this is the one that has to.
 - [ ] `test_request_budget_stops_the_run_and_records_it_in_runs_table`
 - [x] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
 - [x] `test_dedupe_key_matches_same_job_from_two_sources`
-- [ ] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
-- [ ] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
+- [x] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
+- [x] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
 - [ ] `test_source_failure_records_error_and_does_not_abort_the_run`
 - [ ] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       per-page saving, cursor resume, interrupted-run marking, atomic export
