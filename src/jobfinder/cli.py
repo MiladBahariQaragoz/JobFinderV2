@@ -680,9 +680,7 @@ def main(
 
     serve = sub.add_parser("serve", help="open the app in your browser")
     serve.add_argument("--root", type=Path, default=None, help="project root (default: cwd)")
-    serve.add_argument(
-        "--port", type=int, default=8000, help="port to listen on (default: 8000)"
-    )
+    serve.add_argument("--port", type=int, default=8000, help="port to listen on (default: 8000)")
     serve.add_argument(
         "--no-browser", action="store_true", help="start the server without opening a browser"
     )

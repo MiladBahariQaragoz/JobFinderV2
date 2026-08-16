@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — JobFinder{% endblock %}
+{% block content %}
+<div class="job-page">
+  <div>
+    <h1>{{ job.title }}</h1>
+    <p class="sub">
+      {{ job.company or "not stated" }} · {{ job.city or "not stated" }}
+      {% if job.distance_km is not none %} · <span class="num">{{ job.distance_km }}</span> km from home{% endif %}
+      · {{ job.source_label }}
+      {% if job.type_label %} · {{ job.type_label }}{% endif %}
+      {% if job.homeoffice %} · home office possible{% endif %}
+    </p>
+
+    {% if job.is_stale %}
+    <div class="banner">
+      <span>None of your searches has seen this ad in {{ job.stale_days }}+ days — it may be gone.</span>
+    </div>
+    {% endif %}
+
+    {% if job.answer %}
+    {% set answer = job.answer %}
+    <div class="section">
+      <h2>In one sentence</h2>
+      <p>{{ answer.summary_en }}</p>
+      <p class="meta">{{ answer.category or "uncategorised" }} · {{ answer.seniority or "level not stated" }}</p>
+    </div>
+
+    <div class="section">
+      <h2>The work</h2>
+      <ul>
+        {% for duty in answer.duties_en or [] %}<li>{{ duty }}</li>{% endfor %}
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>You need</h2>
+      <ul>
+        {% for requirement in answer.requirements_en or [] %}<li>{{ requirement }}</li>{% endfor %}
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Skills</h2>
+      {% if answer.skills_required or answer.skills_nice %}
+      <p><strong>Required:</strong> {{ answer.skills_required | join(", ") }}</p>
+      {% if answer.skills_nice %}<p><strong>Nice to have:</strong> {{ answer.skills_nice | join(", ") }}</p>{% endif %}
+      {% else %}
+      <p>None stated.</p>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>German</h2>
+      <p>
+        {% if job.german_level %}
+        <span class="tier tier-{{ job.tier }}">{{ job.german_level }}</span>
+        {% if job.tier == "comfortable" %} — comfortable for you{% elif job.tier == "stretch" %} — a stretch for you{% elif job.tier == "out" %} — likely beyond you for now{% endif %}
+        {% else %}
+        <span class="tier tier-unknown">unclear</span> — the ad does not say
+        {% endif %}
+      </p>
+      {% if answer.german_evidence %}<p class="evidence">The ad says: “{{ answer.german_evidence }}”</p>{% endif %}
+      <p class="meta">English is {{ "enough" if answer.english_sufficient else "not enough" }} for this job.</p>
+    </div>
+
+    <div class="section">
+      <h2>Contract</h2>
+      <p>
+        {{ answer.employment_type_norm or job.type_label or "type not stated" }}
+        {% if answer.hours_per_week %} · <span class="num">{{ answer.hours_per_week | int }}</span> h per week{% endif %}
+      </p>
+      {% if answer.deadline %}<p>Apply by <span class="num">{{ answer.deadline }}</span>.</p>{% endif %}
+    </div>
+
+    <div class="section">
+      <h2>Fit for you</h2>
+      <p><span class="num fit-big">{{ answer.fit_score | int }}</span> <span class="meta">/ 100</span></p>
+      {% if answer.fit_reasons %}<p><strong>Why:</strong> {{ answer.fit_reasons | join(", ") }}</p>{% endif %}
+      {% if answer.missing_for_fit %}<p><strong>What you lack:</strong> {{ answer.missing_for_fit | join(", ") }}</p>{% endif %}
+      <p class="meta">Advisory — nothing is hidden from you because of this number.</p>
+    </div>
+
+    {% if answer.red_flags %}
+    <div class="section">
+      <h2>Watch out</h2>
+      <ul>{% for flag in answer.red_flags %}<li>{{ flag }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <h2>How to apply</h2>
+      <p>{{ answer.application_method or "method not stated" }}</p>
+      {% if answer.contact_email %}<p>Email: <a href="mailto:{{ answer.contact_email }}">{{ answer.contact_email }}</a></p>{% endif %}
+      {% if answer.contact_phone %}<p>Phone: <span class="num">{{ answer.contact_phone }}</span></p>{% endif %}
+      {% if job.apply_url or job.source_url %}
+      <p><a href="{{ job.apply_url or job.source_url }}" rel="noopener">Open the original listing</a></p>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h1>Not explained yet</h1>
+      <p>This job is stored, but it has no English answer.</p>
+      <p class="hint">Run <span class="num">jobfinder enrich</span> and this page fills in.</p>
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <h2>Facts from {{ job.source_label }}</h2>
+      <p class="meta">
+        First seen <span class="num">{{ job.first_seen_at[:10] }}</span>
+        · last seen <span class="num">{{ job.last_seen_at[:10] }}</span>
+        {% if job.published_at %} · posted <span class="num">{{ job.published_at[:10] }}</span>{% endif %}
+        {% if job.also_seen_on %} · also seen on {{ job.also_seen_on }}{% endif %}
+      </p>
+    </div>
+
+    {% if job.description %}
+    <div class="section">
+      <details class="original">
+        <summary>The original German ad</summary>
+        <div class="body">{{ job.description }}</div>
+      </details>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside class="side">
+    {% include "_actions.html" %}
+    <div class="box">
+      {% include "_notes.html" %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

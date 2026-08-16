@@ -94,9 +94,9 @@ def store_job(
     if status is not None:
         set_status(connection, job_id, status)
     if last_seen_days_ago:
-        seen = (
-            datetime.now(UTC) - timedelta(days=last_seen_days_ago)
-        ).strftime("%Y-%m-%d %H:%M:%S")
+        seen = (datetime.now(UTC) - timedelta(days=last_seen_days_ago)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         connection.execute("UPDATE jobs SET last_seen_at = ? WHERE job_id = ?", (seen, job_id))
         connection.commit()
     return job_id

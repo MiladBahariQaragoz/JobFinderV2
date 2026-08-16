@@ -12,6 +12,7 @@ built-in one and the web layer ships no custom connection.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -91,8 +92,14 @@ def parse_filters(params) -> JobFilters:
         page = 1
 
     return JobFilters(
-        city=city, source=source, type=type_, max_german=max_german, min_fit=min_fit,
-        status=status, sort=sort, page=page,
+        city=city,
+        source=source,
+        type=type_,
+        max_german=max_german,
+        min_fit=min_fit,
+        status=status,
+        sort=sort,
+        page=page,
     )
 
 
@@ -201,11 +208,29 @@ def list_jobs(
     )
     select = (
         ", ".join(
-            f"j.{column}" for column in (
-                "job_id", "title", "company", "city", "plz", "lat", "lon", "source",
-                "employment_type_raw", "is_minijob", "is_werkstudent", "is_parttime",
-                "is_fulltime", "is_internship", "homeoffice", "published_at",
-                "apply_url", "source_url", "also_seen_on", "first_seen_at", "last_seen_at",
+            f"j.{column}"
+            for column in (
+                "job_id",
+                "title",
+                "company",
+                "city",
+                "plz",
+                "lat",
+                "lon",
+                "source",
+                "employment_type_raw",
+                "is_minijob",
+                "is_werkstudent",
+                "is_parttime",
+                "is_fulltime",
+                "is_internship",
+                "homeoffice",
+                "published_at",
+                "apply_url",
+                "source_url",
+                "also_seen_on",
+                "first_seen_at",
+                "last_seen_at",
             )
         )
         + ", COALESCE(s.status, 'new') AS status"
@@ -220,13 +245,20 @@ def list_jobs(
         rows = connection.execute(
             f"SELECT {select} {base} ORDER BY j.job_id", parameters
         ).fetchall()
-        rows = sorted(rows, key=lambda row: (distance_km(row["lat"], row["lon"]) is None,
-                                             distance_km(row["lat"], row["lon"]) or 0))
+        rows = sorted(
+            rows,
+            key=lambda row: (
+                distance_km(row["lat"], row["lon"]) is None,
+                distance_km(row["lat"], row["lon"]) or 0,
+            ),
+        )
         start = (filters.page - 1) * PAGE_SIZE
         page_rows = rows[start : start + PAGE_SIZE]
     else:
-        order = "fit IS NULL, fit DESC, j.last_seen_at DESC" if filters.sort == "fit" else (
-            "j.published_at IS NULL, j.published_at DESC, j.first_seen_at DESC"
+        order = (
+            "fit IS NULL, fit DESC, j.last_seen_at DESC"
+            if filters.sort == "fit"
+            else ("j.published_at IS NULL, j.published_at DESC, j.first_seen_at DESC")
         )
         offset = (filters.page - 1) * PAGE_SIZE
         page_rows = connection.execute(
@@ -295,7 +327,86 @@ def filter_options(connection: sqlite3.Connection) -> dict[str, list[str]]:
         )
     ]
     sources = [
-        row[0]
-        for row in connection.execute("SELECT DISTINCT source FROM jobs ORDER BY source")
+        row[0] for row in connection.execute("SELECT DISTINCT source FROM jobs ORDER BY source")
     ]
     return {"cities": cities, "sources": sources}
+
+
+_JOB_PAGE_COLUMNS = (
+    "job_id",
+    "title",
+    "company",
+    "city",
+    "plz",
+    "lat",
+    "lon",
+    "source",
+    "employment_type_raw",
+    "is_minijob",
+    "is_werkstudent",
+    "is_parttime",
+    "is_fulltime",
+    "is_internship",
+    "homeoffice",
+    "published_at",
+    "apply_url",
+    "source_url",
+    "also_seen_on",
+    "first_seen_at",
+    "last_seen_at",
+)
+
+
+def job_detail(
+    connection: sqlite3.Connection,
+    job_id: str,
+    *,
+    prompt_version: str | None = None,
+    her_level: str = "A2",
+) -> dict[str, Any] | None:
+    """Everything one job page shows, in one query.
+
+    The answer is read at the **current** prompt version: a job enriched only
+    under an older version renders as un-enriched, because that is the truth —
+    the ad changed or the prompt did, and Phase 7's skip rule will re-send it.
+    """
+    version = prompt_version or current_prompt_version()
+    row = connection.execute(
+        f"SELECT {', '.join(f'j.{column}' for column in _JOB_PAGE_COLUMNS)},"
+        " COALESCE(s.status, 'new') AS status, s.notes, s.applied_on,"
+        " d.description, e.answer AS answer_json, e.enriched_at"
+        " FROM jobs j"
+        " LEFT JOIN status s ON s.job_id = j.job_id"
+        " LEFT JOIN job_descriptions d ON d.job_id = j.job_id"
+        " LEFT JOIN enrichment e ON e.job_id = j.job_id AND e.prompt_version = ?"
+        " WHERE j.job_id = ?",
+        (version, job_id),
+    ).fetchone()
+    if row is None:
+        return None
+
+    answer = None
+    if row["answer_json"]:
+        try:
+            parsed = json.loads(row["answer_json"])
+        except (json.JSONDecodeError, TypeError):
+            parsed = None
+        answer = parsed if isinstance(parsed, dict) else None
+
+    level = answer.get("german_level") if answer else None
+    cutoff = (datetime.now(UTC) - timedelta(days=STALE_AFTER_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    return {
+        **{column: row[column] for column in _JOB_PAGE_COLUMNS},
+        "status": row["status"],
+        "notes": row["notes"],
+        "applied_on": row["applied_on"],
+        "description": row["description"],
+        "enriched_at": row["enriched_at"],
+        "answer": answer,
+        "german_level": level,
+        "tier": german_tier(level, her_level),
+        "distance_km": distance_km(row["lat"], row["lon"]),
+        "type_label": _type_label(row),
+        "stale_days": STALE_AFTER_DAYS,
+        "is_stale": (row["last_seen_at"] or "") < cutoff,
+    }

@@ -243,6 +243,15 @@ button.htmx-request { opacity: 0.55; pointer-events: none; }
   resize: vertical;
   min-height: 4.5rem;
 }
+.notes .notes-title, .notes h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin: 0 0 0.5rem;
+}
+.fit-big { font-size: 1.6rem; font-weight: 600; }
+.status-chip.applied { color: var(--accent); border-color: var(--accent); }
 details.original summary { cursor: pointer; color: var(--text-dim); }
 details.original .body {
   white-space: pre-wrap;
