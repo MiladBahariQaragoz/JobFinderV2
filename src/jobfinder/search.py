@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 from jobfinder.sources.http import RequestBudgetExhausted
 from jobfinder.store.export import export_jobs_init
+from jobfinder.store.health import cooling_off, record_failure, record_success
 from jobfinder.store.jobs import upsert_job
 
 if TYPE_CHECKING:
@@ -105,6 +106,14 @@ def run_search(
 
     try:
         for adapter in adapters:
+            # §8 rule 7: a source that failed three runs running sits this one
+            # out rather than spending it on timeouts.
+            if (paused := cooling_off(connection, adapter.source, now=now)) is not None:
+                per_source[adapter.source] = _add_counts(
+                    per_source.get(adapter.source), SourceCounts(errors=(paused,))
+                )
+                errors.append(f"{adapter.source}: {paused}")
+                continue
             start_query_index, start_page = 0, 1
             if resume:
                 cursor = _cursor(connection, adapter.source, query_hash)
@@ -127,6 +136,7 @@ def run_search(
                     _save_cursor(
                         connection, adapter.source, query_hash, page.query_index, page.page
                     )
+                    record_success(connection, adapter.source, now=now)  # it answers
                     _progress(
                         connection, run_id, found=found, new=new, duplicates=duplicates, now=now
                     )
@@ -150,6 +160,7 @@ def run_search(
                 message = f"{adapter.source}: {type(err).__name__}: {err}"
                 errors.append(message)
                 source_errors.append(message)
+                record_failure(connection, adapter.source, reason=str(err), now=now)
             finally:
                 per_source[adapter.source] = _add_counts(
                     per_source.get(adapter.source),

@@ -51,7 +51,7 @@ class FakeSource:
         self.entered.append(self.entered_at)
         while self.pages:
             item = self.pages.pop(0)
-            if isinstance(item, Exception):
+            if isinstance(item, BaseException):  # KeyboardInterrupt is not an Exception
                 raise item
             if self.entered_at == (0, 1):  # a fresh entry re-serves the script
                 pass
@@ -464,6 +464,78 @@ class TestDetailFetches:
         )
         run_search(db, [source], spec())
         assert source.details == 0
+
+
+class TestSourceHealth:
+    """§8 rule 7: a source that keeps refusing sits the next run out.
+
+    Without this a blocked board costs her minutes of timeouts on every run,
+    for nothing, until somebody edits config.yaml.
+    """
+
+    def fail_a_source(self, db, times: int, source: str = "SS"):
+        for _ in range(times):
+            broken = FakeSource([SourceUnavailable(f"{source} kept refusing")], source=source)
+            run_search(db, [broken], spec())
+
+    def test_a_failing_source_is_counted_towards_its_health(self, db):
+        from jobfinder.store.health import cooling_off
+
+        self.fail_a_source(db, 2)
+
+        assert (
+            db.execute(
+                "SELECT consecutive_failures FROM source_state WHERE source = 'SS'"
+            ).fetchone()[0]
+            == 2
+        )
+        assert cooling_off(db, "SS") is None  # two is not three
+
+    def test_three_consecutive_failures_disable_the_source(self, db):
+        from jobfinder.store.health import cooling_off
+
+        self.fail_a_source(db, 3)
+
+        assert cooling_off(db, "SS") is not None
+
+    def test_disabled_source_is_skipped_on_the_next_run_until_reset(self, db):
+        self.fail_a_source(db, 3)
+
+        fourth = FakeSource([page(2, page_number=1, source="SS")], source="SS")
+        summary = run_search(db, [fourth], spec())
+
+        assert fourth.entered == []  # not asked at all
+        assert "paused until" in summary.per_source["SS"].errors[0]
+
+    def test_a_healthy_source_in_the_same_run_is_untouched(self, db):
+        self.fail_a_source(db, 3)
+
+        cooling = FakeSource([page(1, page_number=1, source="SS")], source="SS")
+        healthy = FakeSource([page(2, page_number=1)], source="BA")
+        summary = run_search(db, [cooling, healthy], spec())
+
+        assert cooling.entered == []
+        assert summary.per_source["BA"].found == 2
+
+    def test_a_good_page_clears_the_count(self, db):
+        self.fail_a_source(db, 2)
+        run_search(db, [FakeSource([page(1, page_number=1, source="SS")], source="SS")], spec())
+
+        assert (
+            db.execute(
+                "SELECT consecutive_failures FROM source_state WHERE source = 'SS'"
+            ).fetchone()[0]
+            == 0
+        )
+
+    def test_her_ctrl_c_is_not_held_against_the_source(self, db):
+        # She stopped it. That says nothing about whether the site answers.
+        run_search(db, [FakeSource([page(1, page_number=1), KeyboardInterrupt()])], spec())
+
+        row = db.execute(
+            "SELECT consecutive_failures FROM source_state WHERE source = 'BA'"
+        ).fetchone()
+        assert row is None or row[0] == 0
 
 
 class TestSummaryReconciliation:

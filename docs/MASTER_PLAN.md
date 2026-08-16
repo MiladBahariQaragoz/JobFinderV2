@@ -912,8 +912,8 @@ never a failed run and never a blocked IP. Everything in
 - [ ] `test_unparseable_page_records_a_failure_and_returns_nothing` (never a crash)
       — "returns nothing" holds (`test_a_junk_200_page_yields_no_postings_and_no_crash`,
       both boards); "records a failure" waits for the source-health work below
-- [ ] `test_three_consecutive_failures_disable_the_source`
-- [ ] `test_disabled_source_is_skipped_on_the_next_run_until_reset`
+- [x] `test_three_consecutive_failures_disable_the_source`
+- [x] `test_disabled_source_is_skipped_on_the_next_run_until_reset`
 - [x] `test_scraper_sources_are_built_with_the_scraper_delay` +
       `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
 - [x] `test_concurrent_requests_to_one_host_are_still_spaced`
