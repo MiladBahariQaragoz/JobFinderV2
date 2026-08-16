@@ -396,18 +396,18 @@ later.
 
 ### Tests (owned by Phases 4, 7 and 9, listed together because the rule is shared)
 
-- [ ] `test_killing_a_search_after_two_pages_keeps_both_pages_on_disk`
-- [ ] `test_resumed_search_starts_at_the_stored_cursor_not_page_one`
-- [ ] `test_network_error_mid_run_marks_run_interrupted_with_counts`
+- [x] `test_killing_a_search_after_two_pages_keeps_both_pages_on_disk`
+- [x] `test_resumed_search_starts_at_the_stored_cursor_not_page_one`
+- [x] `test_network_error_mid_run_marks_run_interrupted_with_counts`
 - [ ] `test_pool_exhausted_mid_batch_keeps_every_completed_enrichment`
 - [ ] `test_resume_after_quota_exhaustion_skips_already_enriched_jobs`
 - [ ] `test_invalid_llm_answer_leaves_the_job_unenriched_not_half_written`
 - [ ] `test_each_enrichment_is_appended_to_the_csv_before_the_next_one_starts`
 - [ ] `test_csv_is_readable_mid_run_and_holds_every_finished_job`
-- [ ] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
-- [ ] `test_stale_running_run_is_marked_interrupted_on_next_start`
+- [x] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
+- [x] `test_stale_running_run_is_marked_interrupted_on_next_start`
 - [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
-- [ ] `test_wal_mode_is_enabled_on_every_connection`
+- [x] `test_wal_mode_is_enabled_on_every_connection`
 
 ---
 
@@ -687,33 +687,33 @@ only one source ever works, this is the one that has to.
 
 ### Test-first checklist
 
-- [ ] `test_spec_with_minijob_maps_to_ba_angebotsart_and_arbeitszeit_params`
-- [ ] `test_spec_with_three_cities_produces_three_queries_with_correct_umkreis`
-- [ ] `test_ba_fixture_parses_into_raw_postings_with_expected_fields`
-- [ ] `test_ba_posting_id_is_source_prefixed_referenznummer`
-- [ ] `test_ba_minijob_flag_is_read_from_istGeringfuegigeBeschaeftigung`
-- [ ] `test_detail_fetch_base64_encodes_the_reference_number`
-- [ ] `test_empty_description_triggers_external_url_fallback` (fixture: the real
+- [x] `test_spec_with_minijob_maps_to_ba_angebotsart_and_arbeitszeit_params`
+- [x] `test_spec_with_three_cities_produces_three_queries_with_correct_umkreis`
+- [x] `test_ba_fixture_parses_into_raw_postings_with_expected_fields`
+- [x] `test_ba_posting_id_is_source_prefixed_referenznummer`
+- [x] `test_ba_minijob_flag_is_read_from_istGeringfuegigeBeschaeftigung`
+- [x] `test_detail_fetch_base64_encodes_the_reference_number`
+- [x] `test_empty_description_triggers_external_url_fallback` (fixture: the real
       `jobboard.compleet.com` shape)
-- [ ] `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
-- [ ] `test_http_client_serves_second_identical_request_from_cache`
-- [ ] `test_request_budget_stops_the_run_and_records_it_in_runs_table`
-- [ ] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
-- [ ] `test_dedupe_key_matches_same_job_from_two_sources`
-- [ ] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
-- [ ] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
-- [ ] `test_source_failure_records_error_and_does_not_abort_the_run`
-- [ ] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
+- [x] `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
+- [x] `test_http_client_serves_second_identical_request_from_cache`
+- [x] `test_request_budget_stops_the_run_and_records_it_in_runs_table`
+- [x] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
+- [x] `test_dedupe_key_matches_same_job_from_two_sources`
+- [x] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
+- [x] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
+- [x] `test_source_failure_records_error_and_does_not_abort_the_run`
+- [x] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       per-page saving, cursor resume, interrupted-run marking, atomic export
-- [ ] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
+- [x] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
       `stellenangebotsTitel` still exist, `X-API-Key` still accepted
 
 ### Done when
 
-- [ ] A real run for her cities returns live postings and writes `jobs-init.csv`
-- [ ] Running it again immediately adds **0** new rows and updates `last_seen_at`
-- [ ] The CSV opens in Excel with correct umlauts and no empty rows
-- [ ] Killing the run mid-way loses nothing already written
+- [x] A real run for her cities returns live postings and writes `jobs-init.csv`
+- [x] Running it again immediately adds **0** new rows and updates `last_seen_at`
+- [x] The CSV opens in Excel with correct umlauts and no empty rows
+- [x] Killing the run mid-way loses nothing already written
 
 **Out of scope:** LLM anything. This phase is deliberately dumb — collect and store.
 
