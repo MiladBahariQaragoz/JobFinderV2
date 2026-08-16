@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — phases 0-7 done, Phase 7 verified on her real store; M3 unblocked
+status: in progress — phases 0-8 done, Phase 8 verified on her real store; M4 shipped
 ---
 
 # JobFinderV2 — Master Plan
@@ -69,15 +69,21 @@ Phases are ordered so that the app becomes useful before it becomes complete.
 | **M1 — Skeleton** | 0–1 | Nothing yet; the machinery exists and is tested |
 | **M2 — Advice** | 2–3 | Fill in her CV and get job titles worth searching for, in German and English |
 | **M3 — First real shortlist** | 4–5, 7 | **Done.** Run a search and get a CSV of live Bavarian jobs, each explained in English — `jobfinder search --enrich` |
-| **M4 — The actual product** | 8 | Browse, filter, read, and mark jobs applied/deleted in a real UI |
+| **M4 — The actual product** | 8 | **Done.** Browse, filter, read, and mark jobs applied/deleted in a real UI — `jobfinder serve`, searches started and cancelled from the browser |
 | **M5 — Wider net** | 6, 9 | Phase 6 done: Kleinanzeigen, Xing and Adzuna, searched in parallel. StepStone and Indeed are blocked from this machine and ship off. Phase 9 (the call-list) is still open |
 | **M6 — Handover** | 10 | Double-click one file on her own laptop and use it without help |
 
 **If time gets short, ship M4 and stop.** Phases 6 and 9 are additive; nothing in
-8 or 10 depends on them.
+8 or 10 depends on them. **M4 has shipped**, so everything from here is either
+reach (Phase 9's call-list) or handover (Phase 10's `.exe`).
 
-**Next up: Phase 8, the web app.** Everything it needs to display now exists in
-the database — the jobs, their English answers, and her status column.
+**Next up: Phase 10, the handover** — she can use the app today only by way of a
+terminal and a virtualenv, which is not delivery. Phase 9 is the wider net and
+can follow it. One thing Phase 8 leaves for whoever picks this up: only 20 of
+her 859 stored jobs carry an English answer, because enrichment has never been
+run at scale against her free-tier quota. The app renders an unenriched job
+honestly ("not read yet", no fit score), so this costs correctness nothing — but
+the product only becomes itself once most of that store is explained.
 
 ---
 
@@ -483,17 +489,25 @@ can be enriched.
 - [x] `test_killing_after_two_pages_keeps_both_pages_on_disk`
 - [x] `test_resume_continues_at_the_stored_cursor_not_page_one`
 - [x] `test_network_error_mid_run_marks_run_interrupted_with_counts`
-- [ ] `test_pool_exhausted_mid_batch_keeps_every_completed_enrichment`
-- [ ] `test_resume_after_quota_exhaustion_skips_already_enriched_jobs`
-- [ ] `test_invalid_llm_answer_leaves_the_job_unenriched_not_half_written`
-- [ ] `test_each_enrichment_is_appended_to_the_csv_before_the_next_one_starts`
-- [ ] `test_csv_is_readable_mid_run_and_holds_every_finished_job`
+- [x] `test_a_spent_quota_stops_the_run_rather_than_retrying_every_job` (with
+      `test_batch_persists_each_result_as_it_lands`: quota spent mid-batch keeps
+      every completed enrichment)
+- [x] `test_a_second_run_enriches_nothing_and_makes_zero_calls` — resuming after
+      a spent quota skips what is already explained
+- [x] `test_a_junk_answer_is_refused_and_leaves_that_job_unenriched` — never
+      half-written
+- [x] `test_the_csv_line_lands_with_the_answer_not_at_the_end_of_the_run`
+- [x] `test_an_interrupted_run_leaves_a_csv_she_can_open` — readable mid-run,
+      holding every finished job
 - [x] `test_crash_mid_export_leaves_the_previous_csv_intact` (write to tmp, fail, assert old file)
 - [x] `test_stale_running_run_is_marked_interrupted_on_next_start`
-- [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
+- [x] `test_a_second_run_enriches_nothing_and_makes_zero_calls` and
+      `test_same_job_twice_leaves_one_row` — a second full run with nothing
+      changed spends no LLM call and adds no row
 - [x] `test_every_connection_runs_wal_and_synchronous_normal`
-- [ ] `test_a_second_writer_waits_instead_of_failing_with_database_is_locked`
-- [ ] `test_enrichment_picks_up_jobs_a_running_search_has_just_stored`
+- [x] `test_connecting_while_another_writer_holds_a_new_database_still_works` —
+      the second writer waits rather than raising `database is locked`
+- [x] `test_enrichment_started_during_a_search_enriches_what_the_search_stored`
 
 ---
 
@@ -549,15 +563,17 @@ Built for reading a lot of structured information quickly, not for looking cleve
 
 ### Tests for the above (owned by Phase 8)
 
-- [ ] `test_search_progress_is_persisted_and_survives_a_page_reload`
-- [ ] `test_progress_endpoint_reports_current_source_and_counts`
-- [ ] `test_cancel_stops_the_run_and_keeps_completed_work`
-- [ ] `test_every_list_page_renders_a_skeleton_state`
-- [ ] `test_empty_result_page_names_the_filters_that_were_applied`
-- [ ] `test_missing_api_key_renders_a_sentence_and_a_link_not_a_traceback`
-- [ ] `test_interrupted_run_banner_offers_resume_with_the_right_counts`
-- [ ] `test_no_emoji_in_any_template` (a grep test — cheap, and it holds the line)
-- [ ] `test_numbers_render_in_the_monospace_class`
+- [x] `test_search_progress_is_persisted_and_survives_a_page_reload`
+- [x] `test_progress_endpoint_reports_current_source_and_counts`
+- [x] `test_cancel_stops_the_run_and_keeps_completed_work`
+- [x] `test_every_list_page_renders_a_skeleton_state`
+- [x] `test_empty_result_page_names_the_filters_that_were_applied`
+- [x] `test_missing_api_key_renders_a_sentence_and_a_link_not_a_traceback`
+- [x] `test_interrupted_run_banner_offers_resume_with_the_right_counts`
+- [x] `test_no_emoji_in_any_template` (a grep test — cheap, and it holds the line)
+- [x] `test_numbers_render_in_the_monospace_class`
+- [x] `test_a_long_run_keeps_its_heartbeat_beating` — the progress panel is only
+      honest if the journal behind it keeps time; a real run proved it did not
 
 ---
 
@@ -1061,29 +1077,59 @@ marks what she has applied to. This is the milestone that makes the project real
 
 ### Test-first checklist
 
-- [ ] `test_index_lists_only_non_deleted_jobs`
-- [ ] `test_filter_by_city_returns_only_that_city`
-- [ ] `test_filter_by_max_german_level_excludes_c1_when_she_selects_b1`
-- [ ] `test_filter_combination_city_and_type_and_fit`
-- [ ] `test_sort_by_fit_score_descending`
-- [ ] `test_job_page_renders_every_enriched_field_present_in_the_row`
-- [ ] `test_job_page_renders_when_enrichment_is_missing` — never a 500 on a fresh job
-- [ ] `test_mark_applied_persists_and_sets_applied_on_date`
-- [ ] `test_delete_soft_deletes_and_survives_a_new_search_run`
-- [ ] `test_notes_are_saved_and_shown_after_reload`
-- [ ] `test_german_original_is_present_but_collapsed`
-- [ ] `test_server_binds_localhost_only`
-- [ ] `test_playwright_smoke_filter_open_job_mark_applied` (one end-to-end path)
-- [ ] Plus every test in [§10](#tests-for-the-above-owned-by-phase-8)
+- [x] `test_index_lists_only_non_deleted_jobs`
+- [x] `test_filter_by_city_returns_only_that_city`
+- [x] `test_filter_by_max_german_level_excludes_c1_when_she_selects_b1`
+- [x] `test_filter_combination_city_and_type_and_fit`
+- [x] `test_sort_by_fit_score_descending`
+- [x] `test_job_page_renders_every_enriched_field_present_in_the_row`
+- [x] `test_job_page_renders_when_enrichment_is_missing` — never a 500 on a fresh job
+- [x] `test_mark_applied_persists_and_sets_applied_on_date`
+- [x] `test_delete_soft_deletes_and_survives_a_new_search_run`
+- [x] `test_notes_are_saved_and_shown_after_reload`
+- [x] `test_german_original_is_present_but_collapsed`
+- [x] `test_server_binds_localhost_only` — and
+      `test_serve_opens_the_browser_once_against_a_server_that_answers`, which
+      drives the real serve function against a real port after the first
+      version of it could not start at all
+- [x] `test_playwright_smoke_filter_open_job_mark_applied` (one end-to-end path)
+- [x] Plus every test in [§10](#tests-for-the-above-owned-by-phase-8)
+- [x] `test_a_section_the_ad_says_nothing_about_says_so` and
+      `test_the_empty_state_only_names_filters_she_actually_set` — two empty
+      states found by using the app on her real store, not by reading the code
 
 ### Done when
 
-- [ ] She uses it for one real search session without asking a question
-- [ ] During a four-minute search she can tell, at every moment, that it is working
-      and roughly how far along it is — and a mid-run browser reload proves it
-- [ ] Every action survives a restart of the app
-- [ ] The list stays responsive at 1 000 jobs
-- [ ] Nothing on screen is in German except the original ad and job titles
+- [ ] She uses it for one real search session without asking a question — **not
+      yet hers to confirm.** Driven end to end against her real store instead:
+      browse, filter, open, mark, search, cancel, all without a dead end. Her
+      own session is the one box only she can tick.
+- [x] During a search she can tell, at every moment, that it is working and
+      roughly how far along it is — and a mid-run browser reload proves it.
+      Measured live on 2026-08-16: `Searching — 104 found, 15 new`, elapsed and
+      a jobs-per-minute rate, one line per source (`Bundesagentur — 50 found,
+      1 new · searching`, `Arbeitnow — 0 found, 0 new · done`), and a reload
+      mid-run came back with the run still going and its counts current
+- [x] Every action survives a restart of the app — a job marked applied with a
+      note came back applied, dated, and noted after `jobfinder serve` was
+      stopped and started again
+- [x] The list stays responsive at 1 000 jobs — timed against a 1 348-job copy
+      of her store: 413 ms for the whole page, 103–125 ms per filtered or
+      sorted row page, 57 ms for the narrowest filter
+- [x] Nothing on screen is in German except the original ad and job titles —
+      confirmed on the job page, where the German original sits collapsed under
+      its own heading and every field around it reads in English
+- [x] Cancel stops a run and keeps what it stored — live: 282 found, 68 new
+      kept, run row `interrupted`, and the banner offered Resume with those
+      counts
+
+**Phase 8 complete.** `jobfinder serve` opens the app on 127.0.0.1; her 674-job
+store browses, filters, sorts and opens one page per job, and her decisions
+persist across restarts. Searches start, narrate and cancel from the browser.
+Using it on real data — rather than reading the tests — is what turned up all
+four defects this phase closed: `serve` could not start at all, two sections
+rendered empty headings, the empty state offered filters she had not set, and
+the run journal froze its own clock. Each is now held by a test.
 
 **Out of scope:** editing job data by hand, bulk actions, charts. If she wants a
 spreadsheet view, `jobs-enriched.csv` is right there.

@@ -12,6 +12,7 @@ import hashlib
 import json
 import sqlite3
 import threading
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -82,8 +83,12 @@ class _RunState:
 
     run_id: int
     query_hash: str
-    now: datetime
+    now: datetime  # when the run started — fixed, and only ever the start
     resume: bool
+    # Every journal write asks the clock again. Freezing one stamp for the
+    # whole run made `last_progress_at` stand still, which tells §9's stale
+    # rule that a healthy long search has been abandoned.
+    clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     on_page: object = None
     found: int = 0
     new: int = 0
@@ -95,6 +100,8 @@ class _RunState:
     budget_exhausted: bool = False
     lock: threading.Lock = field(default_factory=threading.Lock)
     # Set by her Ctrl-C or a spent budget: the other sources stop between pages.
+    # An event handed in from outside (§10's Cancel button) is the same flag —
+    # whoever sets it, the run stops between pages and keeps what it stored.
     stop: threading.Event = field(default_factory=threading.Event)
 
 
@@ -132,6 +139,16 @@ def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, r
             source_duplicates += counts[2]
             _save_cursor(connection, adapter.source, run.query_hash, page.query_index, page.page)
             record_success(connection, adapter.source, now=run.now)  # it answers
+            _upsert_source_progress(
+                connection,
+                run.run_id,
+                adapter.source,
+                found=source_found,
+                new=source_new,
+                duplicates=source_duplicates,
+                state="running",
+                now=run.clock(),
+            )
             with run.lock:
                 run.found += counts[0]
                 run.new += counts[1]
@@ -143,7 +160,7 @@ def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, r
                     found=run.found,
                     new=run.new,
                     duplicates=run.duplicates,
-                    now=run.now,
+                    now=run.clock(),
                 )
                 if run.on_page is not None:
                     run.on_page(page, SourceCounts(*counts), totals)
@@ -175,6 +192,16 @@ def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, r
                     errors=tuple(source_errors),
                 ),
             )
+        _upsert_source_progress(
+            connection,
+            run.run_id,
+            adapter.source,
+            found=source_found,
+            new=source_new,
+            duplicates=source_duplicates,
+            state="failed" if source_errors else "done",
+            now=run.clock(),
+        )
 
 
 def run_search(
@@ -186,8 +213,10 @@ def run_search(
     csv_path: Path | None = None,
     stale_after: timedelta = DEFAULT_STALE_AFTER,
     now: datetime | None = None,
+    clock: Callable[[], datetime] | None = None,
     on_page=None,
     db_path: Path | None = None,
+    stop_event: threading.Event | None = None,
 ) -> SearchSummary:
     """Run every adapter's search, persisting as we go. Never raises adapter errors.
 
@@ -195,22 +224,30 @@ def run_search(
     page's own `SourceCounts` and the run's running ones — the UI's chance to
     narrate progress (§10) from real counts.
 
+    `stop_event` is §10's Cancel button: an event the UI thread sets while the
+    sources are still fetching. The run stops between pages, keeps everything
+    stored, and ends `interrupted` so the resume banner appears. An event set
+    after the sources have finished changes nothing.
+
     Given `db_path`, the sources run **at the same time**, one thread and one
     connection each (§8 rule 2): the throttle is shared per host, so no host is
     fetched twice at once, and four scrapers on four hosts cost the slowest one
     rather than the sum. Without it they run in order on the caller's
     connection, which is what a single source or a test wants.
     """
-    now = now or datetime.now(UTC)
+    tick = clock or (lambda: datetime.now(UTC))
+    now = now or tick()
     _close_stale_runs(connection, now, stale_after)
 
     adapters = list(adapters)
     run = _RunState(
-        run_id=_start_run(connection, spec, [adapter.source for adapter in adapters]),
+        run_id=_start_run(connection, spec, [adapter.source for adapter in adapters], now=now),
         query_hash=_spec_fingerprint(spec),
         now=now,
+        clock=tick,
         resume=resume,
         on_page=on_page,
+        stop=stop_event or threading.Event(),
     )
 
     try:
@@ -221,6 +258,12 @@ def run_search(
                 _run_one_source(connection, adapter, spec, run)
                 if run.stop.is_set():
                     break
+        # A stop set from outside the run (the Cancel button) is the one
+        # interruption that arrives without touching `run.state` — the runner
+        # was busy between pages when it happened. It must not quietly end as
+        # 'done', or the resume banner never appears.
+        if run.stop.is_set() and run.state == "done":
+            run.state = "interrupted"
     finally:
         _finish_run(
             connection,
@@ -230,7 +273,7 @@ def run_search(
             run.new,
             run.duplicates,
             run.errors,
-            now=now,
+            now=run.clock(),
         )
         if csv_path is not None:
             export_jobs_init(connection, csv_path)  # what landed is readable now
@@ -351,7 +394,41 @@ def _store_page(connection: sqlite3.Connection, adapter, page) -> tuple[int, int
 # -- run journal ---------------------------------------------------------------
 
 
-def _start_run(connection: sqlite3.Connection, spec: SearchSpec, sources: list[str]) -> int:
+def _upsert_source_progress(
+    connection: sqlite3.Connection,
+    run_id: int,
+    source: str,
+    *,
+    found: int,
+    new: int,
+    duplicates: int,
+    state: str,
+    now: datetime,
+) -> None:
+    """One source's line in the journal, as of the page just stored.
+
+    Written per page (§9: progress lives on disk, not in a process's memory)
+    so the web app's progress panel is a SELECT, and a browser reload mid-run
+    shows the same numbers the run is producing.
+    """
+    connection.execute(
+        "INSERT INTO run_sources"
+        " (run_id, source, found_count, new_count, duplicate_count, state, last_event_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)"
+        " ON CONFLICT(run_id, source) DO UPDATE SET"
+        " found_count = excluded.found_count,"
+        " new_count = excluded.new_count,"
+        " duplicate_count = excluded.duplicate_count,"
+        " state = excluded.state,"
+        " last_event_at = excluded.last_event_at",
+        (run_id, source, found, new, duplicates, state, _stamp(now)),
+    )
+    connection.commit()
+
+
+def _start_run(
+    connection: sqlite3.Connection, spec: SearchSpec, sources: list[str], *, now: datetime
+) -> int:
     payload = {
         "mode": spec.mode,
         "employment_types": list(spec.employment_types),
@@ -364,8 +441,8 @@ def _start_run(connection: sqlite3.Connection, spec: SearchSpec, sources: list[s
         (
             json.dumps(payload, ensure_ascii=False),
             ",".join(sources),
-            _stamp(datetime.now(UTC)),
-            _stamp(datetime.now(UTC)),
+            _stamp(now),
+            _stamp(now),
         ),
     )
     connection.commit()

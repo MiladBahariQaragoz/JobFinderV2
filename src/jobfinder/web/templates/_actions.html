@@ -1,0 +1,21 @@
+<div class="box" id="actions">
+  <p>
+    <span class="status-chip{% if job.status == 'applied' %} applied{% endif %}">{{ job.status }}</span>
+    {% if job.applied_on %}<span class="meta"> · you applied on <span class="num">{{ job.applied_on[:10] }}</span></span>{% endif %}
+  </p>
+  <form class="actions"
+        hx-post="/jobs/{{ job.job_id | urlencode }}/status"
+        hx-target="#actions"
+        hx-swap="outerHTML"
+        method="post"
+        action="/jobs/{{ job.job_id | urlencode }}/status">
+    <button name="status" value="applied" class="primary">Applied</button>
+    <button name="status" value="interested">Interested</button>
+    <button name="status" value="rejected">Not for me</button>
+    <button name="status" value="deleted" class="danger">Delete</button>
+    {% if job.status != "new" %}
+    <button name="status" value="new" title="Back to new">Reset</button>
+    {% endif %}
+  </form>
+  <p class="meta">Deleted jobs disappear from the list but are never removed.</p>
+</div>

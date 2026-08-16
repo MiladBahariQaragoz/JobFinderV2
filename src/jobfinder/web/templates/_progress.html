@@ -1,0 +1,87 @@
+{% set live = running or run_state == "running" %}
+<div id="progress-panel"
+     {% if live %}hx-get="/progress" hx-trigger="every 1s" hx-swap="outerHTML" hx-select="#progress-panel"{% endif %}>
+  {% if refusal %}
+  <div class="error-state progress-panel">
+    <h1>Cannot start that</h1>
+    <p>{{ refusal.sentence }}</p>
+    <p class="hint"><a href="{{ refusal.link }}">What to do</a></p>
+  </div>
+  {% elif failure %}
+  <div class="error-state progress-panel">
+    <h1>Something went wrong</h1>
+    <p>{{ failure }}</p>
+  </div>
+  {% elif live %}
+  <div class="progress-panel">
+    <div class="list-head">
+      <h1>
+        {% if run and run.found_count is not none %}
+        Searching — <span class="num">{{ run.found_count }}</span> found,
+        <span class="num">{{ run.new_count }}</span> new
+        {% else %}
+        Starting the search…
+        {% endif %}
+      </h1>
+      <form hx-post="/run/cancel" hx-target="#progress-panel" hx-swap="outerHTML"
+            method="post" action="/run/cancel">
+        <button type="submit" class="danger">Cancel</button>
+      </form>
+    </div>
+    <div class="bar indeterminate" role="progressbar" aria-label="searching"><span></span></div>
+    {% if elapsed is not none %}
+    <p class="meta">
+      Running for
+      <span class="num">{{ elapsed // 60 }}</span> m
+      <span class="num">{{ elapsed % 60 }}</span> s
+      {% if rate %} · about <span class="num">{{ rate }}</span> jobs a minute{% endif %}
+    </p>
+    {% endif %}
+    <ul class="source-lines">
+      {% for s in sources %}
+      <li>
+        <span>{{ s.label }} — <span class="num">{{ s.found }}</span> found,
+        <span class="num">{{ s.new }}</span> new</span>
+        {% if s.state == "running" %}<span>· searching</span>
+        {% elif s.state == "failed" %}<span>· failed, the rest continues</span>
+        {% else %}<span>· done</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if enrichment and enrich_state == "running" %}
+    <p class="meta">
+      Explaining jobs in English as they arrive —
+      <span class="num">{{ enrichment.enriched_count }}</span> explained so far
+    </p>
+    {% endif %}
+  </div>
+  {% elif interrupted %}
+  <div class="banner">
+    <span>
+      Your last search was interrupted —
+      <span class="num">{{ interrupted.found_count }}</span> jobs were found and kept
+      (<span class="num">{{ interrupted.new_count }}</span> new).
+      Resume picks up where it stopped.
+    </span>
+    <form hx-post="/run/start" hx-target="#progress-panel" hx-swap="outerHTML"
+          method="post" action="/run/start">
+      <input type="hidden" name="resume" value="on">
+      <input type="hidden" name="cities" value="{{ default_cities }}">
+      <input type="hidden" name="types" value="{{ default_types }}">
+      <button type="submit" class="primary">Resume</button>
+    </form>
+  </div>
+  {% include "_search_form.html" %}
+  {% elif run %}
+  <div class="progress-panel">
+    <p class="meta">
+      Last search: <span class="num">{{ run.found_count }}</span> found,
+      <span class="num">{{ run.new_count }}</span> new
+      {% if run.finished_at %}· finished{% endif %}
+    </p>
+  </div>
+  {% include "_search_form.html" %}
+  {% else %}
+  {% include "_search_form.html" %}
+  {% endif %}
+</div>

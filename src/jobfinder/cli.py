@@ -569,6 +569,50 @@ def _cmd_search(
     return 0
 
 
+def _uvicorn_serve(app, *, host: str, port: int, on_ready) -> None:
+    """Run the server; `on_ready` fires once, as soon as the port answers.
+
+    A watcher thread waits for `server.started` rather than uvicorn's own
+    `callback_notify`, which looks like the obvious hook and is the wrong one
+    twice over: it repeats every heartbeat, so her browser would reopen the
+    tab every second, and it is awaited on the event loop, where opening a
+    browser blocks the server it has just announced.
+    """
+    import threading
+    import time
+
+    import uvicorn
+
+    server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="warning"))
+
+    def announce_once_listening() -> None:
+        while not (server.started or server.should_exit):
+            time.sleep(0.05)
+        if server.started:
+            on_ready()
+
+    threading.Thread(target=announce_once_listening, daemon=True).start()
+    server.run()
+
+
+def _cmd_serve(settings: Settings, args, *, _serve=None, _browser=None) -> int:
+    """Start the app and open her browser at it (§10: one double-click)."""
+    import webbrowser
+
+    from jobfinder.web.app import SERVER_HOST, create_app
+
+    serve = _serve or _uvicorn_serve
+    open_browser = _browser or webbrowser.open
+    url = f"http://{SERVER_HOST}:{args.port}"
+
+    def open_when_ready() -> None:
+        if not args.no_browser:
+            open_browser(url)
+
+    serve(create_app(settings), host=SERVER_HOST, port=args.port, on_ready=open_when_ready)
+    return 0
+
+
 def main(
     argv: list[str] | None = None,
     *,
@@ -577,6 +621,8 @@ def main(
     _runner=None,
     _client_factory=None,
     _sources=None,
+    _serve=None,
+    _browser=None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="jobfinder", description="Local job-search assistant")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -646,6 +692,13 @@ def main(
     )
     search.add_argument("--path", type=Path, default=None, help="path to pool.yaml (with --enrich)")
 
+    serve = sub.add_parser("serve", help="open the app in your browser")
+    serve.add_argument("--root", type=Path, default=None, help="project root (default: cwd)")
+    serve.add_argument("--port", type=int, default=8000, help="port to listen on (default: 8000)")
+    serve.add_argument(
+        "--no-browser", action="store_true", help="start the server without opening a browser"
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "profile":
@@ -682,5 +735,13 @@ def main(
             _pool_factory=_pool_factory,
         )
 
+    if args.command == "serve":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_serve(settings, args, _serve=_serve, _browser=_browser)
+
     parser.error(f"unknown command {args.command!r}")  # pragma: no cover
     return 2  # pragma: no cover
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

@@ -24,6 +24,11 @@ from typing import TYPE_CHECKING
 from jobfinder.enrich.runner import EnrichmentRun, run_enrichment
 from jobfinder.store.db import connect, migrate
 from jobfinder.store.enrichment import jobs_needing_enrichment
+from jobfinder.store.runs import (
+    finish_run,
+    note_enriched,
+    start_enrichment_run,
+)
 
 if TYPE_CHECKING:
     import sqlite3
@@ -79,13 +84,33 @@ class EnrichmentCompanion:
         # poll two seconds from now. One unanswerable ad would otherwise be
         # re-sent for as long as the search lasts.
         self._already_tried: set[str] = set()
+        # §10's Cancel button: stops the worker between batches, keeps every
+        # answer already saved, and ends the run row `interrupted`.
+        self._cancelled = threading.Event()
+        self._run_id: int | None = None
+        # Answers journalled so far — the run row's `enriched_count`.
+        self._journalled = 0
 
     def start(self) -> None:
         """Begin explaining, now, on an empty store if that is what there is."""
         if self._thread is not None:
             raise RuntimeError("this enrichment worker has already been started")
+        # The journal row is written on the caller's thread, so a progress
+        # reader sees the run the moment start() returns — not whenever the
+        # worker thread happens to reach its first batch.
+        journal = connect(self._db_path)
+        try:
+            migrate(journal)
+            self._run_id = start_enrichment_run(journal)
+        finally:
+            journal.close()
         self._thread = threading.Thread(target=self._work, name="enrichment", daemon=True)
         self._thread.start()
+
+    def cancel(self) -> None:
+        """Stop between batches. Answers already saved stay saved (§9)."""
+        self._cancelled.set()
+        self._no_more_jobs.set()
 
     def finish(self, timeout: float | None = None) -> EnrichmentRun:
         """Say no more jobs are coming, let it drain, and report what it did."""
@@ -93,6 +118,7 @@ class EnrichmentCompanion:
             raise RuntimeError("this enrichment worker was never started")
         self._no_more_jobs.set()
         self._thread.join(timeout)
+        self._close_journal()
         return self._summary()
 
     def _work(self) -> None:
@@ -103,7 +129,7 @@ class EnrichmentCompanion:
             # schema here costs nothing and is the difference between enriching
             # and quietly giving up on "no such table: jobs".
             migrate(connection)
-            while True:
+            while not self._cancelled.is_set():
                 # Read the flag *before* the batch. A job stored between the
                 # query and the flag check would otherwise be left unexplained.
                 was_told_to_stop = self._no_more_jobs.is_set()
@@ -116,6 +142,29 @@ class EnrichmentCompanion:
                     self._no_more_jobs.wait(self._poll_seconds)
         finally:
             connection.close()
+
+    def _journal_progress(self, done_in_batch: int, total: int, job) -> None:
+        """One answer landed: count it in the journal, then pass it on (§10)."""
+        self._journalled += 1
+        journal = connect(self._db_path)
+        try:
+            note_enriched(journal, self._run_id, self._journalled)
+        finally:
+            journal.close()
+        if self._on_progress is not None:
+            self._on_progress(self._journalled, total, job)
+
+    def _close_journal(self) -> None:
+        """End the run row: done, or interrupted by cancel / spent quota."""
+        if self._run_id is None:
+            return
+        state = "interrupted" if (self._cancelled.is_set() or self._quota_spent) else "done"
+        journal = connect(self._db_path)
+        try:
+            finish_run(journal, self._run_id, state, errors=self._errors)
+        finally:
+            journal.close()
+        self._run_id = None
 
     def _one_batch(self, connection: sqlite3.Connection) -> EnrichmentRun | None:
         """One pass over what the store holds; None when the run cannot go on."""
@@ -131,7 +180,7 @@ class EnrichmentCompanion:
                 cv_digest=self._cv_digest,
                 limit=min(budget_left, self._workers * BATCH_MULTIPLE),
                 csv_path=self._csv_path,
-                on_progress=self._on_progress,
+                on_progress=self._journal_progress,
                 workers=self._workers,
                 prompt_version=self._prompt_version,
                 skip=self._already_tried,

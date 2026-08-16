@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} — JobFinder{% endblock %}
+{% block content %}
+<section class="error-state">
+  <h1>{{ heading }}</h1>
+  <p>{{ sentence }}</p>
+  <p class="hint"><a href="{{ back }}">Back to your jobs</a></p>
+</section>
+{% endblock %}

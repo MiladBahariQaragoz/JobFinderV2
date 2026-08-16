@@ -245,3 +245,95 @@ def test_the_worker_survives_a_database_that_has_no_schema_yet(tmp_path, setting
 
     assert result.enriched == 1
     assert result.errors == []
+
+
+class TestRunJournal:
+    """The companion writes its own line in the `runs` journal (§9, §10).
+
+    The web app's progress panel reads the database, so an enrichment that
+    runs behind a search has to be visible there too — while it runs, not
+    only once it has finished.
+    """
+
+    def run_rows(self, db_path):
+        connection = connect(db_path)
+        try:
+            return connection.execute(
+                "SELECT * FROM runs WHERE kind = 'enrich' ORDER BY id"
+            ).fetchall()
+        finally:
+            connection.close()
+
+    def wait_for_row(self, db_path, *, state: str, timeout: float = 5.0):
+        import time
+
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            rows = self.run_rows(db_path)
+            if rows and rows[-1]["state"] == state:
+                return rows[-1]
+            time.sleep(0.01)
+        raise AssertionError(f"no enrich run row reached state {state!r}")
+
+    def test_companion_journals_its_progress_and_finishes_done(self, db_path, settings):
+        for index in range(3):
+            store_job(db_path, index)
+        worker = companion(db_path, FakePool([answer()] * 3), settings)
+        worker.start()
+
+        running = self.wait_for_row(db_path, state="running")
+        result = worker.finish()
+
+        (row,) = self.run_rows(db_path)
+        assert running["started_at"]
+        assert row["state"] == "done"
+        assert row["enriched_count"] == result.enriched == 3
+        assert row["finished_at"]
+
+    def test_enriched_count_moves_as_answers_land(self, db_path, settings):
+        import threading
+        import time
+
+        gate = threading.Event()
+
+        class GatedPool(FakePool):
+            def __init__(self, answers):
+                super().__init__(answers)
+                self.parked: list[str] = []  # recorded before the gate, not after
+
+            def complete_json(self, prompt):
+                self.parked.append(prompt)
+                gate.wait(timeout=5)
+                return super().complete_json(prompt)
+
+        store_job(db_path, 0)
+        store_job(db_path, 1)
+        pool = GatedPool([answer()] * 2)
+        worker = companion(db_path, pool, settings, workers=2)
+        worker.start()
+
+        # Both answers are in flight behind the gate: the row exists, counts 0.
+        deadline = time.time() + 5
+        while time.time() < deadline and len(pool.parked) < 2:
+            time.sleep(0.01)
+        assert len(pool.parked) == 2  # both workers are parked at the gate
+        assert self.run_rows(db_path)[-1]["enriched_count"] == 0
+
+        gate.set()
+        worker.finish()
+
+        assert self.run_rows(db_path)[-1]["enriched_count"] == 2
+
+    def test_cancel_stops_the_worker_and_ends_the_run_interrupted(self, db_path, settings):
+        for index in range(2):
+            store_job(db_path, index)
+        worker = companion(db_path, FakePool([answer()] * 2), settings)
+        worker.start()
+        worker.cancel()
+
+        result = worker.finish()
+
+        (row,) = self.run_rows(db_path)
+        assert row["state"] == "interrupted"
+        assert row["enriched_count"] == result.enriched  # whatever landed, kept
+        assert row["finished_at"]

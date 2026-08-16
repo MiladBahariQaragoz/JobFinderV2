@@ -1,0 +1,64 @@
+<form class="filters"
+      hx-get="/jobs/rows"
+      hx-target="#job-rows"
+      hx-trigger="change, submit"
+      hx-push-url="/"
+      method="get" action="/">
+  <label>City
+    <select name="city">
+      <option value="">Every city</option>
+      {% for city in options.cities %}
+      <option value="{{ city }}" {% if filters.city == city %}selected{% endif %}>{{ city }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Type
+    <select name="type">
+      <option value="">Any type</option>
+      {% for value, label in [
+        ("minijob", "minijob"), ("werkstudent", "werkstudent"), ("parttime", "part-time"),
+        ("fulltime", "full-time"), ("internship", "internship")] %}
+      <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>German at most
+    <select name="max_german">
+      <option value="">Any level</option>
+      {% for level in ["none", "A1", "A2", "B1", "B2", "C1", "C2"] %}
+      <option value="{{ level }}" {% if filters.max_german == level %}selected{% endif %}>{{ level }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Fit at least
+    <input type="number" name="min_fit" min="0" max="100" placeholder="0"
+           value="{{ filters.min_fit if filters.min_fit is not none else "" }}">
+  </label>
+  <label>Source
+    <select name="source">
+      <option value="">Every source</option>
+      {% for source in options.sources %}
+      <option value="{{ source }}" {% if filters.source == source %}selected{% endif %}>
+        {{ source_labels.get(source, source) }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Status
+    <select name="status">
+      <option value="">Not deleted</option>
+      {% for status in ["new", "interested", "applied", "rejected", "deleted"] %}
+      <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Sort by
+    <select name="sort">
+      {% for value, label in [("fit", "fit"), ("date", "newest"), ("distance", "distance")] %}
+      <option value="{{ value }}" {% if filters.sort == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Apply</button>
+  <a class="button" href="/">Clear</a>
+</form>

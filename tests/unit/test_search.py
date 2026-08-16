@@ -8,6 +8,7 @@ counts, and `--resume` re-enters at the stored cursor instead of page 1.
 from __future__ import annotations
 
 import dataclasses
+import itertools
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -346,6 +347,34 @@ class TestStaleRuns:
         run_search(db, [FakeSource([page(1, page_number=1)])], spec(), now=now)
         states = [row[0] for row in db.execute("SELECT state FROM runs ORDER BY id")]
         assert states == ["running", "done"]  # fresh one untouched, ours finished
+
+    def test_a_long_run_keeps_its_heartbeat_beating(self, db):
+        """`last_progress_at` has to move, or §9's stale rule shoots the living.
+
+        Measured on her store: a 60-second search stored `started_at`,
+        `last_progress_at` and `finished_at` as one identical stamp, because
+        the run captured `now` once and reused it for every write. A search
+        that outlives the ten-minute window would then look abandoned to the
+        next run that starts, and no run could say how long it took."""
+        start = datetime(2026, 8, 16, 8, 0, 0, tzinfo=UTC)
+        ticks = itertools.count(1)
+
+        def slow_clock() -> datetime:
+            """Six minutes per write — the run outlives the stale window."""
+            return start + timedelta(minutes=6 * next(ticks))
+
+        run_search(
+            db,
+            [FakeSource([page(1, page_number=1), page(2, page_number=2)])],
+            spec(),
+            now=start,
+            clock=slow_clock,
+        )
+
+        row = db.execute("SELECT * FROM runs ORDER BY id DESC LIMIT 1").fetchone()
+        assert row["started_at"] == "2026-08-16 08:00:00"
+        assert row["last_progress_at"] > row["started_at"], "the heartbeat never moved"
+        assert row["finished_at"] > row["started_at"], "the run looks instant"
 
 
 class TestPerSourceCounts:
@@ -696,6 +725,97 @@ class TestSummaryReconciliation:
         assert row["new_count"] == sum(c.new for c in summary.per_source.values())
         assert row["duplicate_count"] == sum(c.duplicates for c in summary.per_source.values())
         assert row["new_count"] == db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
+
+
+def run_source_rows(db, run_id: int):
+    return db.execute(
+        "SELECT * FROM run_sources WHERE run_id = ? ORDER BY source", (run_id,)
+    ).fetchall()
+
+
+class TestRunSourcesJournal:
+    """§10's per-source lines, on disk rather than in stdout.
+
+    The web app's progress panel is promised to be read from the database, so
+    the writer has to journal one row per source as pages land — not only at
+    the end, or a reload mid-run would show nothing.
+    """
+
+    def source_rows(self, db, run_id: int):
+        return run_source_rows(db, run_id)
+
+    def test_each_page_updates_the_run_sources_row(self, db):
+        source = FakeSource([page(3, page_number=1), page(2, page_number=2)])
+        summary = run_search(db, [source], spec())
+        rows = {row["source"]: row for row in self.source_rows(db, summary.run_id)}
+
+        assert set(rows) == {"BA"}
+        assert rows["BA"]["found_count"] == 5
+        assert rows["BA"]["new_count"] == 5
+        assert rows["BA"]["state"] == "done"
+        assert rows["BA"]["last_event_at"]
+
+    def test_per_source_rows_update_while_the_run_is_still_going(self, db):
+        witness = {"after_page_one": None}
+
+        class TwoPageSource(FakeSource):
+            def search_pages(self, spec, *, start_query_index=0, start_page=1):
+                yield page(3, page_number=1)
+                run_id = db.execute("SELECT MAX(id) FROM runs").fetchone()[0]
+                witness["after_page_one"] = run_source_rows(db, run_id)
+                yield page(2, page_number=2)
+
+        run_search(db, [TwoPageSource([object(), object()])], spec())
+
+        (row,) = witness["after_page_one"]
+        assert row["found_count"] == 3  # page 1 is journalled before page 2 starts
+        assert row["state"] == "running"
+
+    def test_a_failing_source_records_its_own_row_and_the_run_continues(self, db):
+        healthy = FakeSource([page(2, page_number=1)])
+        broken = FakeSource([SourceUnavailable("403")], source="XI")
+        summary = run_search(db, [healthy, broken], spec())
+        rows = {row["source"]: row for row in self.source_rows(db, summary.run_id)}
+
+        assert rows["XI"]["state"] == "failed"
+        assert rows["XI"]["found_count"] == 0
+        assert rows["BA"]["state"] == "done"  # one dead source never fails the run
+
+
+class TestCancelEvent:
+    """The Cancel button (§10): a stop event from outside the run's thread."""
+
+    def test_cancel_event_ends_the_run_interrupted_between_pages(self, db):
+        import threading
+
+        cancel = threading.Event()
+
+        class CancelledMidway(FakeSource):
+            def search_pages(self, spec, *, start_query_index=0, start_page=1):
+                yield page(3, page_number=1)
+                cancel.set()  # "she pressed Cancel" while page 2 was being fetched
+                yield page(3, page_number=2)
+                yield page(3, page_number=3)
+
+        summary = run_search(db, [CancelledMidway([object()] * 3)], spec(), stop_event=cancel)
+
+        assert summary.state == "interrupted"
+        assert summary.found == 3  # page 1 kept, pages 2-3 never stored
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 3
+
+    def test_a_run_without_cancel_finishes_normally(self, db):
+        summary = run_search(db, [FakeSource([page(2, page_number=1)])], spec())
+        assert summary.state == "done"
+
+    def test_cancel_after_the_sources_finished_leaves_the_run_done(self, db):
+        # An event set a moment too late must not rewrite a finished run.
+        import threading
+
+        cancel = threading.Event()
+        summary = run_search(db, [FakeSource([page(2, page_number=1)])], spec())
+        cancel.set()
+        assert summary.state == "done"
+        assert run_row(db, summary.run_id)["state"] == "done"
 
 
 class TestCounts:

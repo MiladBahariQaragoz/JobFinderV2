@@ -1,0 +1,12 @@
+<form class="notes"
+      hx-post="/jobs/{{ job.job_id | urlencode }}/notes"
+      hx-target="this"
+      hx-swap="outerHTML"
+      method="post"
+      action="/jobs/{{ job.job_id | urlencode }}/notes">
+  <h2 class="notes-title">Notes</h2>
+  <div id="notes-box">
+    <textarea name="notes" placeholder="Called? Promised to come by? Write it here.">{{ job.notes or "" }}</textarea>
+  </div>
+  <button type="submit">Save note</button>
+</form>
