@@ -407,7 +407,7 @@ later.
 - [ ] `test_export_crash_leaves_previous_csv_intact` (write to tmp, fail, assert old file)
 - [ ] `test_stale_running_run_is_marked_interrupted_on_next_start`
 - [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
-- [ ] `test_wal_mode_is_enabled_on_every_connection`
+- [x] `test_wal_mode_is_enabled_on_every_connection`
 
 ---
 
