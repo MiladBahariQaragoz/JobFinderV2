@@ -291,6 +291,76 @@ class TestNarration:
         assert "continuing" not in capsys.readouterr().out.casefold()
 
 
+class TestResumeMessages:
+    """`--resume` has to say what it actually did, not report an empty search."""
+
+    def runner_returning(self, **overrides):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            return summary(**overrides)
+
+        return runner
+
+    def test_resume_after_a_finished_search_says_there_was_nothing_left(self, tmp_path, capsys):
+        # The cursor from the finished run points past the last query, so the
+        # run is correct at 0 found — the sentence was the lie.
+        runner = self.runner_returning(found=0, new=0, duplicates=0, resumed=True)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "already finished" in out.casefold()
+        assert "Search finished: 0 jobs found" not in out
+
+    def test_resume_with_nothing_interrupted_says_a_fresh_search_ran(self, tmp_path, capsys):
+        runner = self.runner_returning(found=12, new=12, duplicates=0, resumed=False)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "nothing was interrupted" in out.casefold()
+        assert "12" in out  # and the fresh search still reports what it found
+
+    def test_a_resumed_run_that_found_more_reports_the_counts_as_usual(self, tmp_path, capsys):
+        runner = self.runner_returning(found=12, new=4, duplicates=8, resumed=True)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "Search finished: 12 jobs found" in out
+        assert "already finished" not in out.casefold()
+
+    def test_a_fresh_search_that_found_nothing_is_not_called_already_finished(
+        self, tmp_path, capsys
+    ):
+        runner = self.runner_returning(found=0, new=0, duplicates=0, resumed=False)
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+
+        assert "already finished" not in out.casefold()
+        assert "Search finished: 0 jobs found" in out
+
+    def test_an_interrupted_resume_still_offers_to_continue(self, tmp_path, capsys):
+        runner = self.runner_returning(state="interrupted", found=0, new=0, resumed=True)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "already finished" not in out.casefold()  # it did not finish
+        assert "--resume" in out
+
+
 class TestValidation:
     def test_unknown_city_is_one_sentence_and_no_traceback(self, tmp_path, capsys):
         exit_code = main(

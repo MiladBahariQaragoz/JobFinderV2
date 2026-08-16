@@ -133,9 +133,11 @@ Not defects in what Phase 4 promised, but known and deliberately left:
   hands the runner an `on_page` printer, so every stored page prints one
   flushed line — source, page number, running found/new/already-known — and a
   leg continued after a spent budget says so instead of pausing silently.
-- **`--resume` with nothing to resume says "0 jobs found"** instead of saying
-  there was nothing to continue. The stored cursor from a finished run points
-  past the last query, so the run is correct and the sentence is not.
+- ~~**`--resume` with nothing to resume says "0 jobs found"**~~ Closed in
+  Phase 5 (T10): a resume that re-entered a finished search now says the last
+  search had already finished and everything it found is in her list, and a
+  `--resume` with no stored cursor says nothing was interrupted and a fresh
+  search ran instead.
 - **A detail fetch per posting dominates the cost of a search.** Roughly 51
   requests per page of 50: one search call and one detail call each. Phase 7
   reads those descriptions anyway, so moving the fetch into enrichment would

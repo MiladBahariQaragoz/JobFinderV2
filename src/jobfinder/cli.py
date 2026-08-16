@@ -242,11 +242,21 @@ def _print_leg(leg: int, leg_result, combined) -> None:
         )
 
 
-def _print_search_summary(result, csv_path: Path | None, skipped=()) -> None:
+def _print_search_summary(
+    result, csv_path: Path | None, skipped=(), *, resume_requested: bool = False
+) -> None:
+    if resume_requested and not result.resumed:
+        print("Nothing was interrupted, so a fresh search ran instead.")
+
     if result.state == "interrupted":
         kept = f"{result.found} jobs found so far ({result.new} new) — all of them are saved."
         print(f"Run interrupted. {kept}")
         print("Continue any time with: jobfinder search --resume")
+    elif resume_requested and result.resumed and result.found == 0:
+        # The cursor of a finished search points past its last query, so the
+        # run really does find nothing. Saying "0 jobs found" reads as failure.
+        print("The last search had already finished — there was nothing left to continue.")
+        print("Everything it found is in your list.")
     else:
         print(
             f"Search finished: {result.found} jobs found — "
@@ -309,7 +319,12 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
             on_page=_print_page,
             on_leg=_print_leg,
         )
-    _print_search_summary(result, settings.jobs_init_csv, skipped=skipped_sources(settings))
+    _print_search_summary(
+        result,
+        settings.jobs_init_csv,
+        skipped=skipped_sources(settings),
+        resume_requested=args.resume,
+    )
     return 0
 
 
