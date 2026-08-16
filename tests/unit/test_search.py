@@ -392,6 +392,91 @@ class TestPerSourceCounts:
         assert summary.per_source["BA"].new == 5
 
 
+class TestSummaryReconciliation:
+    """Her summary lines are only worth reading if they match what was stored.
+
+    The mixed run below is the realistic one: two sources that both find the
+    same ad, and a third that is down.
+    """
+
+    def twin(self, source: str, n: int) -> RawPosting:
+        """One ad as two sites list it — same identity, different job_id."""
+        return RawPosting(
+            job_id=f"{source}:{n}",
+            source=source,
+            source_id=str(n),
+            title="Aushilfe Verkauf (m/w/d)",
+            company="Bäckerei Müller",
+            city="Ingolstadt" if source == "AN" else "Ingolstadt, Donau",
+        )
+
+    def mixed_run(self, db):
+        ba = FakeSource(
+            [
+                PageResult(
+                    source="BA",
+                    query_index=0,
+                    page=1,
+                    postings=[posting(1), self.twin("BA", 7)],
+                )
+            ],
+            source="BA",
+        )
+        an = FakeSource(
+            [
+                PageResult(
+                    source="AN",
+                    query_index=0,
+                    page=1,
+                    postings=[posting(1, "AN"), self.twin("AN", 9)],
+                )
+            ],
+            source="AN",
+        )
+        broken = FakeSource([SourceUnavailable("stepstone is down")], source="SS")
+        return run_search(db, [ba, an, broken], spec())
+
+    def test_run_summary_counts_match_the_database(self, db):
+        summary = self.mixed_run(db)
+
+        stored = {
+            row["source"]: row["rows"]
+            for row in db.execute("SELECT source, COUNT(*) AS rows FROM jobs GROUP BY source")
+        }
+        for source, counts in summary.per_source.items():
+            assert counts.new == stored.get(source, 0), source
+
+    def test_found_is_new_plus_duplicates_for_every_source(self, db):
+        summary = self.mixed_run(db)
+        for source, counts in summary.per_source.items():
+            assert counts.found == counts.new + counts.duplicates, source
+
+    def test_the_ad_both_sources_found_is_stored_once_and_counted_twice(self, db):
+        summary = self.mixed_run(db)
+
+        assert summary.per_source["BA"].new == 2
+        assert summary.per_source["AN"].found == 2
+        assert summary.per_source["AN"].new == 1  # the twin merged into BA's row
+        assert summary.per_source["AN"].duplicates == 1
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 3
+
+    def test_a_source_that_never_answered_reconciles_at_zero(self, db):
+        summary = self.mixed_run(db)
+
+        assert summary.per_source["SS"].found == 0
+        assert summary.per_source["SS"].errors
+        assert db.execute("SELECT COUNT(*) FROM jobs WHERE source = 'SS'").fetchone()[0] == 0
+
+    def test_the_run_row_totals_match_the_summary(self, db):
+        summary = self.mixed_run(db)
+        row = run_row(db, summary.run_id)
+
+        assert row["found_count"] == sum(c.found for c in summary.per_source.values())
+        assert row["new_count"] == sum(c.new for c in summary.per_source.values())
+        assert row["duplicate_count"] == sum(c.duplicates for c in summary.per_source.values())
+        assert row["new_count"] == db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
+
+
 class TestCounts:
     def test_rerun_counts_duplicates_without_storing_twice(self, db):
         same_page = page(3, page_number=1)

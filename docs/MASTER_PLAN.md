@@ -772,7 +772,7 @@ set she can trust.
 - [x] `test_registry_continues_after_one_source_raises`
 - [x] `test_same_job_from_ba_and_arbeitnow_collapses_to_one_row_with_both_sources`
 - [x] `test_richest_record_wins_when_merging` (the one with a description)
-- [ ] `test_run_summary_counts_match_the_database`
+- [x] `test_run_summary_counts_match_the_database`
 - [x] `tests/live/test_arbeitnow_contract.py`
 
 ### Done when
