@@ -994,7 +994,7 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 
 ### Test-first checklist
 
-- [ ] `test_enrichment_prompt_includes_the_full_description_and_her_cv_digest`
+- [x] `test_enrichment_prompt_includes_the_full_description_and_her_cv_digest`
 - [ ] `test_fake_answer_maps_onto_every_enriched_csv_column`
 - [x] `test_a_german_level_outside_the_enum_is_rejected`
 - [x] `test_a_german_level_without_evidence_is_rejected` — no unsupported guesses

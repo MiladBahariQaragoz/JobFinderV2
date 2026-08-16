@@ -91,7 +91,7 @@ two rules that are this project's and not the model's:
 - `fit_score` outside 0–100 is rejected; list fields must be lists.
 Commit: `feat: the enrichment answer contract, evidence required`.
 
-### T3 — `llm/prompts/enrich.v1.md`
+### T3 — `llm/prompts/enrich.v1.md` ✅
 The prompt: her CV digest, the ad's title/company/city/type flags, the full
 German text, and the JSON shape demanded field by field. States plainly that
 `german_level` must quote the ad or say `unclear`, and that every `_en` field
