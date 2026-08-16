@@ -389,6 +389,20 @@ class TestResumeMessages:
         assert "--resume" in out
 
 
+class TestParallelRun:
+    def test_the_runner_is_told_where_the_database_is_so_it_can_thread(self, tmp_path):
+        # Without db_path the runner has no way to give each source its own
+        # connection, so it falls back to running them one after another.
+        seen = {}
+
+        def runner(connection, adapter_factory, spec, **kwargs):
+            seen.update(kwargs)
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert seen["db_path"] == tmp_path / "data" / "jobfinder.db"
+
+
 class TestClientPacing:
     def test_the_default_client_is_built_with_the_pace_it_is_given(self, tmp_path):
         from jobfinder.cli import _default_client_factory

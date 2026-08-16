@@ -2,7 +2,7 @@
 title: "Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T10 done, T11 (parallel search) next
+status: in progress — T1-T11 done, T12 (sources check) next
 master-plan: docs/MASTER_PLAN.md#phase-6--scrapers-kleinanzeigen-stepstone-indeed-xing
 ---
 
@@ -147,7 +147,7 @@ first — it is the one that pays rent).
       the 3 s one.
 - [x] T10 Health: consecutive-failure counting, cooldown write, skip with
       reason at build time, reset on success. The three checklist tests.
-- [ ] T11 Parallel `run_search`: thread per adapter, own connection per
+- [x] T11 Parallel `run_search`: thread per adapter, own connection per
       worker, merged counts, `test_two_different_hosts_are_fetched_at_the_
       same_time`, `test_scraper_never_issues_parallel_requests_to_one_host`
       (two adapters, one host, one throttle — the v0.3.0 rule at adapter

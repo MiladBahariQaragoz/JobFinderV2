@@ -466,6 +466,81 @@ class TestDetailFetches:
         assert source.details == 0
 
 
+class TestParallelSources:
+    """§8 rule 2: different hosts at the same time, one host never twice at once.
+
+    Four scrapers on four hosts is the case this exists for — serial, that is
+    the sum of their pacing; in parallel it is the slowest one.
+    """
+
+    class BlockingSource(FakeSource):
+        """Waits until released, so overlap can be observed rather than timed."""
+
+        def __init__(self, pages, source, started, release):
+            super().__init__(pages, source)
+            self._started = started
+            self._release = release
+
+        def search_pages(self, spec, *, start_query_index=0, start_page=1):
+            self._started.set()
+            self._release.wait(timeout=5)
+            yield from super().search_pages(
+                spec, start_query_index=start_query_index, start_page=start_page
+            )
+
+    def test_two_different_hosts_are_fetched_at_the_same_time(self, db, tmp_path):
+        import threading
+
+        started_a, started_b = threading.Event(), threading.Event()
+        release = threading.Event()
+        first = self.BlockingSource([page(1, page_number=1, source="KA")], "KA", started_a, release)
+        second = self.BlockingSource(
+            [page(1, page_number=1, source="XI")], "XI", started_b, release
+        )
+
+        def run():
+            # One connection per thread, including this one — the fixture's
+            # belongs to the main thread (§8 rule 2).
+            own = connect(tmp_path / "jobfinder.db")
+            try:
+                run_search(own, [first, second], spec(), db_path=tmp_path / "jobfinder.db")
+            finally:
+                own.close()
+
+        worker = threading.Thread(target=run)
+        worker.start()
+        try:
+            # Serially, the second source could not have started before the
+            # first finished — and the first cannot finish until released.
+            assert started_a.wait(timeout=5)
+            assert started_b.wait(timeout=5), "the second source waited its turn"
+        finally:
+            release.set()
+            worker.join(timeout=10)
+
+    def test_every_posting_still_lands_exactly_once(self, db, tmp_path):
+        sources = [
+            FakeSource([page(3, page_number=1, source=code)], source=code)
+            for code in ("BA", "AN", "KA", "XI")
+        ]
+        summary = run_search(db, sources, spec(), db_path=tmp_path / "jobfinder.db")
+
+        assert summary.found == 12
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 12
+        for code in ("BA", "AN", "KA", "XI"):
+            assert summary.per_source[code].found == 3
+
+    def test_one_source_failing_costs_only_its_own_results(self, db, tmp_path):
+        broken = FakeSource([SourceUnavailable("kleinanzeigen is down")], source="KA")
+        healthy = FakeSource([page(2, page_number=1)], source="BA")
+
+        summary = run_search(db, [broken, healthy], spec(), db_path=tmp_path / "jobfinder.db")
+
+        assert summary.per_source["BA"].found == 2
+        assert summary.per_source["KA"].errors
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 2
+
+
 class TestSourceHealth:
     """§8 rule 7: a source that keeps refusing sits the next run out.
 

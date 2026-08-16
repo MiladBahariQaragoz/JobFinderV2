@@ -330,6 +330,10 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
             max_legs=settings.max_search_legs,
             on_page=_print_page,
             on_leg=_print_leg,
+            # Lets the runner give each source its own thread and its own
+            # connection — §8 rule 2, and the reason four scrapers cost the
+            # slowest one rather than the sum of them.
+            db_path=settings.db_path,
         )
     _print_search_summary(
         result,

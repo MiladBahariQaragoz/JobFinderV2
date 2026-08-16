@@ -918,7 +918,7 @@ never a failed run and never a blocked IP. Everything in
       `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
 - [x] `test_concurrent_requests_to_one_host_are_still_spaced`
 - [x] `test_two_clients_on_the_same_host_wait_for_each_other`
-- [ ] `test_two_different_hosts_are_fetched_at_the_same_time` (§8 rule 2 — the
+- [x] `test_two_different_hosts_are_fetched_at_the_same_time` (§8 rule 2 — the
       reason this phase is not four times slower than Phase 5)
 - [x] `test_retry_after_header_is_honoured` + `test_exhausted_retries_raise_source_unavailable`
 - [x] `test_a_login_walled_list_page_is_detected_and_skipped_not_retried` (Kleinanzeigen and Xing)

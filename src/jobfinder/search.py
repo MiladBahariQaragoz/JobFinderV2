@@ -11,12 +11,14 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from jobfinder.sources.http import RequestBudgetExhausted
+from jobfinder.store.db import connect
 from jobfinder.store.export import export_jobs_init
 from jobfinder.store.health import cooling_off, record_failure, record_success
 from jobfinder.store.jobs import upsert_job
@@ -74,6 +76,107 @@ class SearchSummary:
     per_source: dict = field(default_factory=dict)
 
 
+@dataclass
+class _RunState:
+    """What the sources are jointly building, guarded by one lock."""
+
+    run_id: int
+    query_hash: str
+    now: datetime
+    resume: bool
+    on_page: object = None
+    found: int = 0
+    new: int = 0
+    duplicates: int = 0
+    errors: list[str] = field(default_factory=list)
+    per_source: dict = field(default_factory=dict)
+    resumed_any: bool = False
+    state: str = "done"
+    budget_exhausted: bool = False
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    # Set by her Ctrl-C or a spent budget: the other sources stop between pages.
+    stop: threading.Event = field(default_factory=threading.Event)
+
+
+def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, run: _RunState):
+    """One adapter's whole search, against one connection. Never raises."""
+    # §8 rule 7: a source that failed three runs running sits this one out
+    # rather than spending it on timeouts.
+    if (paused := cooling_off(connection, adapter.source, now=run.now)) is not None:
+        with run.lock:
+            run.per_source[adapter.source] = _add_counts(
+                run.per_source.get(adapter.source), SourceCounts(errors=(paused,))
+            )
+            run.errors.append(f"{adapter.source}: {paused}")
+        return
+
+    start_query_index, start_page = 0, 1
+    if run.resume:
+        cursor = _cursor(connection, adapter.source, run.query_hash)
+        if cursor is not None:
+            start_query_index, start_page = cursor
+            with run.lock:
+                run.resumed_any = True
+
+    source_found = source_new = source_duplicates = 0
+    source_errors: list[str] = []
+    try:
+        for page in adapter.search_pages(
+            spec, start_query_index=start_query_index, start_page=start_page
+        ):
+            if run.stop.is_set():
+                break  # another source hit her Ctrl-C or spent the budget
+            counts = _store_page(connection, adapter, page)
+            source_found += counts[0]
+            source_new += counts[1]
+            source_duplicates += counts[2]
+            _save_cursor(connection, adapter.source, run.query_hash, page.query_index, page.page)
+            record_success(connection, adapter.source, now=run.now)  # it answers
+            with run.lock:
+                run.found += counts[0]
+                run.new += counts[1]
+                run.duplicates += counts[2]
+                totals = SourceCounts(found=run.found, new=run.new, duplicates=run.duplicates)
+                _progress(
+                    connection,
+                    run.run_id,
+                    found=run.found,
+                    new=run.new,
+                    duplicates=run.duplicates,
+                    now=run.now,
+                )
+                if run.on_page is not None:
+                    run.on_page(page, SourceCounts(*counts), totals)
+    except (KeyboardInterrupt, RequestBudgetExhausted) as err:
+        # Her stop or the politeness limit: halt the whole run, every source.
+        budget = isinstance(err, RequestBudgetExhausted)
+        message = f"{adapter.source}: {str(err) if budget else 'stopped by user'}"
+        source_errors.append(message)
+        with run.lock:
+            run.state = "interrupted"
+            run.budget_exhausted = run.budget_exhausted or budget
+            run.errors.append(message)
+        run.stop.set()
+    except Exception as err:  # one source down must not lose the others
+        message = f"{adapter.source}: {type(err).__name__}: {err}"
+        source_errors.append(message)
+        record_failure(connection, adapter.source, reason=str(err), now=run.now)
+        with run.lock:
+            run.state = "interrupted"
+            run.errors.append(message)
+    finally:
+        with run.lock:
+            run.per_source[adapter.source] = _add_counts(
+                run.per_source.get(adapter.source),
+                SourceCounts(
+                    found=source_found,
+                    new=source_new,
+                    duplicates=source_duplicates,
+                    errors=tuple(source_errors),
+                ),
+            )
+
+
 def run_search(
     connection: sqlite3.Connection,
     adapters,
@@ -84,109 +187,81 @@ def run_search(
     stale_after: timedelta = DEFAULT_STALE_AFTER,
     now: datetime | None = None,
     on_page=None,
+    db_path: Path | None = None,
 ) -> SearchSummary:
     """Run every adapter's search, persisting as we go. Never raises adapter errors.
 
     `on_page(page, counts, totals)` fires after each stored page with that
     page's own `SourceCounts` and the run's running ones — the UI's chance to
     narrate progress (§10) from real counts.
+
+    Given `db_path`, the sources run **at the same time**, one thread and one
+    connection each (§8 rule 2): the throttle is shared per host, so no host is
+    fetched twice at once, and four scrapers on four hosts cost the slowest one
+    rather than the sum. Without it they run in order on the caller's
+    connection, which is what a single source or a test wants.
     """
     now = now or datetime.now(UTC)
     _close_stale_runs(connection, now, stale_after)
 
-    query_hash = _spec_fingerprint(spec)
-    run_id = _start_run(connection, spec, [adapter.source for adapter in adapters])
-    resumed_any = False
-
-    found = new = duplicates = 0
-    errors: list[str] = []
-    per_source: dict[str, SourceCounts] = {}
-    state = "done"
-    budget_exhausted = False
+    adapters = list(adapters)
+    run = _RunState(
+        run_id=_start_run(connection, spec, [adapter.source for adapter in adapters]),
+        query_hash=_spec_fingerprint(spec),
+        now=now,
+        resume=resume,
+        on_page=on_page,
+    )
 
     try:
-        for adapter in adapters:
-            # §8 rule 7: a source that failed three runs running sits this one
-            # out rather than spending it on timeouts.
-            if (paused := cooling_off(connection, adapter.source, now=now)) is not None:
-                per_source[adapter.source] = _add_counts(
-                    per_source.get(adapter.source), SourceCounts(errors=(paused,))
-                )
-                errors.append(f"{adapter.source}: {paused}")
-                continue
-            start_query_index, start_page = 0, 1
-            if resume:
-                cursor = _cursor(connection, adapter.source, query_hash)
-                if cursor is not None:
-                    start_query_index, start_page = cursor
-                    resumed_any = True
-            source_found = source_new = source_duplicates = 0
-            source_errors: list[str] = []
-            try:
-                for page in adapter.search_pages(
-                    spec, start_query_index=start_query_index, start_page=start_page
-                ):
-                    outcome_counts = _store_page(connection, adapter, page)
-                    found += outcome_counts[0]
-                    new += outcome_counts[1]
-                    duplicates += outcome_counts[2]
-                    source_found += outcome_counts[0]
-                    source_new += outcome_counts[1]
-                    source_duplicates += outcome_counts[2]
-                    _save_cursor(
-                        connection, adapter.source, query_hash, page.query_index, page.page
-                    )
-                    record_success(connection, adapter.source, now=now)  # it answers
-                    _progress(
-                        connection, run_id, found=found, new=new, duplicates=duplicates, now=now
-                    )
-                    if on_page is not None:
-                        on_page(
-                            page,
-                            SourceCounts(*outcome_counts),
-                            SourceCounts(found=found, new=new, duplicates=duplicates),
-                        )
-            except (KeyboardInterrupt, RequestBudgetExhausted) as err:
-                # Her stop or the politeness limit: halt the whole run here.
-                state = "interrupted"
-                budget_exhausted = isinstance(err, RequestBudgetExhausted)
-                reason = str(err) if budget_exhausted else "stopped by user"
-                message = f"{adapter.source}: {reason}"
-                errors.append(message)
-                source_errors.append(message)
-                break
-            except Exception as err:  # one source down must not lose the others
-                state = "interrupted"
-                message = f"{adapter.source}: {type(err).__name__}: {err}"
-                errors.append(message)
-                source_errors.append(message)
-                record_failure(connection, adapter.source, reason=str(err), now=now)
-            finally:
-                per_source[adapter.source] = _add_counts(
-                    per_source.get(adapter.source),
-                    SourceCounts(
-                        found=source_found,
-                        new=source_new,
-                        duplicates=source_duplicates,
-                        errors=tuple(source_errors),
-                    ),
-                )
+        if db_path is not None and len(adapters) > 1:
+            _run_in_parallel(adapters, spec, run, db_path)
+        else:
+            for adapter in adapters:
+                _run_one_source(connection, adapter, spec, run)
+                if run.stop.is_set():
+                    break
     finally:
-        _finish_run(connection, run_id, state, found, new, duplicates, errors, now=now)
+        _finish_run(
+            connection,
+            run.run_id,
+            run.state,
+            run.found,
+            run.new,
+            run.duplicates,
+            run.errors,
+            now=now,
+        )
         if csv_path is not None:
             export_jobs_init(connection, csv_path)  # what landed is readable now
 
     return SearchSummary(
-        run_id=run_id,
-        state=state,
-        found=found,
-        new=new,
-        duplicates=duplicates,
-        errors=errors,
-        resumed=resumed_any,
-        budget_exhausted=budget_exhausted,
-        per_source=per_source,
+        run_id=run.run_id,
+        state=run.state,
+        found=run.found,
+        new=run.new,
+        duplicates=run.duplicates,
+        errors=run.errors,
+        resumed=run.resumed_any,
+        budget_exhausted=run.budget_exhausted,
+        per_source=run.per_source,
     )
+
+
+def _run_in_parallel(adapters, spec: SearchSpec, run: _RunState, db_path: Path) -> None:
+    """One worker per source, each with its own connection — never a shared one."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def work(adapter):
+        worker_connection = connect(db_path)  # §8 rule 2: one per thread
+        try:
+            _run_one_source(worker_connection, adapter, spec, run)
+        finally:
+            worker_connection.close()
+
+    with ThreadPoolExecutor(max_workers=len(adapters)) as pool:
+        for future in [pool.submit(work, adapter) for adapter in adapters]:
+            future.result()  # re-raises anything _run_one_source failed to catch
 
 
 def run_search_until_done(
