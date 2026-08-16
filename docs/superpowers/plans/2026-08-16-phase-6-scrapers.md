@@ -160,6 +160,46 @@ first — it is the one that pays rent).
 - [ ] T14 Definition of Done sweep: full suite, ruff, MASTER_PLAN ticks and
       §5/§8 updates, config example, this file closed out.
 
+## Adzuna, measured live 2026-08-16 (her key is now in `.env`)
+
+Probed before writing a line of parser, because the question "is Adzuna a
+substitute for StepStone" needed an answer from the API rather than from
+reasoning.
+
+| question | measured |
+|---|---|
+| Volume for her specs | minijob/Ingolstadt **204**, teilzeit/Ingolstadt **815**, werkstudent/München **1 705**, aushilfe/Augsburg **93** |
+| New to her store? | **84 %** — only 24 of 150 rows match a stored Bundesagentur job on title + company |
+| Full ad text in the API? | **No.** Description is capped at 500 characters; 195 of 200 end in an ellipsis |
+| Recoverable by following `redirect_url`? | **61 %** — of 18 followed, 11 returned a page carrying a JSON-LD `JobPosting` (median 2 332 characters, max 4 082), 7 returned 403 |
+| Which board is behind a row? | **Hidden.** Every `redirect_url` is an `adzuna.de` tracker; the origin only appears if the redirect is followed |
+
+**Conclusion: not a StepStone replacement, but a fourth source worth having.**
+Whether a given row came from StepStone is unknowable and turns out to be
+beside the point — what matters is that 84 % of the inventory is new to her
+and 61 % of it can be read in full through the JSON-LD extractor this phase
+already built.
+
+Design that follows from the numbers:
+
+- Rows parse into `AZ:{id}` postings from `results[]`: `title`, `company.display_name`,
+  `location` (`area[]` carries the city, `display_name` is "district, city"),
+  `created`, `category`, `latitude`/`longitude`, and the 500-character teaser.
+- `fetch_detail` follows `redirect_url` and extracts the JSON-LD ad. A 403
+  keeps the teaser rather than nothing — Phase 7 marks those rows
+  `german_level: unclear`, because §5 forbids an evidence-free guess.
+- One extra request per genuinely new job, the same cost shape as the BA
+  detail fetch, and T11 already skips it for jobs the store knows.
+- The recorded fixture has the account's `app_id` replaced with
+  `APP_ID_REDACTED`: Adzuna stamps it into every `redirect_url`, and fixtures
+  are committed.
+
+**StepStone and Indeed are settled by this**: both still refuse this machine
+(StepStone below HTTP, Indeed 403 + WAF page, re-probed today), neither has a
+sanctioned API, and the only thing that would change either is a real browser
+— out of scope since this phase was written. They stay off, with skip lines
+that say why.
+
 ## Known gaps this phase ships with
 
 - StepStone and Indeed cannot be recorded from this network (transport
