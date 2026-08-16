@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — M1 and M2 done, phases 0-5 done, M3 needs Phase 7
+status: in progress — phases 0-6 done (v0.4.0), Phase 7 under way; M3 needs it
 ---
 
 # JobFinderV2 — Master Plan
@@ -70,7 +70,7 @@ Phases are ordered so that the app becomes useful before it becomes complete.
 | **M2 — Advice** | 2–3 | Fill in her CV and get job titles worth searching for, in German and English |
 | **M3 — First real shortlist** | 4–5, 7 | Run a search and get a CSV of live Bavarian jobs, each explained in English |
 | **M4 — The actual product** | 8 | Browse, filter, read, and mark jobs applied/deleted in a real UI |
-| **M5 — Wider net** | 6, 9 | Get StepStone/Indeed/Xing results, plus a call-list of local kitchens and bakeries |
+| **M5 — Wider net** | 6, 9 | Phase 6 done: Kleinanzeigen, Xing and Adzuna, searched in parallel. StepStone and Indeed are blocked from this machine and ship off. Phase 9 (the call-list) is still open |
 | **M6 — Handover** | 10 | Double-click one file on her own laptop and use it without help |
 
 **If time gets short, ship M4 and stop.** Phases 6 and 9 are additive; nothing in
@@ -949,6 +949,15 @@ never a failed run and never a blocked IP. Everything in
       `test_http_client_waits_between_requests_to_the_same_host`; live runs held 1.50 s
       per API request and 3 s per scraped one
 
+**Phase 6 complete (v0.4.0).** Kleinanzeigen, Xing and Adzuna ship enabled; a real
+run returns 346 jobs across five sources in 11 seconds, with the sources searched in
+parallel, one connection each. StepStone and Indeed were re-probed on 2026-08-16 and
+still refuse this machine — both ship off with a skip line that says so, and neither
+has a sanctioned API to fall back on. Adzuna reaches part of that inventory instead:
+84 % of its rows were jobs the Bundesagentur search never returned. Three gaps are
+recorded in
+[the phase plan](superpowers/plans/2026-08-16-phase-6-scrapers.md#known-gaps-this-phase-ships-with).
+
 **Out of scope:** headless browsers. If a site requires JavaScript execution, that
 adapter is dropped rather than escalated — the cost/benefit against the BA API is poor.
 
@@ -987,9 +996,9 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 
 - [ ] `test_enrichment_prompt_includes_the_full_description_and_her_cv_digest`
 - [ ] `test_fake_answer_maps_onto_every_enriched_csv_column`
-- [ ] `test_german_level_outside_the_enum_is_rejected`
-- [ ] `test_german_level_without_evidence_is_rejected` — no unsupported guesses
-- [ ] `test_answer_in_german_is_rejected_by_the_validator` (summary must be English)
+- [x] `test_a_german_level_outside_the_enum_is_rejected`
+- [x] `test_a_german_level_without_evidence_is_rejected` — no unsupported guesses
+- [x] `test_an_answer_written_in_german_is_rejected` (summary must be English)
 - [ ] `test_pipe_separated_list_fields_survive_a_csv_round_trip`
 - [ ] `test_already_enriched_job_is_not_sent_again`
 - [ ] `test_changed_description_triggers_re_enrichment`

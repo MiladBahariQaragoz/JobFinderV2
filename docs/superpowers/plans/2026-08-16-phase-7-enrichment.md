@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: planned
+status: in progress — T1-T2 done, T3 (the prompt) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -79,10 +79,10 @@ evidenced from a full ad, and must never let the first pretend to be the second.
 
 ## Tasks
 
-### T1 — this plan doc
+### T1 — this plan doc ✅
 Commit: `docs: phase-7 task plan grounded in what her store actually holds`.
 
-### T2 — the answer contract: `ENRICHMENT_SPEC` + validator
+### T2 — the answer contract: `ENRICHMENT_SPEC` + validator ✅
 `tests/unit/test_llm_schema.py`. The shape from §5 as `FieldRule`s, plus the
 two rules that are this project's and not the model's:
 - a `german_level` outside `none/A1…C2/unclear` is rejected naming the value;
