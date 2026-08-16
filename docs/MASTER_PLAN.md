@@ -174,7 +174,7 @@ an export test, so they are settled here rather than per phase.
 | Field | Rule | Example |
 |---|---|---|
 | `job_id` | `{SOURCE}:{native id}` — stable, the primary key | `BA:11119-4913285274-S` |
-| `source` | Short code per adapter | `BA`, `AN`, `AZ`, `SS`, `ID`, `XI` |
+| `source` | Short code per adapter | `BA`, `AN`, `AZ`, `KA`, `SS`, `ID`, `XI` |
 | `dedupe_key` | `sha1(normalized_title + normalized_company + normalized_city)` — catches the same job listed on three sites | `9f2c…` |
 | `content_hash` | `sha1(description)` — changes only when the ad text changes, drives re-enrichment | `41ab…` |
 
@@ -262,10 +262,10 @@ assumptions, and the failures are recorded so nobody re-discovers them.
 | | ⚠️ | `pc/v4/jobs` → `403`, `pc/v6/jobdetails` → `403`, OAuth `gettoken_cc` → `403` | Use v6 for search, v4 for details. Do not "fix" this by switching versions. |
 | | ⚠️ | ~1 in 3 ads has an empty `stellenangebotsBeschreibung` and only an `externeURL` | Fallback: fetch the external URL and extract text (Phase 4). |
 | **Arbeitnow** | ✅ verified `200` | `GET www.arbeitnow.com/api/job-board-api`, no key, CORS open | Tech/English-friendly DACH roles, paginated. Good for her qualified-role search, weak on Bavaria-specific and non-tech work. |
-| **Adzuna** | ⚙️ optional | `api.adzuna.com/v1/api/jobs/de/search/{page}` with free `app_id`/`app_key` | Aggregates listings that include StepStone-sourced ads. Add only if she registers a key; adapter must no-op cleanly when the key is absent. |
+| **Adzuna** | ✅ verified `200`, key registered 2026-08-16 | `api.adzuna.com/v1/api/jobs/de/search/{page}` with free `app_id`/`app_key` | Measured, not assumed: **204** minijobs for Ingolstadt, **84 %** of rows absent from the Bundesagentur set. Its description is a **500-character teaser**, so `fetch_detail` follows `redirect_url` for the real ad — good for the first ~40 of a run, after which adzuna.de serves a sign-in wall and the rest keep teasers. Which board is behind a row is never visible. A source of leads, not of readable ads. Absent keys mean skipped, never an error. |
 | **OpenStreetMap Overpass** | ✅ verified `200` | `POST overpass-api.de/api/interpreter` | For general work. Neuburg an der Donau alone returned **60** restaurants/cafés/bakeries, **28 with a phone or email**. This is the cold-contact engine. |
-| **StepStone** | 🔨 scraper | Search results page → listing pages | `robots.txt` disallows much of the site and forbids non-conforming robots. Included by explicit decision; treat as fragile. |
-| **Indeed** | 🔨 scraper | Search results page → listing pages | Aggressive bot detection; expect it to be the first to break. Kill switch matters here. |
+| **StepStone** | ⛔ blocked below HTTP (re-probed 2026-08-16) | Search results page → listing pages | Every request is reset at the transport level — TLS-fingerprint filtering, so a User-Agent change buys nothing. Adapter built and tested against the failure path, **off by default**, skip line says why. Only a real browser would change this, which Phase 6 rules out. |
+| **Indeed** | ⛔ `403` + WAF page (re-probed 2026-08-16) | Search results page → listing pages | Answers with a 27 KB block page. No sanctioned API exists — their publisher API is closed to new signups. Built, tested against the recorded 403, **off by default**. |
 | **Xing** | 🔨 scraper | Public job pages | `robots.txt` disallows `/search/` and `/publicsearch/`. Public listing pages only, never anything behind login. |
 | **Kleinanzeigen** | ✅ verified `200`, scraper | `GET www.kleinanzeigen.de/s-jobs/{city}/c102l{locationId}` → 25 listings per page, then `/s-anzeige/{slug}/{id}` | **Probably her best source for minijobs.** This is where Bavarian bakeries, kitchens, cleaning firms and shops actually post. Verified: 25 parseable listing links and 27 JSON-LD blocks on one page, ads like "Aushilfe im Verkauf Minijob", "Reinigungskraft als Minijob". Category `c102` is Jobs. |
 | | ⚠️ | The `l{id}` code is a Kleinanzeigen location id, not a city name — `l7414` resolved to Stockstadt, not Ingolstadt | A verified city → location-id map is a deliverable, not something to guess at runtime. |
@@ -929,12 +929,25 @@ never a failed run and never a blocked IP. Everything in
 ### Done when
 
 - [ ] Each scraper returns real listings for "Werkstudent München" and "Aushilfe Küche
-      Ingolstadt"
-- [ ] Kleinanzeigen returns ads for Neuburg, Ingolstadt and Munich with the right
-      locations, and the minijob flag is right on a hand-checked sample of ten
-- [ ] Turning all three off leaves the app fully working on API sources
-- [ ] A deliberately corrupted fixture produces a clean "source failed" line, no traceback
-- [ ] A full run makes no more requests than the budget allows, at human pace
+      Ingolstadt" — **partly, and honestly**: run live 2026-08-16, Xing returned 20 and
+      19; Kleinanzeigen returned 3 for Aushilfe Küche Ingolstadt and **0** for
+      Werkstudent München, whose jobs browse carries almost no student work that day;
+      StepStone and Indeed are blocked and cannot answer at all
+- [x] Kleinanzeigen returns ads for Neuburg, Ingolstadt and Munich with the right
+      locations, and the minijob flag is right on a hand-checked sample —
+      `tests/live/test_kleinanzeigen_location_ids.py` verified **all thirteen** ids
+      against live postcodes, and the stored Kleinanzeigen rows were right on 7 of 7
+      (the sample it produced), including two the title alone would have missed
+- [x] Turning all three off leaves the app fully working on API sources — run with
+      `enabled_sources: [ba, arbeitnow, adzuna]`: 320 jobs, three skip lines, nothing broke
+- [x] A deliberately corrupted fixture produces a clean "source failed" line, no traceback
+      — `test_a_junk_200_page_yields_no_postings_and_no_crash` (both boards),
+      `test_one_source_failing_costs_only_its_own_results`, and
+      `test_an_unexpected_break_is_reported_not_raised` for `sources check`
+- [x] A full run makes no more requests than the budget allows, at human pace —
+      `test_request_budget_is_enforced_on_retries_too` plus the per-host gap in
+      `test_http_client_waits_between_requests_to_the_same_host`; live runs held 1.50 s
+      per API request and 3 s per scraped one
 
 **Out of scope:** headless browsers. If a site requires JavaScript execution, that
 adapter is dropped rather than escalated — the cost/benefit against the BA API is poor.

@@ -2,7 +2,7 @@
 title: "Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T13 done, T14 (definition of done) next
+status: done — shipped with Adzuna; three gaps recorded below
 master-plan: docs/MASTER_PLAN.md#phase-6--scrapers-kleinanzeigen-stepstone-indeed-xing
 ---
 
@@ -157,7 +157,7 @@ first — it is the one that pays rent).
 - [x] T13 Live tests: `test_kleinanzeigen_location_ids.py` (each mapped id
       returns ads located in its city), `test_scrapers_smoke.py` (one query
       per site, ≥1 parseable result or a clean "blocked" verdict).
-- [ ] T14 Definition of Done sweep: full suite, ruff, MASTER_PLAN ticks and
+- [x] T14 Definition of Done sweep: full suite, ruff, MASTER_PLAN ticks and
       §5/§8 updates, config example, this file closed out.
 
 ## Adzuna, measured live 2026-08-16 (her key is now in `.env`)
@@ -211,6 +211,26 @@ sanctioned API, and the only thing that would change either is a real browser
 that say why.
 
 ## Known gaps this phase ships with
+
+Added at closeout, all found by using the thing rather than by reading it:
+
+- **Flags on stored rows do not improve when the vocabulary does.** A Xing ad
+  titled "Flexibler Nebenjob als Preisbeobachter*in" sits in her store with
+  `is_minijob = 0` because it was stored at 14:54 and "Nebenjob" entered the
+  word list at 17:07. §5's re-run rule deliberately touches nothing but
+  `last_seen_at`, so nothing will ever fix it in place. Re-flagging wants its
+  own command, and Phase 8 is where it will be missed, because that is where
+  the minijob filter lives.
+- **Kleinanzeigen reposts stay separate rows.** Two identical
+  "Fahrscheinkontrolleur" ads are in the store under two ad ids. The merge is
+  cross-source only on purpose (two Penny openings in Neuburg are two jobs),
+  so a genuine repost on one site survives as two rows. Cheap for her to
+  ignore, wrong to fix by weakening the rule.
+- **Kleinanzeigen's München browse is thin.** Zero werkstudent ads the day this
+  shipped, and the location-id test had to skip it for want of any ads. The id
+  is right — the browse simply carries little there.
+
+## Original gaps
 
 - StepStone and Indeed cannot be recorded from this network (transport
   block / 403). Their adapters exist, are disabled by default, and their
