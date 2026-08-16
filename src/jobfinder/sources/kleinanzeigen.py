@@ -111,7 +111,14 @@ def _posting_from_article(article, source_url: str) -> RawPosting | None:
         (article.select_one(".aditem-main--top--left") or article.select_one(".aditem-main--top"))
         and article.select_one(".aditem-main--top--left").get_text(" ", strip=True)
     )
-    signals = employment_type_signals(title)
+    # The teaser under each title is already in this response, and it is where
+    # "Minijob" or "auf 520 € Basis" usually appears when the title is just a
+    # job name. It is two lines, so it informs the flags but is never stored
+    # as the ad text — that would set has_description and cost her the real ad,
+    # since the runner skips the detail fetch for a posting that has text.
+    snippet_el = article.select_one(".aditem-main--middle--description")
+    snippet = snippet_el.get_text(" ", strip=True) if snippet_el else None
+    signals = employment_type_signals(title, snippet)
     return RawPosting(
         job_id=f"KA:{ad_id}",
         source="KA",
@@ -239,11 +246,25 @@ class KleinanzeigenScraper:
 
     @staticmethod
     def _matching(postings: list[RawPosting], spec: SearchSpec) -> list[RawPosting]:
-        """Types are alternatives: wording for any one of her types passes."""
+        """Types are alternatives: wording for any one of her types passes.
+
+        The flags were read from the title *and* the list snippet, so filtering
+        on them rather than re-reading the title keeps both signals.
+        """
         wanted = set(spec.employment_types)
         kept = []
         for posting in postings:
-            signals = employment_type_signals(posting.title)
+            signals = {
+                employment_type
+                for employment_type, flag in (
+                    ("minijob", posting.is_minijob),
+                    ("parttime", posting.is_parttime),
+                    ("fulltime", posting.is_fulltime),
+                    ("internship", posting.is_internship),
+                    ("werkstudent", posting.is_werkstudent),
+                )
+                if flag
+            }
             if not wanted or signals & wanted:
                 kept.append(posting)
         return kept

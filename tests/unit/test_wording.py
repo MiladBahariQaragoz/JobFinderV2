@@ -24,6 +24,24 @@ class TestEmploymentTypeSignals:
         assert "parttime" in employment_type_signals("Teilzeitkraft gesucht")
         assert "fulltime" in employment_type_signals("Vollzeitstelle")
 
+    def test_the_other_words_german_ads_use_for_a_side_job(self):
+        # Hand-checked against a real Ingolstadt page: "Nebenjob" was the most
+        # common wording on it and the list did not know the word, so the ad
+        # was dropped before anyone looked at it.
+        for wording in (
+            "❌Nebenjob in INGOLSTADT | Einlasskontrolle – 21,00 €/h❌",
+            "Schülerjob: Zeitungen austragen",
+            "Nebentätigkeit am Wochenende",
+            "Studentenjob Warenverräumung",
+        ):
+            assert "minijob" in employment_type_signals(wording), wording
+
+    def test_every_threshold_the_minijob_limit_has_had(self):
+        # The limit is indexed to the minimum wage and has moved repeatedly.
+        # An ad quoting this year's figure must not read as a full-time post.
+        for amount in ("450 €", "520 €", "538 €", "556 €"):
+            assert "minijob" in employment_type_signals(f"Aushilfstätigkeit auf {amount} Basis")
+
     def test_a_quiet_ad_signals_nothing(self):
         assert employment_type_signals("Produktionsmitarbeiter (m/w/d)") == set()
 

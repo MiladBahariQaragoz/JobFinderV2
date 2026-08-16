@@ -13,16 +13,30 @@ from __future__ import annotations
 MINIJOB_WORDS = (
     "minijob",
     "mini-job",
-    "450 €",
-    "450€",
-    "450 euro",
-    "450-basis",
-    "520 €",
-    "520€",
-    "520 euro",
+    "mini job",
+    # The words the ads on a real Ingolstadt page actually used. "Nebenjob"
+    # was the commonest of them and was missing, so those ads were dropped
+    # before anyone read them.
+    "nebenjob",
+    "neben-job",
+    "nebentätigkeit",
+    "nebentaetigkeit",
+    "schülerjob",
+    "schuelerjob",
+    "studentenjob",  # colloquial for a small job, not the Werkstudent contract
     "geringfügig",
     "geringfuegig",
     "aushilfe",
+    "aushilfs",  # Aushilfskraft, Aushilfstätigkeit
+    # Every earnings ceiling the minijob has had. The limit is indexed to the
+    # minimum wage and rises most years, so an ad quoting this year's figure
+    # reads as a full-time post until its number is on this list. Check the
+    # current ceiling each January and add it here.
+    *(
+        spelling
+        for amount in ("450", "520", "538", "556")
+        for spelling in (f"{amount} €", f"{amount}€", f"{amount} euro", f"{amount}-basis")
+    ),
 )
 
 WERKSTUDENT_WORDS = ("werkstudent", "studentische hilfskraft", "working student")

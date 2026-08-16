@@ -119,6 +119,57 @@ class TestParseList:
 # -- query building --------------------------------------------------------------
 
 
+class TestListSnippet:
+    """The list page carries the first lines of each ad — free signal.
+
+    Hand-check of the recorded page: 27 ads, 3 of them genuinely small jobs,
+    and filtering on the title alone found one. The snippet is already in the
+    response we paid for, so reading it costs nothing and no extra request.
+    """
+
+    def snippet_ad(self, fixture_path, *, title: str, snippet: str):
+        from jobfinder.sources.kleinanzeigen import parse_list
+
+        soup = BeautifulSoup(list_html(fixture_path), "html.parser")
+        article = copy.copy(soup.select("article.aditem")[0])
+        article.select_one(".text-module-begin a.ellipsis").string = title
+        article.select_one(".aditem-main--middle--description").string = snippet
+        postings, _ = parse_list(str(article))
+        return postings[0]
+
+    def test_wording_in_the_snippet_sets_the_flag(self, fixture_path):
+        posting = self.snippet_ad(
+            fixture_path,
+            title="Fahrscheinkontrolleur (m|w|d) | Sicherheit",  # says nothing
+            snippet="Wir zahlen auf 450 € Basis, ideal als Nebenjob.",
+        )
+        assert posting.is_minijob is True
+
+    def test_the_snippet_is_not_stored_as_the_ad_text(self, fixture_path):
+        # It is two lines of teaser. Storing it would set has_description and
+        # rob her of the real ad, because the runner skips the detail fetch
+        # for a posting that already carries text.
+        posting = self.snippet_ad(
+            fixture_path, title="Produktionsmitarbeiter (m/w/d)", snippet="Wir verbinden Jobs..."
+        )
+        assert posting.description is None
+        assert posting.has_description is False
+
+    def test_an_ad_the_snippet_rescues_survives_the_filter(self, fixture_path):
+        from jobfinder.sources.kleinanzeigen import KleinanzeigenScraper
+
+        soup = BeautifulSoup(list_html(fixture_path), "html.parser")
+        article = soup.select("article.aditem")[0]
+        article.select_one(".text-module-begin a.ellipsis").string = "Fahrscheinkontrolleur (m|w|d)"
+        article.select_one(".aditem-main--middle--description").string = "Minijob, 15 Std./Woche"
+
+        # The recorded page carries a next link, so the walk asks for one more.
+        client = RecordingClient([str(soup), "<html><body></body></html>"])
+        pages = list(KleinanzeigenScraper(client).search_pages(spec(employment_types=["minijob"])))
+        kept = [posting.title for page in pages for posting in page.postings]
+        assert "Fahrscheinkontrolleur (m|w|d)" in kept
+
+
 class TestQueries:
     def test_one_browse_query_per_city_and_it_is_offers_only(self):
         from jobfinder.sources.kleinanzeigen import build_queries
