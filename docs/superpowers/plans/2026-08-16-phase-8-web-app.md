@@ -2,7 +2,7 @@
 title: "Phase 8 — The app she actually uses"
 date: 2026-08-16
 type: phase-plan
-status: in progress
+status: complete — T1-T8 shipped, verified on her real store 2026-08-16
 master-plan: docs/MASTER_PLAN.md#phase-8--the-app-she-actually-uses
 ---
 
@@ -18,9 +18,20 @@ applied to.
 
 ## What the store already holds (measured, not assumed)
 
-Her database after Phase 7: 674 jobs, 5 sources, 660+ enriched answers at
-`enrich.v1` with evidenced German levels. Everything the list and job pages
-need exists — but not all of it exists **queryably**:
+Her database after Phase 7: 674 jobs across 4 sources (BA 447, Adzuna 202,
+Xing 18, Kleinanzeigen 7), of which **20** carry an answer at `enrich.v1`.
+
+> **Corrected 2026-08-16, at T8.** This section originally claimed "5 sources,
+> 660+ enriched answers", and both halves were wrong when counted. Phase 7
+> enriched the twenty postings its own done-when asked for and stopped; the
+> rest of the store has never been through a batch. The list and job pages are
+> built for that: an unenriched job reads "not read yet" with no fit score,
+> which is the truth rather than a gap. Nothing in the plan below depended on
+> the wrong number, but a premise nobody checked is exactly the kind of thing
+> this document exists to stop.
+
+Everything the list and job pages need exists — but not all of it exists
+**queryably**:
 
 - `german_level` and `fit_score` live inside `enrichment.answer` as JSON.
   Filtering and sorting on them means `json_extract` in SQL, not fetching and
@@ -172,6 +183,23 @@ Commit: `test: the visual rules and one real end-to-end path`.
 `jobfinder serve` against her 674-job database: browse, filter, open jobs,
 mark one applied, confirm restart survival and a 1 000-row page time; tick
 the MASTER_PLAN boxes; CLAUDE.md commands; merge.
+
+**Done, and it earned its place.** Driving the real app found four defects that
+616 green tests did not, every one of them on a path the tests exercised
+through a seam rather than end to end:
+
+| Found | Why no test caught it | Commit |
+|---|---|---|
+| `jobfinder serve` died on startup — `uvicorn.run()` has no `callback_notify` | The three serve tests injected a fake serve; the HTTP test built its own uvicorn config. Nothing called `_uvicorn_serve` | `fix: jobfinder serve really starts…` |
+| `callback_notify` would have reopened her browser tab every second, and deadlocks the loop it is awaited on | It is uvicorn's own heartbeat, not a one-shot ready hook — only a real server shows that | same |
+| "The work" and "You need" rendered a heading over an empty list | Every fixture answer had duties and requirements. Her real store had an ad too short to have any | `fix: a section the ad says nothing about says so…` |
+| The empty state offered filters she had not set, and a caveat that was untrue of her search | The test asserted the named filters appeared, not that unnamed ones stayed away | `fix: the empty state offers the filters she set…` |
+| `started_at`, `last_progress_at` and `finished_at` were one frozen stamp, so §9's stale rule would close a healthy long run | Tests froze `now` deliberately and asserted counts, never that the clock moved | `fix: the run journal keeps time…` |
+
+Measured on the way through: 1 348-job list page in 413 ms (row pages
+103–125 ms); a live search narrating `104 found, 15 new` with per-source lines;
+a mid-run reload returning the same run with current counts; Cancel leaving
+282 found / 68 new kept and an `interrupted` row behind the Resume banner.
 
 ## Done when (mirrored from MASTER_PLAN)
 
