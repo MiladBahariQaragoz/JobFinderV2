@@ -185,7 +185,7 @@ class TestAutoContinue:
             return summary()
 
         main(["search", "--root", str(tmp_path)], _client_factory=client_factory, _runner=runner)
-        assert len(built) == 4  # 2 legs × 2 default sources
+        assert len(built) == 8  # 2 legs × 4 default sources
 
     def test_the_leg_cap_comes_from_settings(self, tmp_path):
         seen = {}
@@ -397,9 +397,9 @@ class TestClientPacing:
 
         assert client.min_delay == 1.0
 
-    def test_a_real_run_paces_the_api_sources_at_one_second(self, tmp_path):
+    def test_a_real_run_paces_each_source_by_what_it_talks_to(self, tmp_path):
         # End to end through the registry: nothing else in the app decides
-        # this, so an accidental default of 3 s would show up here.
+        # this, so a scraper paced like an API would show up here.
         paces = []
 
         def client_factory(settings, delay_seconds):
@@ -411,7 +411,8 @@ class TestClientPacing:
             return summary()
 
         main(["search", "--root", str(tmp_path)], _client_factory=client_factory, _runner=runner)
-        assert paces == [1.0, 1.0]  # Bundesagentur and Arbeitnow
+        # Bundesagentur, Arbeitnow — then Kleinanzeigen and Xing, scraped.
+        assert paces == [1.0, 1.0, 3.0, 3.0]
 
 
 class TestValidation:

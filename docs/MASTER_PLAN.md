@@ -914,7 +914,8 @@ never a failed run and never a blocked IP. Everything in
       both boards); "records a failure" waits for the source-health work below
 - [ ] `test_three_consecutive_failures_disable_the_source`
 - [ ] `test_disabled_source_is_skipped_on_the_next_run_until_reset`
-- [ ] `test_scraper_respects_min_delay_between_requests` (fake clock)
+- [x] `test_scraper_sources_are_built_with_the_scraper_delay` +
+      `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
 - [x] `test_concurrent_requests_to_one_host_are_still_spaced`
 - [x] `test_two_clients_on_the_same_host_wait_for_each_other`
 - [ ] `test_two_different_hosts_are_fetched_at_the_same_time` (§8 rule 2 — the

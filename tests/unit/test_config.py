@@ -21,7 +21,9 @@ def test_settings_defaults_when_no_config_file_exists(tmp_path):
     assert settings.request_budget == 800
     assert settings.max_search_legs == 6
     assert settings.llm_budget == 500
-    assert settings.enabled_sources == ("ba", "arbeitnow")  # the free, keyless APIs
+    # The sources that answer this machine. StepStone and Indeed are known
+    # and off by default — they blocked this client in testing.
+    assert settings.enabled_sources == ("ba", "arbeitnow", "kleinanzeigen", "xing")
 
 
 def test_request_pacing_defaults_differ_by_host_kind(tmp_path):

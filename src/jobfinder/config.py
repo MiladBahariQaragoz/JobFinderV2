@@ -33,7 +33,11 @@ class Settings:
     api_delay_seconds: float = 1.0
     scraper_delay_seconds: float = 3.0
     llm_budget: int = 500
-    enabled_sources: tuple[str, ...] = ("ba", "arbeitnow")
+    # The sources that answer this machine: two free APIs and the two scraped
+    # sites that serve her market. StepStone and Indeed stay opt-in — both
+    # refused this client in testing, and enabling them by default would spend
+    # a run's minutes on timeouts.
+    enabled_sources: tuple[str, ...] = ("ba", "arbeitnow", "kleinanzeigen", "xing")
     # Bounds for every Pool built this run — see docs/llm-backend.md.
     llm_max_wait_seconds: float = 3600
     llm_run_deadline_seconds: float = 7200

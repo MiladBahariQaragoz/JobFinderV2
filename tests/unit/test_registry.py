@@ -67,6 +67,14 @@ class TestPacing:
 
         assert seen == [1.0, 1.0, 1.0]  # every source today is a documented API
 
+    def test_scraper_sources_are_built_with_the_scraper_delay(self, tmp_path):
+        settings = Settings(project_root=tmp_path, enabled_sources=("kleinanzeigen", "xing"))
+        factory, seen = delays_tracker()
+
+        build_adapters(settings, factory)
+
+        assert seen == [3.0, 3.0]  # a scraped site gets the careful gap
+
     def test_a_scraper_source_would_be_built_with_the_scraper_delay(self, tmp_path):
         from jobfinder.sources.registry import delay_for_kind
 
@@ -118,10 +126,8 @@ class TestBuildAdapters:
         settings = Settings(project_root=tmp_path, enabled_sources=("ba", "adzuna"))
         built = build_adapters(settings, lambda _s, _delay=None: object())
         assert [adapter.source for adapter in built.adapters] == ["BA"]
-        assert built.skipped == (
-            ("arbeitnow", "disabled in config.yaml"),
-            ("adzuna", "no API key in .env"),
-        )
+        assert ("adzuna", "no API key in .env") in built.skipped
+        assert ("arbeitnow", "disabled in config.yaml") in built.skipped
 
     def test_adzuna_with_keys_runs_and_gets_its_own_client(self, tmp_path, adzuna_keys):
         settings = Settings(project_root=tmp_path, enabled_sources=("ba", "adzuna"))
@@ -130,15 +136,42 @@ class TestBuildAdapters:
         assert [adapter.source for adapter in built.adapters] == ["BA", "AZ"]
         assert len(made) == 2
 
+    def test_the_scrapers_build_behind_the_same_interface(self, tmp_path, no_adzuna_keys):
+        from jobfinder.sources.indeed import IndeedScraper
+        from jobfinder.sources.kleinanzeigen import KleinanzeigenScraper
+        from jobfinder.sources.stepstone import StepStoneScraper
+        from jobfinder.sources.xing import XingScraper
+
+        settings = Settings(
+            project_root=tmp_path,
+            enabled_sources=("kleinanzeigen", "xing", "stepstone", "indeed"),
+        )
+        built = build_adapters(settings, lambda _s, _delay=None: object())
+        assert [adapter.source for adapter in built.adapters] == ["KA", "XI", "SS", "ID"]
+        assert isinstance(built.adapters[0], KleinanzeigenScraper)
+        assert isinstance(built.adapters[1], XingScraper)
+        assert isinstance(built.adapters[2], StepStoneScraper)
+        assert isinstance(built.adapters[3], IndeedScraper)
+
+    def test_a_blocked_board_says_why_it_is_off_when_left_out(self, tmp_path, no_adzuna_keys):
+        # StepStone and Indeed refused this project's client in Phase 6 recon;
+        # off-by-default is the shipped state, and the skip line names it.
+        settings = Settings(project_root=tmp_path, enabled_sources=("ba", "arbeitnow"))
+        built = build_adapters(settings, lambda _s, _delay=None: object())
+        reasons = dict(built.skipped)
+        assert "stepstone" in reasons
+        assert "indeed" in reasons
+        assert "blocked" in reasons["stepstone"]
+
     def test_a_known_source_left_out_of_settings_is_reported_disabled(
         self, tmp_path, no_adzuna_keys
     ):
         settings = Settings(project_root=tmp_path, enabled_sources=("ba",))
         built = build_adapters(settings, lambda _s, _delay=None: object())
-        assert built.skipped == (
-            ("arbeitnow", "disabled in config.yaml"),
-            ("adzuna", "disabled in config.yaml"),
-        )
+        reasons = dict(built.skipped)
+        assert reasons["arbeitnow"] == "disabled in config.yaml"
+        assert reasons["adzuna"] == "disabled in config.yaml"
+        assert reasons["kleinanzeigen"] == "disabled in config.yaml"
 
     def test_unknown_source_name_names_the_valid_ones(self, tmp_path, no_adzuna_keys):
         settings = Settings(project_root=tmp_path, enabled_sources=("ba", "linkedin"))
@@ -151,10 +184,13 @@ class TestBuildAdapters:
 
 
 class TestDefaults:
-    def test_default_enabled_sources_are_the_free_apis(self, tmp_path):
+    def test_default_enabled_sources_are_the_apis_that_work_plus_two_scrapers(self, tmp_path):
+        # StepStone and Indeed stay opt-in: both refused this project's
+        # politely-identified client in Phase 6 recon, and enabling them by
+        # default would spend minutes of timeouts on every run.
         settings = Settings(project_root=tmp_path)
-        assert settings.enabled_sources == ("ba", "arbeitnow")
+        assert settings.enabled_sources == ("ba", "arbeitnow", "kleinanzeigen", "xing")
 
-    def test_a_fresh_project_builds_both_adapters_by_default(self, tmp_path, no_adzuna_keys):
+    def test_a_fresh_project_builds_those_four_by_default(self, tmp_path, no_adzuna_keys):
         built = build_adapters(Settings(project_root=tmp_path), lambda _s, _delay=None: object())
-        assert [adapter.source for adapter in built.adapters] == ["BA", "AN"]
+        assert [adapter.source for adapter in built.adapters] == ["BA", "AN", "KA", "XI"]

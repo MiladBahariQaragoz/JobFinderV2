@@ -2,7 +2,7 @@
 title: "Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T8 done, T9 (registry) under way
+status: in progress — T1-T9 done, T10 (source health) next
 master-plan: docs/MASTER_PLAN.md#phase-6--scrapers-kleinanzeigen-stepstone-indeed-xing
 ---
 
@@ -142,7 +142,7 @@ first — it is the one that pays rent).
 - [x] T8 `sources/stepstone.py` + `sources/indeed.py`: URL building tested
       as pure logic; parsing over the shared extractor; the recorded 403
       drives `test_unparseable_page_records_a_failure_and_returns_nothing`.
-- [ ] T9 Registry: four new sources, kinds `scraper`, labels, defaults,
+- [x] T9 Registry: four new sources, kinds `scraper`, labels, defaults,
       `SOURCE_CODES`. Tests: registry runs only enabled, scraper delay is
       the 3 s one.
 - [ ] T10 Health: consecutive-failure counting, cooldown write, skip with
