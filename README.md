@@ -51,7 +51,23 @@ jobfinder sources check             # which job sites still answer today
 jobfinder search                    # collect postings  -> data/jobs-init.csv
 jobfinder enrich                    # explain them in English -> data/jobs-enriched.csv
 jobfinder search --enrich           # both at once: postings explained as they arrive
+jobfinder serve                     # open the app in a browser — this is the product
 ```
+
+`jobfinder serve` is the one to reach for. It starts a local server on
+`127.0.0.1` (nothing listens beyond this machine, there is no login because
+there is no second user) and opens a browser at it. From there: the whole store
+as a filterable list, one page per job with its English answer and the German
+original a click away, and *Applied* / *Interested* / *Not for me* / *Delete*
+with a notes box. Searches start from that page too, narrated with per-source
+counts while they run, and Cancel is always safe to press — everything already
+fetched is on disk.
+
+| Flag | What it does |
+|---|---|
+| `--port N` | serve somewhere other than 8000 |
+| `--no-browser` | start the server, open nothing |
+| `--root PATH` | use a different project root, and so a different `data/` |
 
 Useful flags:
 
@@ -115,6 +131,7 @@ follows, and `python -m llmpool --help` for the CLI.
 | `src/jobfinder/store/` | SQLite schema, upserts, and the CSV exports |
 | `src/jobfinder/enrich/` | The enrichment batch, its CSV mapping, and the search companion |
 | `src/jobfinder/llm/` | Pool construction, answer contracts, prompts, answer cache |
+| `src/jobfinder/web/` | The browser app: routes, queries, templates, and the fonts and htmx it ships with so it works offline |
 | `scripts/` | One-off and diagnostic scripts, e.g. `llm_smoke.py` |
 | `docs/` | Working notes and conventions |
 | `data/` | Runtime state — the database, CSVs, pool health, caches. Gitignored. |

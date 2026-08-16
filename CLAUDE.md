@@ -40,6 +40,7 @@ jobfinder sources check             # ask every source whether it still answers
 jobfinder search                    # collect postings  -> data/jobs-init.csv
 jobfinder enrich [--limit N]        # explain them in English -> data/jobs-enriched.csv
 jobfinder search --enrich           # both at once, enrichment as a second worker
+jobfinder serve [--port N]          # the browser app on 127.0.0.1 (default port 8000)
 ```
 
 `--limit` on `enrich` is the flag to reach for while developing: a full pass
