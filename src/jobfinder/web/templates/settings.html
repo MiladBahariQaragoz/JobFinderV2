@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Settings — JobFinder{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<p class="meta">
+  Everything lives on this laptop. The list below says which free LLM
+  providers have a key — one is enough to explain jobs in English.
+  Keys go into the <span class="num">.env</span> file in
+  <span class="num">{{ project_root }}</span>, one line each; restart the app
+  after editing.
+</p>
+<div class="settings-list">
+  {% for provider in providers %}
+  <div class="row">
+    <span>
+      {{ provider.name }}
+      {% if provider.present %}
+      <span class="ok">key present</span>
+      {% else %}
+      <span class="missing">no key</span>
+      {% endif %}
+    </span>
+    <span>
+      {% if provider.signup %}<a href="{{ provider.signup }}" rel="noopener">get a free key</a> · {% endif %}
+      <span class="num">{{ provider.env_var }}</span>
+    </span>
+  </div>
+  {% endfor %}
+</div>
+<p class="meta">
+  From a terminal, <span class="num">jobfinder llm doctor</span> checks the
+  same keys and pings each provider once.
+</p>
+{% endblock %}

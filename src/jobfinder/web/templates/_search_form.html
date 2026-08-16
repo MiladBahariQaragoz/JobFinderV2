@@ -1,0 +1,23 @@
+<form class="filters progress-panel"
+      hx-post="/run/start" hx-target="#progress-panel" hx-swap="outerHTML"
+      method="post" action="/run/start">
+  <label>Cities
+    <input type="text" name="cities" value="{{ default_cities }}">
+  </label>
+  <label>Job types
+    <input type="text" name="types" value="{{ default_types }}">
+  </label>
+  <label>Keywords (optional)
+    <input type="text" name="keywords" placeholder="e.g. Küche, Verkauf">
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="enrich" checked>
+    Explain jobs in English while searching
+  </label>
+  <button type="submit" class="primary">Search</button>
+</form>
+<p class="meta">
+  A search takes minutes and says so here the whole time — every page it
+  fetches is saved the moment it lands, so Cancel or a closed laptop loses
+  nothing.
+</p>

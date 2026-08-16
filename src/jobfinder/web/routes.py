@@ -13,8 +13,15 @@ from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from jobfinder.cli import DEFAULT_CITIES, DEFAULT_TYPES
 from jobfinder.sources.registry import SOURCE_LABELS
 from jobfinder.store.db import connect, migrate
+from jobfinder.store.runs import (
+    display_state,
+    interrupted_run,
+    latest_run,
+    run_sources,
+)
 from jobfinder.store.status import set_notes, set_status
 from jobfinder.web.app import templates
 from jobfinder.web.queries import (
@@ -27,6 +34,7 @@ from jobfinder.web.queries import (
     list_jobs,
     parse_filters,
 )
+from jobfinder.web.runs import StartRefused, elapsed_seconds
 
 router = APIRouter()
 
@@ -75,7 +83,9 @@ def _list_context(request: Request) -> dict:
 
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    return render(request, "index.html", _list_context(request))
+    context = _list_context(request)
+    context.update(_progress_context(request))  # the panel ships with the page
+    return render(request, "index.html", context)
 
 
 @router.get("/jobs/rows", response_class=HTMLResponse)
@@ -193,3 +203,119 @@ async def save_job_notes(job_id: str, request: Request):
         )
     detail["source_label"] = SOURCE_LABELS.get(detail["source"], detail["source"])
     return _respond(request, job_id, "_notes.html", {"job": detail})
+
+
+# -- runs: the live progress surface (§10) --------------------------------------
+
+
+def _progress_context(request: Request) -> dict:
+    """Everything the progress panel shows, read from the journal — never
+    from the run thread's memory, so a reload shows the same truth."""
+    settings = request.app.state.settings
+    manager = request.app.state.run_manager
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        run = latest_run(connection, kind="search")
+        sources = run_sources(connection, run["id"]) if run is not None else []
+        enrichment = latest_run(connection, kind="enrich")
+        interrupted = interrupted_run(connection)
+    finally:
+        connection.close()
+
+    state = display_state(run) if run is not None else None
+    running = manager.is_running() if manager is not None else False
+    elapsed = elapsed_seconds(run["started_at"]) if run is not None else None
+    rate = None
+    if run is not None and elapsed and elapsed > 0:
+        rate = round(run["found_count"] / (elapsed / 60))
+
+    return {
+        "run": run,
+        "run_state": state,
+        "running": running,
+        "sources": [
+            {
+                "label": SOURCE_LABELS.get(row["source"], row["source"]),
+                "found": row["found_count"],
+                "new": row["new_count"],
+                "state": row["state"],
+            }
+            for row in sources
+        ],
+        "enrichment": enrichment,
+        "enrich_state": display_state(enrichment) if enrichment is not None else None,
+        "interrupted": interrupted,
+        "elapsed": elapsed,
+        "rate": rate,
+        "failure": manager.failure() if manager is not None else None,
+        "default_cities": ", ".join(DEFAULT_CITIES),
+        "default_types": ", ".join(DEFAULT_TYPES),
+    }
+
+
+@router.get("/progress", response_class=HTMLResponse)
+def progress(request: Request):
+    return render(request, "_progress.html", _progress_context(request))
+
+
+@router.post("/run/start", response_class=HTMLResponse)
+async def run_start(request: Request):
+    form = await request.form()
+    manager = request.app.state.run_manager
+    context = _progress_context(request)
+    try:
+        manager.start(
+            resume=bool(form.get("resume")),
+            enrich=bool(form.get("enrich")),
+            cities=str(form.get("cities") or "") or None,
+            types=str(form.get("types") or "") or None,
+            keywords=str(form.get("keywords") or "") or None,
+        )
+    except StartRefused as exc:
+        # Rendered, not raised: this is a state she can act on, not an error
+        # dump — §10's "a sentence and a link, not a traceback".
+        context["refusal"] = exc
+        return render(request, "_progress.html", context)
+    if request.headers.get("HX-Request"):
+        return render(request, "_progress.html", _progress_context(request))
+    return RedirectResponse("/", status_code=303)
+
+
+@router.post("/run/cancel", response_class=HTMLResponse)
+def run_cancel(request: Request):
+    manager = request.app.state.run_manager
+    if manager is not None:
+        manager.cancel()
+    if request.headers.get("HX-Request"):
+        return render(request, "_progress.html", _progress_context(request))
+    return RedirectResponse("/", status_code=303)
+
+
+@router.get("/settings", response_class=HTMLResponse)
+def settings_page(request: Request):
+    """One page of "is it set up": which provider keys exist, which do not,
+    and where to get the missing ones. Key values are never shown."""
+    import llmpool
+
+    app_settings = request.app.state.settings
+    catalog = llmpool.load_catalog()
+    missing_vars = {env_var for _name, env_var, _url in llmpool.missing_keys(catalog)}
+    providers = [
+        {
+            "name": name,
+            "env_var": env_var,
+            "signup": url,
+            "present": env_var not in missing_vars,
+        }
+        # missing_keys(catalog, env={}) enumerates every enabled provider,
+        # whether or not a key exists for it.
+        for name, env_var, url in llmpool.missing_keys(catalog, env={})
+    ]
+    providers.sort(key=lambda provider: (not provider["present"], provider["name"]))
+    return render(
+        request,
+        "settings.html",
+        {"providers": providers, "project_root": app_settings.project_root},
+    )
