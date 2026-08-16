@@ -705,7 +705,7 @@ only one source ever works, this is the one that has to.
 - [x] `test_source_failure_records_error_and_does_not_abort_the_run`
 - [x] The search-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       per-page saving, cursor resume, interrupted-run marking, atomic export
-- [ ] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
+- [x] `tests/live/test_ba_contract.py` — endpoint answers, `referenznummer` and
       `stellenangebotsTitel` still exist, `X-API-Key` still accepted
 
 ### Done when
