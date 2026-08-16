@@ -337,7 +337,7 @@ class TestFetchDetail:
             "eine Küchenhilfe für Samstag und Sonntag. Wir bieten ein freundliches "
             "Team, Schichtzulagen und kostenlose Getränke während der Arbeit.</p>"
             "</body></html>"
-        ).encode("utf-8")
+        ).encode()
         posting = parse_page(load_search_fixture(fixture_path))[0]
         client = RecordingClient([details])
         client.html_responses = [static_page]

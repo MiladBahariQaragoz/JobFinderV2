@@ -698,8 +698,8 @@ only one source ever works, this is the one that has to.
 - [x] `test_http_client_waits_between_requests_to_the_same_host` (fake clock)
 - [x] `test_http_client_serves_second_identical_request_from_cache`
 - [ ] `test_request_budget_stops_the_run_and_records_it_in_runs_table`
-- [ ] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
-- [ ] `test_dedupe_key_matches_same_job_from_two_sources`
+- [x] `test_upsert_same_job_twice_leaves_one_row_and_updates_last_seen`
+- [x] `test_dedupe_key_matches_same_job_from_two_sources`
 - [ ] `test_export_csv_is_utf8_sig_and_umlauts_survive_a_round_trip`
 - [ ] `test_export_csv_has_no_blank_lines_on_windows` (the `newline=""` bug)
 - [ ] `test_source_failure_records_error_and_does_not_abort_the_run`
