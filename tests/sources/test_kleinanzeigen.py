@@ -264,3 +264,11 @@ class TestSearchPages:
         assert posting.description and "ZeitWerk Personal" in posting.description
         assert posting.city == "Ingolstadt"
         assert client.calls == [stub.source_url]
+
+    def test_a_login_walled_detail_page_returns_the_stub_not_a_crash(self, fixture_path):
+        from jobfinder.sources.kleinanzeigen import KleinanzeigenScraper, parse_list
+
+        wall = "<html><body><h1>Bitte melde dich an, um fortzufahren</h1></body></html>"
+        scraper = KleinanzeigenScraper(RecordingClient([wall]))
+        stub = parse_list(list_html(fixture_path))[0][0]
+        assert scraper.fetch_detail(stub) is stub  # listed, just unenriched

@@ -219,7 +219,10 @@ class KleinanzeigenScraper:
                 page_number += 1
 
     def fetch_detail(self, posting: RawPosting) -> RawPosting:
-        markup = self._get(posting.source_url)
+        try:
+            markup = self._get(posting.source_url)
+        except LoginWall:
+            return posting  # walled ad stays listed, just unenriched
         parsed = parse_detail(markup, source_url=posting.source_url)
         if parsed is None:
             return posting  # an unparseable ad stays unenriched, not broken
