@@ -12,6 +12,7 @@ import base64
 import hashlib
 import json
 import random
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -51,6 +52,38 @@ def _real_opener(request, timeout):
     return urllib.request.urlopen(request, timeout=timeout)
 
 
+class HostThrottle:
+    """When each host is next free — shared by every client in the process.
+
+    §8 rule 1 belongs to the host, not to the client fetching it. Adapters
+    each get their own `PoliteClient` (their own budget, their own cache
+    handle), so the gap has to live somewhere they all see, and be claimed
+    under a lock: without one, three workers all read "free" before any of
+    them writes the next slot.
+    """
+
+    def __init__(self):
+        self._next_allowed: dict[str, float] = {}
+        self._lock = threading.Lock()
+
+    def reserve(self, host: str, *, now: float, delay: float) -> float:
+        """Claim this host's next slot and return how long to wait for it.
+
+        The caller sleeps outside the lock — holding it through the wait
+        would queue every host behind whichever one is slowest.
+        """
+        with self._lock:
+            next_allowed = self._next_allowed.get(host, now)
+            wait = max(0.0, next_allowed - now)
+            self._next_allowed[host] = max(next_allowed, now) + delay
+        return wait
+
+
+# One process, one set of hosts. Clients that want isolation (tests, mostly)
+# pass their own.
+SHARED_THROTTLE = HostThrottle()
+
+
 class PoliteClient:
     """Throttled, cached, budgeted GET client with injected time for tests."""
 
@@ -70,6 +103,7 @@ class PoliteClient:
         rng: Callable[[float, float], float] = random.uniform,
         opener: Callable = _real_opener,
         timeout: float = 30.0,
+        throttle: HostThrottle | None = None,
     ):
         self.cache_dir = Path(cache_dir) if cache_dir is not None else None
         self.budget = budget
@@ -84,7 +118,7 @@ class PoliteClient:
         self._sleep = sleep
         self._rng = rng
         self._opener = opener
-        self._next_allowed: dict[str, float] = {}
+        self.throttle = throttle or SHARED_THROTTLE
         self.network_calls = 0
 
     # -- public API ---------------------------------------------------------
@@ -145,12 +179,11 @@ class PoliteClient:
         return Response(status=status, body=body, headers=flat)
 
     def _throttle(self, host: str) -> None:
-        now = self._clock()
-        next_allowed = self._next_allowed.get(host)
-        if next_allowed is not None and now < next_allowed:
-            self._sleep(next_allowed - now)
-            now = next_allowed
-        self._next_allowed[host] = now + self.min_delay + self._rng(0, self.jitter)
+        wait = self.throttle.reserve(
+            host, now=self._clock(), delay=self.min_delay + self._rng(0, self.jitter)
+        )
+        if wait > 0:
+            self._sleep(wait)
 
     def _wait_before_retry(self, response: Response | Exception, attempt: int) -> None:
         retry_after = None
