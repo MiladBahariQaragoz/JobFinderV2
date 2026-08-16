@@ -4,3 +4,8 @@ llmpool @ git+https://github.com/MiladBahariQaragoz/FreeLLMPool.git
 
 # Reads API keys out of .env for scripts and the app.
 python-dotenv>=1.0
+
+# The web app (Phase 8): FastAPI + uvicorn + Jinja2 templates.
+fastapi>=0.115
+uvicorn>=0.30
+jinja2>=3.1
