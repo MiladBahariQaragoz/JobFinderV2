@@ -12,6 +12,7 @@ import hashlib
 import json
 import sqlite3
 import threading
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -82,8 +83,12 @@ class _RunState:
 
     run_id: int
     query_hash: str
-    now: datetime
+    now: datetime  # when the run started — fixed, and only ever the start
     resume: bool
+    # Every journal write asks the clock again. Freezing one stamp for the
+    # whole run made `last_progress_at` stand still, which tells §9's stale
+    # rule that a healthy long search has been abandoned.
+    clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     on_page: object = None
     found: int = 0
     new: int = 0
@@ -142,7 +147,7 @@ def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, r
                 new=source_new,
                 duplicates=source_duplicates,
                 state="running",
-                now=run.now,
+                now=run.clock(),
             )
             with run.lock:
                 run.found += counts[0]
@@ -155,7 +160,7 @@ def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, r
                     found=run.found,
                     new=run.new,
                     duplicates=run.duplicates,
-                    now=run.now,
+                    now=run.clock(),
                 )
                 if run.on_page is not None:
                     run.on_page(page, SourceCounts(*counts), totals)
@@ -195,7 +200,7 @@ def _run_one_source(connection: sqlite3.Connection, adapter, spec: SearchSpec, r
             new=source_new,
             duplicates=source_duplicates,
             state="failed" if source_errors else "done",
-            now=run.now,
+            now=run.clock(),
         )
 
 
@@ -208,6 +213,7 @@ def run_search(
     csv_path: Path | None = None,
     stale_after: timedelta = DEFAULT_STALE_AFTER,
     now: datetime | None = None,
+    clock: Callable[[], datetime] | None = None,
     on_page=None,
     db_path: Path | None = None,
     stop_event: threading.Event | None = None,
@@ -229,14 +235,16 @@ def run_search(
     rather than the sum. Without it they run in order on the caller's
     connection, which is what a single source or a test wants.
     """
-    now = now or datetime.now(UTC)
+    tick = clock or (lambda: datetime.now(UTC))
+    now = now or tick()
     _close_stale_runs(connection, now, stale_after)
 
     adapters = list(adapters)
     run = _RunState(
-        run_id=_start_run(connection, spec, [adapter.source for adapter in adapters]),
+        run_id=_start_run(connection, spec, [adapter.source for adapter in adapters], now=now),
         query_hash=_spec_fingerprint(spec),
         now=now,
+        clock=tick,
         resume=resume,
         on_page=on_page,
         stop=stop_event or threading.Event(),
@@ -265,7 +273,7 @@ def run_search(
             run.new,
             run.duplicates,
             run.errors,
-            now=now,
+            now=run.clock(),
         )
         if csv_path is not None:
             export_jobs_init(connection, csv_path)  # what landed is readable now
@@ -418,7 +426,9 @@ def _upsert_source_progress(
     connection.commit()
 
 
-def _start_run(connection: sqlite3.Connection, spec: SearchSpec, sources: list[str]) -> int:
+def _start_run(
+    connection: sqlite3.Connection, spec: SearchSpec, sources: list[str], *, now: datetime
+) -> int:
     payload = {
         "mode": spec.mode,
         "employment_types": list(spec.employment_types),
@@ -431,8 +441,8 @@ def _start_run(connection: sqlite3.Connection, spec: SearchSpec, sources: list[s
         (
             json.dumps(payload, ensure_ascii=False),
             ",".join(sources),
-            _stamp(datetime.now(UTC)),
-            _stamp(datetime.now(UTC)),
+            _stamp(now),
+            _stamp(now),
         ),
     )
     connection.commit()

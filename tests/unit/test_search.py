@@ -8,6 +8,7 @@ counts, and `--resume` re-enters at the stored cursor instead of page 1.
 from __future__ import annotations
 
 import dataclasses
+import itertools
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -346,6 +347,34 @@ class TestStaleRuns:
         run_search(db, [FakeSource([page(1, page_number=1)])], spec(), now=now)
         states = [row[0] for row in db.execute("SELECT state FROM runs ORDER BY id")]
         assert states == ["running", "done"]  # fresh one untouched, ours finished
+
+    def test_a_long_run_keeps_its_heartbeat_beating(self, db):
+        """`last_progress_at` has to move, or §9's stale rule shoots the living.
+
+        Measured on her store: a 60-second search stored `started_at`,
+        `last_progress_at` and `finished_at` as one identical stamp, because
+        the run captured `now` once and reused it for every write. A search
+        that outlives the ten-minute window would then look abandoned to the
+        next run that starts, and no run could say how long it took."""
+        start = datetime(2026, 8, 16, 8, 0, 0, tzinfo=UTC)
+        ticks = itertools.count(1)
+
+        def slow_clock() -> datetime:
+            """Six minutes per write — the run outlives the stale window."""
+            return start + timedelta(minutes=6 * next(ticks))
+
+        run_search(
+            db,
+            [FakeSource([page(1, page_number=1), page(2, page_number=2)])],
+            spec(),
+            now=start,
+            clock=slow_clock,
+        )
+
+        row = db.execute("SELECT * FROM runs ORDER BY id DESC LIMIT 1").fetchone()
+        assert row["started_at"] == "2026-08-16 08:00:00"
+        assert row["last_progress_at"] > row["started_at"], "the heartbeat never moved"
+        assert row["finished_at"] > row["started_at"], "the run looks instant"
 
 
 class TestPerSourceCounts:
