@@ -24,9 +24,19 @@ def test_settings_defaults_when_no_config_file_exists(tmp_path):
     assert settings.enabled_sources == ("ba", "arbeitnow")  # the free, keyless APIs
 
 
+def test_request_pacing_defaults_differ_by_host_kind(tmp_path):
+    # §8 rule 1: 3 s keeps a scraped site from blocking her, and a documented
+    # API is not a scraped site.
+    settings = Settings.load(project_root=tmp_path)
+
+    assert settings.api_delay_seconds == 1.0
+    assert settings.scraper_delay_seconds == 3.0
+
+
 def test_settings_override_from_config_yaml(tmp_path):
     (tmp_path / "config.yaml").write_text(
-        "request_budget: 40\nllm_budget: 25\nenabled_sources: [ba, arbeitnow]\n",
+        "request_budget: 40\nllm_budget: 25\nenabled_sources: [ba, arbeitnow]\n"
+        "api_delay_seconds: 2.5\n",
         encoding="utf-8",
     )
 
@@ -35,6 +45,7 @@ def test_settings_override_from_config_yaml(tmp_path):
     assert settings.request_budget == 40
     assert settings.llm_budget == 25
     assert settings.enabled_sources == ("ba", "arbeitnow")
+    assert settings.api_delay_seconds == 2.5  # she can slow it down again
 
 
 def test_secrets_are_read_from_env_not_config_yaml(tmp_path, monkeypatch):

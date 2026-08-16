@@ -37,13 +37,13 @@ def keys(monkeypatch):
 class TestSkip:
     def test_adzuna_adapter_is_skipped_cleanly_without_keys(self, tmp_path, no_keys):
         settings = Settings(project_root=tmp_path, enabled_sources=("ba", "adzuna"))
-        built = build_adapters(settings, lambda _s: object())
+        built = build_adapters(settings, lambda _s, _delay=None: object())
         assert [adapter.source for adapter in built.adapters] == ["BA"]  # no AZ, no crash
         assert dict(built.skipped)["adzuna"] == "no API key in .env"
 
     def test_with_keys_the_adapter_is_built(self, tmp_path, keys):
         settings = Settings(project_root=tmp_path, enabled_sources=("adzuna",))
-        built = build_adapters(settings, lambda _s: object())
+        built = build_adapters(settings, lambda _s, _delay=None: object())
         assert [adapter.source for adapter in built.adapters] == ["AZ"]
 
     def test_an_adapter_without_keys_refuses_to_search_readably(self, no_keys):

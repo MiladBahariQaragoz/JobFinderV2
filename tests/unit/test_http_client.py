@@ -12,6 +12,7 @@ import pytest
 
 from jobfinder.sources.http import (
     USER_AGENT,
+    HostThrottle,
     PoliteClient,
     RequestBudgetExhausted,
     SourceUnavailable,
@@ -71,9 +72,99 @@ def make_client(opener, tmp_path: Path, **overrides) -> tuple[PoliteClient, dict
         clock=lambda: state["now"],
         sleep=sleep,
         rng=lambda a, b: 0.5,
+        # Its own throttle, so one test's fake clock cannot reach another's.
+        # Production clients deliberately share one — see TestSharedThrottle.
+        throttle=HostThrottle(),
     )
     parts.update(overrides)
     return PoliteClient(**parts), {"sleeps": sleeps, "state": state}
+
+
+class TestSharedThrottle:
+    """§8 rule 2: the gap belongs to the host, not to whoever is fetching it.
+
+    Every adapter gets its own client — its own budget, its own cache handle.
+    If each also kept its own idea of when the host was next free, two
+    adapters pointed at one host would both think they were clear and §8
+    rule 1 would be broken with nothing failing.
+    """
+
+    def pair(self, tmp_path, throttle, **overrides):
+        """Two clients on one shared clock, so their waits are comparable."""
+        state = {"now": 1000.0}
+        sleeps: list[float] = []
+
+        def sleep(seconds: float) -> None:
+            sleeps.append(seconds)
+            state["now"] += seconds
+
+        def build(name):
+            return PoliteClient(
+                cache_dir=tmp_path / name,
+                opener=FakeOpener([FakeResponse(b"{}")]),
+                clock=lambda: state["now"],
+                sleep=sleep,
+                rng=lambda a, b: 0.5,
+                throttle=throttle,
+                min_delay=3.0,
+                jitter=1.0,
+            )
+
+        return build("one"), build("two"), sleeps
+
+    def test_two_clients_on_the_same_host_wait_for_each_other(self, tmp_path):
+        first, second, sleeps = self.pair(tmp_path, HostThrottle())
+
+        first.get("https://example.org/a")
+        second.get("https://example.org/b")
+
+        assert sleeps == [pytest.approx(3.5)]  # the second client waited its turn
+
+    def test_two_clients_on_different_hosts_do_not_wait(self, tmp_path):
+        first, second, sleeps = self.pair(tmp_path, HostThrottle())
+
+        first.get("https://example.org/a")
+        second.get("https://other.example/b")
+
+        assert sleeps == []  # different hosts, no reason to queue
+
+    def test_clients_share_one_throttle_unless_told_otherwise(self, tmp_path):
+        assert PoliteClient(cache_dir=None).throttle is PoliteClient(cache_dir=None).throttle
+
+    def test_concurrent_requests_to_one_host_are_still_spaced(self, tmp_path):
+        # The reason the throttle needs a lock: without one, three threads all
+        # read "the host is free" before any of them writes the next slot.
+        import threading
+        import time
+
+        throttle = HostThrottle()
+        stamps: list[float] = []
+        guard = threading.Lock()
+
+        def opener(request, timeout=None):
+            with guard:
+                stamps.append(time.monotonic())
+            return FakeResponse(b"{}")
+
+        def fetch(index: int) -> None:
+            client = PoliteClient(
+                cache_dir=None,
+                opener=opener,
+                throttle=throttle,
+                min_delay=0.05,
+                jitter=0.0,
+            )
+            client.get(f"https://example.org/{index}")
+
+        threads = [threading.Thread(target=fetch, args=(i,)) for i in range(3)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        gaps = [b - a for a, b in zip(sorted(stamps), sorted(stamps)[1:], strict=False)]
+        assert len(stamps) == 3
+        assert all(gap >= 0.04 for gap in gaps), gaps
 
 
 def test_first_request_to_a_host_never_waits(tmp_path):

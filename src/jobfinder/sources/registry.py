@@ -20,6 +20,15 @@ from jobfinder.sources.ba import BAApi
 # The order results are searched in. Fixed on purpose: the backbone first.
 KNOWN_SOURCES = ("ba", "arbeitnow", "adzuna")
 
+# What kind of host each source talks to, which is what decides its pacing
+# (§8 rule 1). Every source today is a documented API; Phase 6's scrapers
+# arrive as "scraper" and are paced three times more carefully.
+SOURCE_KINDS = {
+    "ba": "api",
+    "arbeitnow": "api",
+    "adzuna": "api",
+}
+
 # What she sees, not what the adapter calls itself. Keys are both the config
 # name and the adapter's source code, because summaries carry either.
 SOURCE_LABELS = {
@@ -56,10 +65,19 @@ def skipped_sources(settings: Settings) -> tuple[tuple[str, str], ...]:
     return tuple(skipped)
 
 
+def delay_for_kind(settings: Settings, kind: str) -> float:
+    """The §8 gap between two requests to one host of this kind."""
+    return settings.scraper_delay_seconds if kind == "scraper" else settings.api_delay_seconds
+
+
 def build_adapters(
-    settings: Settings, client_factory: Callable[[Settings], object]
+    settings: Settings, client_factory: Callable[[Settings, float], object]
 ) -> RegistryBuild:
-    """Build one adapter per enabled source, each with a fresh client."""
+    """Build one adapter per enabled source, each with a fresh client.
+
+    The client is built with the pacing its source's host deserves — the
+    registry is the only place that knows which sources are scraped.
+    """
     unknown = [name for name in settings.enabled_sources if name not in KNOWN_SOURCES]
     if unknown:
         raise ValueError(
@@ -73,7 +91,8 @@ def build_adapters(
             continue  # reported by `skipped_sources`, not rebuilt here
         if name == "adzuna" and not adzuna_keys_present():
             continue
-        adapters.append(_ADAPTERS_FOR[name](client_factory(settings)))
+        delay = delay_for_kind(settings, SOURCE_KINDS[name])
+        adapters.append(_ADAPTERS_FOR[name](client_factory(settings, delay)))
     return RegistryBuild(adapters=adapters, skipped=skipped_sources(settings))
 
 

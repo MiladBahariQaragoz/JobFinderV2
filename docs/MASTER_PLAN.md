@@ -352,20 +352,50 @@ A red test is not a task. Commit at green, or at green-plus-refactor.
 
 These are engineering constraints that keep her searches working, and they are tested.
 
-1. **One request at a time per host**, minimum 3 s apart with ±1 s jitter. No
-   parallel fetching of a scraped site, ever.
-2. **Cache every fetched page for 24 h** in `data/http-cache/`. A re-run must not
+1. **One request at a time per host**, with ±1 s jitter and a minimum gap that
+   depends on what the host is: **3 s for a scraped site**, **1 s for a
+   documented API** (Bundesagentur, Arbeitnow, Adzuna, Overpass). The 3 s rule
+   exists because a scraper that hammers a site gets her IP blocked; an API
+   published for programmatic use is not that, and spending seven minutes on
+   one search out of misplaced caution is its own failure. Neither API
+   documents a rate limit, so 1 s is a judgment call backed by rule 5 —
+   a 429 is honoured, backed off and, if it persists, kills the source.
+   Measured live on 2026-08-16: a cold Augsburg minijob search spent 268
+   requests in 402 s (1.50 s each, the 1 s gap plus mean jitter) and returned
+   263 jobs with no 429 and no failed source. The same run at the old pace
+   would have taken 15.6 minutes. **No parallel fetching of one host, ever**,
+   whatever kind it is.
+2. **Different hosts may be fetched in parallel** — one worker per host, each
+   keeping its own gap from rule 1. Sources are serialised today, which costs
+   nothing while one source holds most of the requests but multiplies wall
+   time once Phase 6 adds four scrapers on four hosts (measured shape: four
+   sources × 60 requests is 14 minutes serial, 3.5 minutes in parallel).
+   Two conditions before any of it runs concurrently:
+   - The **throttle must be shared per host, not per client.** Each adapter is
+     built with its own `PoliteClient` today, so two adapters pointed at one
+     host would each keep their own `_next_allowed` and both think they are
+     clear — rule 1 broken with no test failing. A process-wide, lock-guarded
+     host → next-allowed registry is the fix.
+   - The **store must tolerate concurrent writers**: an explicit `busy_timeout`
+     on every connection and one connection per thread. WAL lets readers
+     through a write, but two writers still take turns, and the one that
+     arrives second must wait rather than raise `database is locked`. The
+     Python driver happens to default to 5 s, which is why this worked before
+     anyone stated it; `connect()` now sets 15 s deliberately, and the
+     per-thread rule is enforced by sqlite3's own guard — a worker calls
+     `connect()` again instead of sharing the search's connection.
+3. **Cache every fetched page for 24 h** in `data/http-cache/`. A re-run must not
    re-fetch. Tests assert the second call hits the cache.
-3. **A real identifying User-Agent** with a contact address. No pretending to be
+4. **A real identifying User-Agent** with a contact address. No pretending to be
    Chrome-on-someone-else's-machine.
-4. **Honor `Retry-After` and back off exponentially** on 429/503, then trip the
+5. **Honor `Retry-After` and back off exponentially** on 429/503, then trip the
    source's kill switch after 3 consecutive failures and move on. One dead source
    never fails the run.
-5. **Public pages only.** No login, no session cookies, no CAPTCHA-solving service,
+6. **Public pages only.** No login, no session cookies, no CAPTCHA-solving service,
    no proxy rotation. If a page needs an account, the adapter skips it.
-6. **Per-source kill switch** in config; `sources.stepstone.enabled: false` is a
+7. **Per-source kill switch** in config; `sources.stepstone.enabled: false` is a
    one-line fix when a site changes and she needs results today.
-7. **Request budget per leg of a run** (default 800) so a bug cannot turn into a
+8. **Request budget per leg of a run** (default 800) so a bug cannot turn into a
    flood. A search that spends its budget is continued automatically with a fresh
    one, which is safe only because `max_search_legs` (default 6) bounds the total
    and any stop that is not a spent budget ends the search there.
@@ -400,6 +430,28 @@ later.
 | **Stale run detection** | A `running` row whose `last_progress_at` is older than the heartbeat interval is marked `interrupted` on next start, so the app never claims to be doing something it is not. |
 | **Nothing partial is stored** | An LLM answer that fails validation is discarded, not written half-parsed. The job stays unenriched and gets retried. |
 
+### Enrichment does not wait for the search to finish
+
+A search is bound by HTTP pacing against job-site hosts; enrichment is bound by
+LLM providers on entirely different hosts, paced by `llmpool`. Running them one
+after the other adds their wall times together for no reason — the two never
+contend for the same host, and §9 already makes the handover safe: every job is
+committed to SQLite the moment it is stored, so a job that exists is a job that
+can be enriched.
+
+- **The store is the queue.** The enrichment worker polls for jobs with a
+  description and no `enrichment` row at the current `prompt_version`. No
+  in-memory queue, no handoff between the two, and an interrupted search leaves
+  a partially enriched but perfectly consistent database.
+- **`jobfinder search --enrich` runs both**, search in the foreground with its
+  page lines, enrichment as a second worker narrating its own counts. Either
+  command alone must still work exactly as it does now.
+- **Prerequisite:** `busy_timeout` on every connection and one connection per
+  thread (§8 rule 2). Without them the second writer fails instantly rather
+  than waiting.
+- **Her quota is the limit that matters**, not throughput: enrichment stops on
+  `PoolExhausted` and says so, whether or not the search is still running.
+
 ### Failure semantics — what happens, and what she sees
 
 | Failure | Kept | On resume |
@@ -433,6 +485,8 @@ later.
 - [x] `test_stale_running_run_is_marked_interrupted_on_next_start`
 - [ ] `test_second_full_run_with_no_changes_makes_zero_llm_calls_and_zero_new_rows`
 - [x] `test_wal_mode_is_enabled_on_every_connection`
+- [ ] `test_a_second_writer_waits_instead_of_failing_with_database_is_locked`
+- [ ] `test_enrichment_picks_up_jobs_a_running_search_has_just_stored`
 
 ---
 
@@ -851,6 +905,9 @@ never a failed run and never a blocked IP. Everything in
 - [ ] `test_disabled_source_is_skipped_on_the_next_run_until_reset`
 - [ ] `test_scraper_respects_min_delay_between_requests` (fake clock)
 - [ ] `test_scraper_never_issues_parallel_requests_to_one_host`
+- [ ] `test_two_adapters_pointed_at_one_host_share_a_single_throttle`
+- [ ] `test_two_different_hosts_are_fetched_at_the_same_time` (§8 rule 2 — the
+      reason this phase is not four times slower than Phase 5)
 - [ ] `test_429_response_honors_retry_after_then_gives_up`
 - [ ] `test_login_walled_page_is_detected_and_skipped_not_retried`
 - [ ] `test_user_agent_header_identifies_the_tool`
@@ -896,6 +953,10 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 - Application route extraction: email, portal URL, or phone — the difference between
   "she can apply tonight" and "she needs to make a German phone call"
 - `jobfinder enrich [--limit N] [--force]`, exports `jobs-enriched.csv` when done
+- **Enrichment runs alongside a search, not after it** (see
+  [§9](#enrichment-does-not-wait-for-the-search-to-finish)): the store is the
+  queue, `jobfinder search --enrich` starts both, and either command alone
+  still behaves exactly as it does today
 
 ### Test-first checklist
 
@@ -912,6 +973,8 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 - [ ] `test_one_failing_item_does_not_end_the_batch`
 - [ ] `test_pool_exhausted_stops_cleanly_with_a_resumable_message`
 - [ ] `test_enrich_limit_respects_the_llm_budget`
+- [ ] `test_enrichment_started_during_a_search_enriches_what_the_search_stored`
+- [ ] `test_search_alone_and_enrich_alone_are_unchanged_by_the_combined_command`
 - [ ] The enrichment-side resume tests from [§9](#tests-owned-by-phases-4-7-and-9-listed-together-because-the-rule-is-shared):
       quota exhaustion keeps completed work, resume skips it, no half-written answers
 - [ ] `tests/live/test_enrich_one_real_posting.py` (marked `live_llm`)

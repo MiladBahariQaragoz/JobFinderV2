@@ -13,6 +13,13 @@ from pathlib import Path
 
 SCHEMA_VERSION = 3
 
+# How long a writer waits for another writer before giving up (§8 rule 2).
+# Enrichment is meant to run while a search is still storing jobs, and WAL
+# lets readers through but still takes turns between writers. The driver
+# happens to default to 5 s; a rule her data depends on is stated here rather
+# than inherited, with room for a laptop that is busy doing something else.
+BUSY_TIMEOUT_MS = 15_000
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
     job_id              TEXT PRIMARY KEY,
@@ -131,7 +138,11 @@ ADDED_COLUMNS = {
 
 
 def connect(db_path: Path) -> sqlite3.Connection:
-    """Open the database with §9's durability settings, creating directories."""
+    """Open the database with §9's durability settings, creating directories.
+
+    One connection per thread — sqlite3's own guard enforces it. A worker that
+    runs alongside a search (§8 rule 2) calls this again rather than sharing.
+    """
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
@@ -139,6 +150,7 @@ def connect(db_path: Path) -> sqlite3.Connection:
     connection.execute("PRAGMA journal_mode = WAL")
     connection.execute("PRAGMA synchronous = NORMAL")
     connection.execute("PRAGMA foreign_keys = ON")
+    connection.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
     return connection
 
 
