@@ -184,12 +184,26 @@ class TestBuildAdapters:
 
 
 class TestDefaults:
+    def test_adzuna_is_on_by_default_and_gated_by_the_key_alone(self, tmp_path, adzuna_keys):
+        # She registered a key on 2026-08-16. Being in enabled_sources costs
+        # nothing without one — the registry skips it with a reason — so the
+        # key is the only switch worth having.
+        settings = Settings(project_root=tmp_path)
+        assert "adzuna" in settings.enabled_sources
+        built = build_adapters(settings, lambda _s, _delay=None: object())
+        assert [adapter.source for adapter in built.adapters] == ["BA", "AN", "AZ", "KA", "XI"]
+
+    def test_without_the_key_the_same_default_simply_skips_it(self, tmp_path, no_adzuna_keys):
+        built = build_adapters(Settings(project_root=tmp_path), lambda _s, _delay=None: object())
+        assert "AZ" not in [adapter.source for adapter in built.adapters]
+        assert dict(built.skipped)["adzuna"] == "no API key in .env"
+
     def test_default_enabled_sources_are_the_apis_that_work_plus_two_scrapers(self, tmp_path):
         # StepStone and Indeed stay opt-in: both refused this project's
         # politely-identified client in Phase 6 recon, and enabling them by
         # default would spend minutes of timeouts on every run.
         settings = Settings(project_root=tmp_path)
-        assert settings.enabled_sources == ("ba", "arbeitnow", "kleinanzeigen", "xing")
+        assert settings.enabled_sources == ("ba", "arbeitnow", "adzuna", "kleinanzeigen", "xing")
 
     def test_a_fresh_project_builds_those_four_by_default(self, tmp_path, no_adzuna_keys):
         built = build_adapters(Settings(project_root=tmp_path), lambda _s, _delay=None: object())

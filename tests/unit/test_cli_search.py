@@ -164,7 +164,8 @@ class TestRun:
 
         main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
         out = capsys.readouterr().out
-        assert "Adzuna — skipped (disabled in config.yaml)" in out
+        # Adzuna is enabled by default; the key is what it is missing.
+        assert "Adzuna — skipped (no API key in .env)" in out
 
 
 class TestAutoContinue:
