@@ -12,6 +12,10 @@ from __future__ import annotations
 import html as html_lib
 import json
 import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from jobfinder.sources.base import RawPosting
 
 _SCRIPT_OR_STYLE = re.compile(r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
 _LDJSON_BLOCK = re.compile(
@@ -128,3 +132,45 @@ def jobposting_city(posting: dict) -> str | None:
     if not isinstance(address, dict):
         return None
     return address.get("addressLocality")
+
+
+def jobposting_to_posting(
+    data: dict,
+    *,
+    source: str,
+    job_id: str,
+    source_id: str,
+    source_url: str,
+) -> RawPosting | None:
+    """One schema.org JobPosting into a RawPosting — the path every board shares.
+
+    Xing, StepStone and Indeed all emit `JobPosting` for SEO; one mapping here
+    means a field they add (or rename) is fixed once. Returns None when the
+    block has no title, the one field a posting cannot lack.
+    """
+    from jobfinder.sources.base import RawPosting
+    from jobfinder.sources.wording import employment_type_signals
+
+    title = (data.get("title") or "").strip()
+    if not title:
+        return None
+    description = html_to_text(data.get("description") or "") or None
+    posted = str(data.get("datePosted") or "")
+    signals = employment_type_signals(title, description or "")
+    return RawPosting(
+        job_id=job_id,
+        source=source,
+        source_id=source_id,
+        title=title,
+        company=jobposting_company(data),
+        city=jobposting_city(data),
+        published_at=posted[:10] or None,
+        apply_url=data.get("url") or source_url,
+        source_url=source_url,
+        description=description,
+        is_minijob="minijob" in signals,
+        is_parttime="parttime" in signals,
+        is_fulltime="fulltime" in signals,
+        is_internship="internship" in signals,
+        is_werkstudent="werkstudent" in signals,
+    )
