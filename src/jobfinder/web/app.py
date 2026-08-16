@@ -32,6 +32,10 @@ def create_app(settings: Settings, *, run_manager=None) -> FastAPI:
     the run engine (`web/runs.py`); production builds its own."""
     app = FastAPI(title="JobFinder", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
+    if run_manager is None:
+        from jobfinder.web.runs import RunManager
+
+        run_manager = RunManager(settings)
     app.state.run_manager = run_manager
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
