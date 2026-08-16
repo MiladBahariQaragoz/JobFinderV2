@@ -174,6 +174,16 @@ reasoning.
 | Recoverable by following `redirect_url`? | **61 %** — of 18 followed, 11 returned a page carrying a JSON-LD `JobPosting` (median 2 332 characters, max 4 082), 7 returned 403 |
 | Which board is behind a row? | **Hidden.** Every `redirect_url` is an `adzuna.de` tracker; the origin only appears if the redirect is followed |
 
+**Correction, found while verifying the adapter live the same afternoon:** the
+61 % does not hold. After roughly forty redirect follows in one session,
+adzuna.de began answering every one with a bot-detection page — *"Zugriff
+verweigert … Melde Dich an um fortzufahren"* — and did not stop. The recovery
+rate is therefore "some full ads early in a run, teasers after", not a stable
+61 %. §8 rule 6 already covers it: a page that wants an account is skipped
+rather than retried, so the first wall ends the following for that run and the
+remaining ads keep their teasers. **Adzuna is a source of leads, not of
+readable ads.**
+
 **Conclusion: not a StepStone replacement, but a fourth source worth having.**
 Whether a given row came from StepStone is unknowable and turns out to be
 beside the point — what matters is that 84 % of the inventory is new to her
