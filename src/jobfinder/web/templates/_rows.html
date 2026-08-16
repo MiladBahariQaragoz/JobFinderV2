@@ -1,0 +1,64 @@
+{% if jobs %}
+<div class="list-head">
+  <h1><span class="num">{{ total }}</span> {{ "job" if total == 1 else "jobs" }}</h1>
+  {% if pages > 1 %}
+  <nav class="pages">
+    {% if prev_url %}
+    <a class="button" href="{{ prev_url }}">Previous</a>
+    {% endif %}
+    <span class="meta">page <span class="num">{{ filters.page }}</span> of <span class="num">{{ pages }}</span></span>
+    {% if next_url %}
+    <a class="button" href="{{ next_url }}">Next</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+</div>
+<div class="job-rows-body">
+  <div class="list-col-head">
+    <span>Job</span><span>Where</span><span>Type</span><span>German</span><span>Fit</span><span>Status</span>
+  </div>
+  <div class="job-list">
+    {% for job in jobs %}
+    <a class="job-row{% if job.stale %} stale{% endif %}" href="/jobs/{{ job.job_id | urlencode }}">
+      <div>
+        <div class="title">{{ job.title }}</div>
+        <div class="meta">
+          {{ job.company or "not stated" }}
+          {% if job.also_seen_on %} · also on {{ job.also_seen_on }}{% endif %}
+          {% if job.stale %} · not seen in {{ stale_days }}+ days{% endif %}
+        </div>
+      </div>
+      <div>
+        <div>{{ job.city or "not stated" }}</div>
+        <div class="meta">{% if job.distance_km is not none %}<span class="num">{{ job.distance_km }}</span> km from home{% endif %}</div>
+      </div>
+      <div class="meta">{{ job.type_label or "not stated" }}</div>
+      <div>
+        {% if job.lvl %}
+        <span class="tier tier-{{ job.tier }}">{{ job.lvl }}</span>
+        {% else %}
+        <span class="meta">not read yet</span>
+        {% endif %}
+      </div>
+      <div>{% if job.fit is not none %}<span class="num">{{ job.fit | int }}</span>{% else %}<span class="meta">—</span>{% endif %}</div>
+      <div><span class="status-chip{% if job.status == "applied" %} applied{% endif %}">{{ job.status }}</span></div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% elif active_filters %}
+<div class="empty-state">
+  <h1>No jobs match</h1>
+  <p>You asked for {% for part in active_filters %}{{ part }}{% if not loop.last %}, {% endif %}{% endfor %} — nothing in the store fits all of that.</p>
+  <p class="hint">
+    Loosen the German level or clear the fit floor, or
+    <a href="/">show every job</a>. Jobs whose ad does not state a German
+    level are hidden while a level filter is on.
+  </p>
+</div>
+{% else %}
+<div class="empty-state">
+  <h1>Nothing to show</h1>
+  <p class="hint">Every stored job is deleted or filtered out. <a href="/">Clear the filters</a>.</p>
+</div>
+{% endif %}

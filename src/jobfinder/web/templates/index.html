@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% block title %}Jobs — JobFinder{% endblock %}
 {% block content %}
+{% if not has_any_jobs %}
 <section class="empty-state">
   <h1>No jobs yet</h1>
   <p>
@@ -8,4 +10,15 @@
   </p>
   <p class="hint">From a terminal: <span class="num">jobfinder search</span></p>
 </section>
+{% else %}
+{% include "_filters.html" %}
+<div id="job-rows" hx-indicator="#job-rows">
+  {% include "_rows.html" %}
+  <div class="skeleton-rows" aria-hidden="true">
+    {% for _ in range(6) %}
+    <div class="skeleton-row"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 {% endblock %}
