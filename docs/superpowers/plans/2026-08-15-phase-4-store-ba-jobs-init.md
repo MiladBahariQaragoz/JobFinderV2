@@ -2,7 +2,7 @@
 title: Phase 4 — the store, the Bundesagentur source, jobs-init.csv
 date: 2026-08-15
 type: phase-plan
-status: in progress
+status: done
 ---
 
 # Phase 4 task plan

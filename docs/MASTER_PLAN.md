@@ -710,10 +710,10 @@ only one source ever works, this is the one that has to.
 
 ### Done when
 
-- [ ] A real run for her cities returns live postings and writes `jobs-init.csv`
-- [ ] Running it again immediately adds **0** new rows and updates `last_seen_at`
-- [ ] The CSV opens in Excel with correct umlauts and no empty rows
-- [ ] Killing the run mid-way loses nothing already written
+- [x] A real run for her cities returns live postings and writes `jobs-init.csv`
+- [x] Running it again immediately adds **0** new rows and updates `last_seen_at`
+- [x] The CSV opens in Excel with correct umlauts and no empty rows
+- [x] Killing the run mid-way loses nothing already written
 
 **Out of scope:** LLM anything. This phase is deliberately dumb — collect and store.
 
