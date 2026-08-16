@@ -384,6 +384,10 @@ These are engineering constraints that keep her searches working, and they are t
      anyone stated it; `connect()` now sets 15 s deliberately, and the
      per-thread rule is enforced by sqlite3's own guard — a worker calls
      `connect()` again instead of sharing the search's connection.
+
+   Both prerequisites shipped in v0.3.0; the measurements behind rules 1 and 2,
+   and the two mistakes made proving them, are in
+   [the pacing change record](superpowers/plans/2026-08-16-request-pacing-and-concurrency.md).
 3. **Cache every fetched page for 24 h** in `data/http-cache/`. A re-run must not
    re-fetch. Tests assert the second call hits the cache.
 4. **A real identifying User-Agent** with a contact address. No pretending to be
