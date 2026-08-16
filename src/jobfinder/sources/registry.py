@@ -20,6 +20,17 @@ from jobfinder.sources.ba import BAApi
 # The order results are searched in. Fixed on purpose: the backbone first.
 KNOWN_SOURCES = ("ba", "arbeitnow", "adzuna")
 
+# What she sees, not what the adapter calls itself. Keys are both the config
+# name and the adapter's source code, because summaries carry either.
+SOURCE_LABELS = {
+    "ba": "Bundesagentur",
+    "BA": "Bundesagentur",
+    "arbeitnow": "Arbeitnow",
+    "AN": "Arbeitnow",
+    "adzuna": "Adzuna",
+    "AZ": "Adzuna",
+}
+
 
 @dataclass(frozen=True)
 class RegistryBuild:
@@ -34,6 +45,17 @@ def adzuna_keys_present() -> bool:
     return bool(os.environ.get("ADZUNA_APP_ID")) and bool(os.environ.get("ADZUNA_APP_KEY"))
 
 
+def skipped_sources(settings: Settings) -> tuple[tuple[str, str], ...]:
+    """Every known source that will not run, and why — no clients built."""
+    skipped: list[tuple[str, str]] = []
+    for name in KNOWN_SOURCES:
+        if name not in settings.enabled_sources:
+            skipped.append((name, "disabled in config.yaml"))
+        elif name == "adzuna" and not adzuna_keys_present():
+            skipped.append((name, "no API key in .env"))
+    return tuple(skipped)
+
+
 def build_adapters(
     settings: Settings, client_factory: Callable[[Settings], object]
 ) -> RegistryBuild:
@@ -46,16 +68,13 @@ def build_adapters(
         )
 
     adapters: list = []
-    skipped: list[tuple[str, str]] = []
     for name in KNOWN_SOURCES:
         if name not in settings.enabled_sources:
-            skipped.append((name, "disabled in config.yaml"))
-            continue
+            continue  # reported by `skipped_sources`, not rebuilt here
         if name == "adzuna" and not adzuna_keys_present():
-            skipped.append((name, "no API key in .env"))
             continue
         adapters.append(_ADAPTERS_FOR[name](client_factory(settings)))
-    return RegistryBuild(adapters=adapters, skipped=tuple(skipped))
+    return RegistryBuild(adapters=adapters, skipped=skipped_sources(settings))
 
 
 # Each entry builds its adapter around the client it is given.

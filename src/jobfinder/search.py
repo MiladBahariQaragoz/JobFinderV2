@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -34,6 +34,27 @@ DEFAULT_MAX_LEGS = 6
 
 
 @dataclass(frozen=True)
+class SourceCounts:
+    """One source's line in the summary — §10's `Bundesagentur — 42 found, 7 new`."""
+
+    found: int = 0
+    new: int = 0
+    duplicates: int = 0
+    errors: tuple[str, ...] = ()
+
+
+def _add_counts(earlier: SourceCounts | None, page: SourceCounts) -> SourceCounts:
+    if earlier is None:
+        return page
+    return SourceCounts(
+        found=earlier.found + page.found,
+        new=earlier.new + page.new,
+        duplicates=earlier.duplicates + page.duplicates,
+        errors=earlier.errors + page.errors,
+    )
+
+
+@dataclass(frozen=True)
 class SearchSummary:
     """What one run did — the numbers her summary lines are built from."""
 
@@ -48,6 +69,8 @@ class SearchSummary:
     # automatically — her Ctrl-C and a dead host are not.
     budget_exhausted: bool = False
     legs: int = 1  # how many budgets the search needed
+    # One entry per source that ran — the per-source summary lines (§10).
+    per_source: dict = field(default_factory=dict)
 
 
 def run_search(
@@ -75,6 +98,7 @@ def run_search(
 
     found = new = duplicates = 0
     errors: list[str] = []
+    per_source: dict[str, SourceCounts] = {}
     state = "done"
     budget_exhausted = False
 
@@ -86,6 +110,8 @@ def run_search(
                 if cursor is not None:
                     start_query_index, start_page = cursor
                     resumed_any = True
+            source_found = source_new = source_duplicates = 0
+            source_errors: list[str] = []
             try:
                 for page in adapter.search_pages(
                     spec, start_query_index=start_query_index, start_page=start_page
@@ -94,6 +120,9 @@ def run_search(
                     found += outcome_counts[0]
                     new += outcome_counts[1]
                     duplicates += outcome_counts[2]
+                    source_found += outcome_counts[0]
+                    source_new += outcome_counts[1]
+                    source_duplicates += outcome_counts[2]
                     _save_cursor(
                         connection, adapter.source, query_hash, page.query_index, page.page
                     )
@@ -107,11 +136,25 @@ def run_search(
                 state = "interrupted"
                 budget_exhausted = isinstance(err, RequestBudgetExhausted)
                 reason = str(err) if budget_exhausted else "stopped by user"
-                errors.append(f"{adapter.source}: {reason}")
+                message = f"{adapter.source}: {reason}"
+                errors.append(message)
+                source_errors.append(message)
                 break
             except Exception as err:  # one source down must not lose the others
                 state = "interrupted"
-                errors.append(f"{adapter.source}: {type(err).__name__}: {err}")
+                message = f"{adapter.source}: {type(err).__name__}: {err}"
+                errors.append(message)
+                source_errors.append(message)
+            finally:
+                per_source[adapter.source] = _add_counts(
+                    per_source.get(adapter.source),
+                    SourceCounts(
+                        found=source_found,
+                        new=source_new,
+                        duplicates=source_duplicates,
+                        errors=tuple(source_errors),
+                    ),
+                )
     finally:
         _finish_run(connection, run_id, state, found, new, duplicates, errors, now=now)
         if csv_path is not None:
@@ -126,6 +169,7 @@ def run_search(
         errors=errors,
         resumed=resumed_any,
         budget_exhausted=budget_exhausted,
+        per_source=per_source,
     )
 
 
@@ -170,6 +214,9 @@ def _merge_legs(earlier: SearchSummary | None, leg: SearchSummary) -> SearchSumm
     """One summary for the whole search — counts add up, the last state wins."""
     if earlier is None:
         return replace(leg, legs=1)
+    per_source = dict(earlier.per_source)
+    for source, counts in leg.per_source.items():
+        per_source[source] = _add_counts(per_source.get(source), counts)
     return replace(
         leg,
         found=earlier.found + leg.found,
@@ -178,6 +225,7 @@ def _merge_legs(earlier: SearchSummary | None, leg: SearchSummary) -> SearchSumm
         errors=earlier.errors + leg.errors,
         resumed=earlier.resumed or leg.resumed,
         legs=earlier.legs + 1,
+        per_source=per_source,
     )
 
 

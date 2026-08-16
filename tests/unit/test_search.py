@@ -341,6 +341,51 @@ class TestStaleRuns:
         assert states == ["running", "done"]  # fresh one untouched, ours finished
 
 
+class TestPerSourceCounts:
+    """One line per source in her summary — so counts must exist per source."""
+
+    def test_each_source_gets_its_own_counts(self, db):
+        ba = FakeSource([page(3, page_number=1)], source="BA")
+        an = FakeSource([page(2, page_number=1, source="AN")], source="AN")
+        summary = run_search(db, [ba, an], spec())
+
+        assert summary.per_source["BA"].found == 3
+        assert summary.per_source["BA"].new == 3
+        assert summary.per_source["AN"].found == 2
+        assert summary.per_source["AN"].new == 2
+
+    def test_a_failing_source_lands_in_its_own_counts_and_the_run_continues(self, db):
+        broken = FakeSource([SourceUnavailable("arbeitnow is down")], source="AN")
+        healthy = FakeSource([page(2, page_number=1)], source="BA")
+        summary = run_search(db, [broken, healthy], spec())
+
+        assert summary.per_source["AN"].found == 0
+        assert summary.per_source["AN"].errors  # the failure belongs to AN, not the run
+        assert summary.per_source["BA"].found == 2  # and BA still ran
+
+    def test_counts_add_up_across_legs_per_source(self, db):
+        from jobfinder.search import run_search_until_done
+
+        made: list[FakeSource] = []
+
+        def factory():
+            source = FakeSource(
+                [
+                    page(2, page_number=len(made) + 1),
+                    RequestBudgetExhausted("budget of 200 spent"),
+                ]
+                if len(made) < 2
+                else [page(1, page_number=3)]
+            )
+            made.append(source)
+            return [source]
+
+        summary = run_search_until_done(db, factory, spec())
+
+        assert summary.per_source["BA"].found == 5  # 2 + 2 + 1 across three legs
+        assert summary.per_source["BA"].new == 5
+
+
 class TestCounts:
     def test_rerun_counts_duplicates_without_storing_twice(self, db):
         same_page = page(3, page_number=1)

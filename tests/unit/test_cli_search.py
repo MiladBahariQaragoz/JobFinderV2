@@ -139,6 +139,33 @@ class TestRun:
         assert exit_code == 0
         assert "arbeitnow is down" in out
 
+    def test_each_source_gets_its_own_line_in_her_words(self, tmp_path, capsys):
+        from jobfinder.search import SourceCounts
+
+        def runner(connection, adapters, spec, **kwargs):
+            return summary(
+                per_source={
+                    "BA": SourceCounts(found=42, new=7, duplicates=35),
+                    "AN": SourceCounts(found=3, new=1, duplicates=2),
+                }
+            )
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+        assert "Bundesagentur — 42 found, 7 new" in out
+        assert "Arbeitnow — 3 found, 1 new" in out
+
+    def test_a_skipped_source_says_why(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.delenv("ADZUNA_APP_ID", raising=False)
+        monkeypatch.delenv("ADZUNA_APP_KEY", raising=False)
+
+        def runner(connection, adapters, spec, **kwargs):
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+        assert "Adzuna — skipped (disabled in config.yaml)" in out
+
 
 class TestAutoContinue:
     def test_every_leg_and_source_gets_its_own_fresh_client(self, tmp_path):
