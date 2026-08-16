@@ -55,6 +55,45 @@ class TestFilters:
         assert "Aushilfe Verkauf Minijob" not in response.text
 
 
+class TestPickingSeveralAtOnce:
+    """She lives in one place but can reach several — one city at a time is
+    the wrong question. The same goes for the contract types she will take."""
+
+    def test_two_cities_return_the_jobs_in_both(self, client):
+        body = client.get("/?city=Ingolstadt&city=M%C3%BCnchen").text
+        assert "Aushilfe Verkauf Minijob" in body  # Ingolstadt
+        assert "Werkstudent Datenanalyse" in body  # München
+        assert "Retail Assistant" in body  # München
+
+    def test_two_types_return_the_jobs_of_either(self, client):
+        body = client.get("/?type=minijob&type=werkstudent").text
+        assert "Aushilfe Verkauf Minijob" in body  # minijob
+        assert "Werkstudent Datenanalyse" in body  # werkstudent
+        assert "Retail Assistant" not in body  # part-time only
+
+    def test_two_sources_return_the_jobs_of_either(self, client):
+        body = client.get("/?source=AN&source=BA").text
+        assert "Retail Assistant" in body  # AN
+        assert "Aushilfe Verkauf Minijob" in body  # BA
+
+    def test_picking_several_still_narrows_against_the_other_filters(self, client):
+        body = client.get("/?city=Ingolstadt&city=M%C3%BCnchen&type=minijob").text
+        assert "Aushilfe Verkauf Minijob" in body
+        assert "Küchenhilfe" in body  # Ingolstadt minijob
+        assert "Retail Assistant" not in body  # München, but part-time
+
+    def test_the_empty_state_names_every_city_she_picked(self, client):
+        body = client.get("/?city=Passau&city=Bayreuth").text
+        assert "No jobs match" in body
+        assert "Passau" in body
+        assert "Bayreuth" in body
+
+    def test_one_value_still_behaves_exactly_as_before(self, client):
+        body = client.get("/?city=Ingolstadt").text
+        assert "Aushilfe Verkauf Minijob" in body
+        assert "Werkstudent Datenanalyse" not in body
+
+
 class TestSorting:
     def test_sort_by_fit_score_descending(self, client):
         response = client.get("/?sort=fit")

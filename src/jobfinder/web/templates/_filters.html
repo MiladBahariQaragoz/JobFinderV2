@@ -4,21 +4,25 @@
       hx-trigger="change, submit"
       hx-push-url="/"
       method="get" action="/">
-  <label>City
-    <select name="city">
-      <option value="">Every city</option>
+  {#
+    City, type, source and status take several values at once — she can reach
+    more than one town and will take more than one kind of contract. Holding
+    Ctrl (or Cmd) picks more; picking none means no filter, which is why there
+    is no "every city" option to select any more.
+  #}
+  <label>Cities
+    <select name="city" multiple size="4">
       {% for city in options.cities %}
-      <option value="{{ city }}" {% if filters.city == city %}selected{% endif %}>{{ city }}</option>
+      <option value="{{ city }}" {% if city in filters.cities %}selected{% endif %}>{{ city }}</option>
       {% endfor %}
     </select>
   </label>
-  <label>Type
-    <select name="type">
-      <option value="">Any type</option>
+  <label>Types
+    <select name="type" multiple size="4">
       {% for value, label in [
         ("minijob", "minijob"), ("werkstudent", "werkstudent"), ("parttime", "part-time"),
         ("fulltime", "full-time"), ("internship", "internship")] %}
-      <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
+      <option value="{{ value }}" {% if value in filters.types %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
   </label>
@@ -34,21 +38,19 @@
     <input type="number" name="min_fit" min="0" max="100" placeholder="0"
            value="{{ filters.min_fit if filters.min_fit is not none else "" }}">
   </label>
-  <label>Source
-    <select name="source">
-      <option value="">Every source</option>
+  <label>Sources
+    <select name="source" multiple size="4">
       {% for source in options.sources %}
-      <option value="{{ source }}" {% if filters.source == source %}selected{% endif %}>
+      <option value="{{ source }}" {% if source in filters.sources %}selected{% endif %}>
         {{ source_labels.get(source, source) }}
       </option>
       {% endfor %}
     </select>
   </label>
   <label>Status
-    <select name="status">
-      <option value="">Not deleted</option>
+    <select name="status" multiple size="4">
       {% for status in ["new", "interested", "applied", "rejected", "deleted"] %}
-      <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+      <option value="{{ status }}" {% if status in filters.statuses %}selected{% endif %}>{{ status }}</option>
       {% endfor %}
     </select>
   </label>
