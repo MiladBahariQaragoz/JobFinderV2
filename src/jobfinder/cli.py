@@ -205,11 +205,15 @@ def _build_search_spec(args):
     return spec
 
 
-def _default_client_factory(settings: Settings):
-    """One polite client — the registry gives each adapter its own."""
+def _default_client_factory(settings: Settings, delay_seconds: float):
+    """One polite client — the registry gives each adapter its own, paced for its host."""
     from jobfinder.sources.http import PoliteClient
 
-    return PoliteClient(cache_dir=settings.data_dir / "http-cache", budget=settings.request_budget)
+    return PoliteClient(
+        cache_dir=settings.data_dir / "http-cache",
+        budget=settings.request_budget,
+        min_delay=delay_seconds,
+    )
 
 
 def _adapter_factory(settings: Settings, client_factory):

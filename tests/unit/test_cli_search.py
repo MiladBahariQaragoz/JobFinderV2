@@ -174,7 +174,7 @@ class TestAutoContinue:
         # politeness budget.
         built = []
 
-        def client_factory(_settings):
+        def client_factory(_settings, _delay_seconds=None):
             marker = object()
             built.append(marker)
             return marker
@@ -386,6 +386,32 @@ class TestResumeMessages:
 
         assert "already finished" not in out.casefold()  # it did not finish
         assert "--resume" in out
+
+
+class TestClientPacing:
+    def test_the_default_client_is_built_with_the_pace_it_is_given(self, tmp_path):
+        from jobfinder.cli import _default_client_factory
+        from jobfinder.config import Settings
+
+        client = _default_client_factory(Settings(project_root=tmp_path), 1.0)
+
+        assert client.min_delay == 1.0
+
+    def test_a_real_run_paces_the_api_sources_at_one_second(self, tmp_path):
+        # End to end through the registry: nothing else in the app decides
+        # this, so an accidental default of 3 s would show up here.
+        paces = []
+
+        def client_factory(settings, delay_seconds):
+            paces.append(delay_seconds)
+            return object()
+
+        def runner(connection, adapter_factory, spec, **kwargs):
+            adapter_factory()
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=client_factory, _runner=runner)
+        assert paces == [1.0, 1.0]  # Bundesagentur and Arbeitnow
 
 
 class TestValidation:

@@ -358,9 +358,13 @@ These are engineering constraints that keep her searches working, and they are t
    exists because a scraper that hammers a site gets her IP blocked; an API
    published for programmatic use is not that, and spending seven minutes on
    one search out of misplaced caution is its own failure. Neither API
-   documents a rate limit, so 1 s is a judgment call backed by rule 4 —
+   documents a rate limit, so 1 s is a judgment call backed by rule 5 —
    a 429 is honoured, backed off and, if it persists, kills the source.
-   **No parallel fetching of one host, ever**, whatever kind it is.
+   Measured live on 2026-08-16: a cold Augsburg minijob search spent 268
+   requests in 402 s (1.50 s each, the 1 s gap plus mean jitter) and returned
+   263 jobs with no 429 and no failed source. The same run at the old pace
+   would have taken 15.6 minutes. **No parallel fetching of one host, ever**,
+   whatever kind it is.
 2. **Different hosts may be fetched in parallel** — one worker per host, each
    keeping its own gap from rule 1. Sources are serialised today, which costs
    nothing while one source holds most of the requests but multiplies wall

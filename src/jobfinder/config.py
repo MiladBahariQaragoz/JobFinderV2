@@ -26,6 +26,12 @@ class Settings:
     # what keeps a full search unattended without making it unbounded.
     request_budget: int = 800
     max_search_legs: int = 6
+    # §8 rule 1: the gap between two requests to one host, before jitter. The
+    # 3 s figure is what keeps a scraped site from blocking her; an API
+    # published for programmatic use is not that, and pacing it like one turns
+    # a single search into minutes of waiting.
+    api_delay_seconds: float = 1.0
+    scraper_delay_seconds: float = 3.0
     llm_budget: int = 500
     enabled_sources: tuple[str, ...] = ("ba", "arbeitnow")
     # Bounds for every Pool built this run — see docs/llm-backend.md.
