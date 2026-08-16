@@ -219,6 +219,29 @@ def _adapter_factory(settings: Settings, client_factory):
     return lambda: build_adapters(settings, client_factory).adapters
 
 
+def _source_label(source: str) -> str:
+    from jobfinder.sources.registry import SOURCE_LABELS
+
+    return SOURCE_LABELS.get(source, source)
+
+
+def _print_page(page, found: int, new: int, duplicates: int) -> None:
+    """One line per stored page (§10): a cold cache means minutes of fetching."""
+    line = f"  {_source_label(page.source)}, page {page.page} — {found} found, {new} new"
+    if duplicates:
+        line += f", {duplicates} already known"
+    print(line, flush=True)  # unflushed output would leave the screen frozen
+
+
+def _print_leg(leg: int, leg_result, combined) -> None:
+    """Say so when a spent budget is being continued rather than ending the run."""
+    if leg_result.budget_exhausted:
+        print(
+            f"  Request budget spent — continuing with a fresh one (round {leg + 1}).",
+            flush=True,
+        )
+
+
 def _print_search_summary(result, csv_path: Path | None, skipped=()) -> None:
     if result.state == "interrupted":
         kept = f"{result.found} jobs found so far ({result.new} new) — all of them are saved."
@@ -231,13 +254,11 @@ def _print_search_summary(result, csv_path: Path | None, skipped=()) -> None:
         )
     per_source = getattr(result, "per_source", None) or {}
     if per_source or skipped:
-        from jobfinder.sources.registry import SOURCE_LABELS
-
         print("Sources:")
         for source, counts in per_source.items():
-            print(f"  {SOURCE_LABELS.get(source, source)} — {counts.found} found, {counts.new} new")
+            print(f"  {_source_label(source)} — {counts.found} found, {counts.new} new")
         for name, reason in skipped:
-            print(f"  {SOURCE_LABELS.get(name, name)} — skipped ({reason})")
+            print(f"  {_source_label(name)} — skipped ({reason})")
     if result.legs > 1:
         print(f"It took {result.legs} rounds of requests, continued automatically.")
     if result.errors:
@@ -285,6 +306,8 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
             resume=args.resume,
             csv_path=settings.jobs_init_csv,
             max_legs=settings.max_search_legs,
+            on_page=_print_page,
+            on_leg=_print_leg,
         )
     _print_search_summary(result, settings.jobs_init_csv, skipped=skipped_sources(settings))
     return 0

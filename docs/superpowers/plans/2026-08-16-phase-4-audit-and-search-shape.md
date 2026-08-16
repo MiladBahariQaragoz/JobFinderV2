@@ -129,11 +129,10 @@ stored 8 real minijob postings with full descriptions in 29 s, run recorded
 
 Not defects in what Phase 4 promised, but known and deliberately left:
 
-- **A cold run is silent.** `run_search` takes an `on_page` callback for
-  exactly this and the CLI passes nothing, so a run with no warm cache prints
-  nothing until it finishes — minutes, given a detail fetch per posting at
-  3–4 s spacing. §10's panic rule wants counts on screen while it works. The
-  hook exists; only the CLI side is missing.
+- ~~**A cold run is silent.**~~ Closed in Phase 5 (T9): `jobfinder search`
+  hands the runner an `on_page` printer, so every stored page prints one
+  flushed line — source, page number, running found/new/already-known — and a
+  leg continued after a spent budget says so instead of pausing silently.
 - **`--resume` with nothing to resume says "0 jobs found"** instead of saying
   there was nothing to continue. The stored cursor from a finished run points
   past the last query, so the run is correct and the sentence is not.

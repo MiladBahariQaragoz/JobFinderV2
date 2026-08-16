@@ -212,6 +212,85 @@ class TestAutoContinue:
         assert "rounds" not in capsys.readouterr().out
 
 
+class TestNarration:
+    """§10's panic rule: a cold run must never sit silent for minutes.
+
+    The full progress surface belongs to Phase 8; on the command line one
+    plain line per stored page is what stands between her and a dead screen.
+    """
+
+    def page(self, source="BA", number=1, count=50):
+        from jobfinder.sources.base import PageResult, RawPosting
+
+        postings = [
+            RawPosting(job_id=f"{source}:{i}", source=source, source_id=str(i), title=f"Job {i}")
+            for i in range(count)
+        ]
+        return PageResult(source=source, query_index=0, page=number, postings=postings)
+
+    def runner_calling_on_page(self, *calls):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            on_page = kwargs.get("on_page")
+            assert on_page is not None, "the CLI must hand the runner a page printer"
+            for page, found, new, duplicates in calls:
+                on_page(page, found, new, duplicates)
+            return summary()
+
+        return runner
+
+    def test_every_stored_page_prints_a_line_as_it_lands(self, tmp_path, capsys):
+        runner = self.runner_calling_on_page(
+            (self.page(number=1), 50, 50, 0),
+            (self.page(number=2), 100, 73, 27),
+        )
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+
+        assert "Bundesagentur, page 1 — 50 found, 50 new" in out
+        assert "Bundesagentur, page 2 — 100 found, 73 new, 27 already known" in out
+
+    def test_the_page_line_names_the_source_she_would_recognise(self, tmp_path, capsys):
+        runner = self.runner_calling_on_page((self.page(source="AN", number=4), 12, 3, 9))
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert "Arbeitnow, page 4" in capsys.readouterr().out
+
+    def test_page_lines_are_flushed_so_the_screen_moves_during_the_run(self, tmp_path, monkeypatch):
+        import io
+        import sys
+
+        class Recorder(io.StringIO):
+            flushes = 0
+
+            def flush(self):
+                Recorder.flushes += 1
+
+        monkeypatch.setattr(sys, "stdout", Recorder())
+        runner = self.runner_calling_on_page((self.page(), 50, 50, 0))
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+
+        assert Recorder.flushes > 0  # buffered output would look frozen
+
+    def test_a_continued_leg_says_the_search_is_carrying_on(self, tmp_path, capsys):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            on_leg = kwargs.get("on_leg")
+            assert on_leg is not None, "the CLI must hand the runner a leg printer"
+            on_leg(1, summary(state="interrupted", budget_exhausted=True, found=800), summary())
+            return summary(legs=2)
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+        assert "budget" in out.casefold()
+        assert "continuing" in out.casefold()
+
+    def test_a_finished_leg_announces_nothing(self, tmp_path, capsys):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            kwargs["on_leg"](1, summary(state="done"), summary())
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert "continuing" not in capsys.readouterr().out.casefold()
+
+
 class TestValidation:
     def test_unknown_city_is_one_sentence_and_no_traceback(self, tmp_path, capsys):
         exit_code = main(
