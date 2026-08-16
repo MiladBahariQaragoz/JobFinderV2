@@ -92,11 +92,22 @@ class TestProgressEndpoint:
 
         first = client.get("/progress").text
         reloaded = client.get("/progress").text  # a fresh request, like F5
-        page = client.get("/").text  # the whole page, reloaded
+        page = client.get("/search").text  # the whole page, reloaded
 
         for body in (first, reloaded, page):
             assert ">12<" in body  # same counts every time she looks
             assert "Bundesagentur" in body
+
+    def test_the_job_list_still_says_a_search_is_running(self, managed):
+        """The panel moved to its own page; the work must not become invisible
+        on the one she spends her time on (§10 — nothing ever looks frozen)."""
+        settings, _manager, client = managed
+        seed_running_run(settings)
+
+        body = client.get("/").text
+        assert "A search is running" in body
+        assert ">12<" in body  # the same counts, from the same journal
+        assert 'href="/search"' in body  # ...and one click to the full panel
 
     def test_progress_offers_cancel_while_a_run_is_live(self, managed):
         settings, _manager, client = managed

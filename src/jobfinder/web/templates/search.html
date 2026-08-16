@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Search — JobFinder{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Search for more jobs</h1>
+  <p class="meta">
+    This asks the job sites for new postings and adds them to your list. To
+    narrow the jobs you already have, use the filters on the
+    <a href="/">Jobs</a> page instead.
+  </p>
+</div>
+{% include "_progress.html" %}
+{% endblock %}

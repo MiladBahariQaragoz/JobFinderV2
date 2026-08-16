@@ -93,6 +93,45 @@ class TestPickingSeveralAtOnce:
         assert "Aushilfe Verkauf Minijob" in body
         assert "Werkstudent Datenanalyse" not in body
 
+    def test_paging_keeps_every_city_she_picked(self, settings, client):
+        """The next-page link is built from the query string, and a plain
+        dict() over repeated parameters keeps only the last one — which would
+        silently drop her other cities at page two."""
+        connection = connect(settings.db_path)
+        try:
+            for n in range(60):  # past one 50-row page
+                store_job(connection, job_id=f"BA:2{n}", title=f"Filler {n}", city="München")
+        finally:
+            connection.close()
+
+        body = client.get("/?city=Ingolstadt&city=M%C3%BCnchen").text
+        next_link = body.split('href="/?', 1)[1].split('"', 1)[0]
+        assert next_link.count("city=") == 2, f"the next page drops a city: {next_link}"
+
+
+class TestSearchLivesOnItsOwnPage:
+    """Searching and filtering are different questions — one asks the internet
+    for more jobs, the other narrows the ones already stored. Side by side on
+    one page they read as the same control."""
+
+    def test_the_list_page_does_not_carry_the_search_form(self, client):
+        body = client.get("/").text
+        assert "Explain jobs in English while searching" not in body
+        assert 'action="/run/start"' not in body
+
+    def test_the_search_page_carries_it(self, client):
+        response = client.get("/search")
+        assert response.status_code == 200
+        body = response.text
+        assert "Explain jobs in English while searching" in body
+        assert 'action="/run/start"' in body
+
+    def test_both_pages_are_reachable_from_every_page(self, client):
+        for path in ("/", "/search", "/jobs/BA%3A1"):
+            body = client.get(path).text
+            assert 'href="/search"' in body, f"no way to reach the search from {path}"
+            assert 'href="/"' in body, f"no way back to the jobs from {path}"
+
 
 class TestSorting:
     def test_sort_by_fit_score_descending(self, client):
