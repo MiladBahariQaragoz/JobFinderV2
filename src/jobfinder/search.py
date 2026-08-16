@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -34,6 +34,27 @@ DEFAULT_MAX_LEGS = 6
 
 
 @dataclass(frozen=True)
+class SourceCounts:
+    """One source's line in the summary — §10's `Bundesagentur — 42 found, 7 new`."""
+
+    found: int = 0
+    new: int = 0
+    duplicates: int = 0
+    errors: tuple[str, ...] = ()
+
+
+def _add_counts(earlier: SourceCounts | None, page: SourceCounts) -> SourceCounts:
+    if earlier is None:
+        return page
+    return SourceCounts(
+        found=earlier.found + page.found,
+        new=earlier.new + page.new,
+        duplicates=earlier.duplicates + page.duplicates,
+        errors=earlier.errors + page.errors,
+    )
+
+
+@dataclass(frozen=True)
 class SearchSummary:
     """What one run did — the numbers her summary lines are built from."""
 
@@ -48,6 +69,8 @@ class SearchSummary:
     # automatically — her Ctrl-C and a dead host are not.
     budget_exhausted: bool = False
     legs: int = 1  # how many budgets the search needed
+    # One entry per source that ran — the per-source summary lines (§10).
+    per_source: dict = field(default_factory=dict)
 
 
 def run_search(
@@ -63,8 +86,9 @@ def run_search(
 ) -> SearchSummary:
     """Run every adapter's search, persisting as we go. Never raises adapter errors.
 
-    `on_page(page, found, new, duplicates)` fires after each stored page — the
-    UI's chance to narrate progress (§10) from real counts.
+    `on_page(page, counts, totals)` fires after each stored page with that
+    page's own `SourceCounts` and the run's running ones — the UI's chance to
+    narrate progress (§10) from real counts.
     """
     now = now or datetime.now(UTC)
     _close_stale_runs(connection, now, stale_after)
@@ -75,6 +99,7 @@ def run_search(
 
     found = new = duplicates = 0
     errors: list[str] = []
+    per_source: dict[str, SourceCounts] = {}
     state = "done"
     budget_exhausted = False
 
@@ -86,6 +111,8 @@ def run_search(
                 if cursor is not None:
                     start_query_index, start_page = cursor
                     resumed_any = True
+            source_found = source_new = source_duplicates = 0
+            source_errors: list[str] = []
             try:
                 for page in adapter.search_pages(
                     spec, start_query_index=start_query_index, start_page=start_page
@@ -94,6 +121,9 @@ def run_search(
                     found += outcome_counts[0]
                     new += outcome_counts[1]
                     duplicates += outcome_counts[2]
+                    source_found += outcome_counts[0]
+                    source_new += outcome_counts[1]
+                    source_duplicates += outcome_counts[2]
                     _save_cursor(
                         connection, adapter.source, query_hash, page.query_index, page.page
                     )
@@ -101,17 +131,35 @@ def run_search(
                         connection, run_id, found=found, new=new, duplicates=duplicates, now=now
                     )
                     if on_page is not None:
-                        on_page(page, found, new, duplicates)
+                        on_page(
+                            page,
+                            SourceCounts(*outcome_counts),
+                            SourceCounts(found=found, new=new, duplicates=duplicates),
+                        )
             except (KeyboardInterrupt, RequestBudgetExhausted) as err:
                 # Her stop or the politeness limit: halt the whole run here.
                 state = "interrupted"
                 budget_exhausted = isinstance(err, RequestBudgetExhausted)
                 reason = str(err) if budget_exhausted else "stopped by user"
-                errors.append(f"{adapter.source}: {reason}")
+                message = f"{adapter.source}: {reason}"
+                errors.append(message)
+                source_errors.append(message)
                 break
             except Exception as err:  # one source down must not lose the others
                 state = "interrupted"
-                errors.append(f"{adapter.source}: {type(err).__name__}: {err}")
+                message = f"{adapter.source}: {type(err).__name__}: {err}"
+                errors.append(message)
+                source_errors.append(message)
+            finally:
+                per_source[adapter.source] = _add_counts(
+                    per_source.get(adapter.source),
+                    SourceCounts(
+                        found=source_found,
+                        new=source_new,
+                        duplicates=source_duplicates,
+                        errors=tuple(source_errors),
+                    ),
+                )
     finally:
         _finish_run(connection, run_id, state, found, new, duplicates, errors, now=now)
         if csv_path is not None:
@@ -126,6 +174,7 @@ def run_search(
         errors=errors,
         resumed=resumed_any,
         budget_exhausted=budget_exhausted,
+        per_source=per_source,
     )
 
 
@@ -170,6 +219,9 @@ def _merge_legs(earlier: SearchSummary | None, leg: SearchSummary) -> SearchSumm
     """One summary for the whole search — counts add up, the last state wins."""
     if earlier is None:
         return replace(leg, legs=1)
+    per_source = dict(earlier.per_source)
+    for source, counts in leg.per_source.items():
+        per_source[source] = _add_counts(per_source.get(source), counts)
     return replace(
         leg,
         found=earlier.found + leg.found,
@@ -178,7 +230,13 @@ def _merge_legs(earlier: SearchSummary | None, leg: SearchSummary) -> SearchSumm
         errors=earlier.errors + leg.errors,
         resumed=earlier.resumed or leg.resumed,
         legs=earlier.legs + 1,
+        per_source=per_source,
     )
+
+
+def _is_known(connection: sqlite3.Connection, job_id: str) -> bool:
+    row = connection.execute("SELECT 1 FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+    return row is not None
 
 
 def _store_page(connection: sqlite3.Connection, adapter, page) -> tuple[int, int, int]:
@@ -186,7 +244,14 @@ def _store_page(connection: sqlite3.Connection, adapter, page) -> tuple[int, int
     found = new = duplicates = 0
     fetch_detail = getattr(adapter, "fetch_detail", None)
     for posting in page.postings:
-        if posting.description is None and fetch_detail is not None:
+        # A detail fetch is a request at §8 pacing and the dominant cost of a
+        # run. For a job already stored the answer is thrown away anyway: the
+        # re-run rule moves `last_seen_at` and touches nothing else.
+        if (
+            posting.description is None
+            and fetch_detail is not None
+            and not _is_known(connection, posting.job_id)
+        ):
             posting = fetch_detail(posting)
         outcome = upsert_job(connection, posting)
         found += 1

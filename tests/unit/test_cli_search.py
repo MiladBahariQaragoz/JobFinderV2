@@ -10,7 +10,7 @@ from jobfinder.search_spec import SearchSpec
 
 
 def no_adapters(_settings):
-    """A factory that builds no adapters — the fake runner never needs them."""
+    """A client factory that is never reached — the fake runner never builds adapters."""
     return []
 
 
@@ -139,15 +139,45 @@ class TestRun:
         assert exit_code == 0
         assert "arbeitnow is down" in out
 
+    def test_each_source_gets_its_own_line_in_her_words(self, tmp_path, capsys):
+        from jobfinder.search import SourceCounts
+
+        def runner(connection, adapters, spec, **kwargs):
+            return summary(
+                per_source={
+                    "BA": SourceCounts(found=42, new=7, duplicates=35),
+                    "AN": SourceCounts(found=3, new=1, duplicates=2),
+                }
+            )
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+        assert "Bundesagentur — 42 found, 7 new" in out
+        assert "Arbeitnow — 3 found, 1 new" in out
+
+    def test_a_skipped_source_says_why(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.delenv("ADZUNA_APP_ID", raising=False)
+        monkeypatch.delenv("ADZUNA_APP_KEY", raising=False)
+
+        def runner(connection, adapters, spec, **kwargs):
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+        assert "Adzuna — skipped (disabled in config.yaml)" in out
+
 
 class TestAutoContinue:
-    def test_each_leg_gets_a_freshly_built_client(self, tmp_path):
-        # A leg only gets a new budget because it gets a new client.
+    def test_every_leg_and_source_gets_its_own_fresh_client(self, tmp_path):
+        # A leg gets a new budget because it gets a new client — and each
+        # source gets its own client too, so one source cannot spend another's
+        # politeness budget.
         built = []
 
         def client_factory(_settings):
-            built.append(object())
-            return []
+            marker = object()
+            built.append(marker)
+            return marker
 
         def runner(connection, adapter_factory, spec, **kwargs):
             adapter_factory()
@@ -155,7 +185,7 @@ class TestAutoContinue:
             return summary()
 
         main(["search", "--root", str(tmp_path)], _client_factory=client_factory, _runner=runner)
-        assert len(built) == 2
+        assert len(built) == 4  # 2 legs × 2 default sources
 
     def test_the_leg_cap_comes_from_settings(self, tmp_path):
         seen = {}
@@ -180,6 +210,182 @@ class TestAutoContinue:
 
         main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
         assert "rounds" not in capsys.readouterr().out
+
+
+class TestNarration:
+    """§10's panic rule: a cold run must never sit silent for minutes.
+
+    The full progress surface belongs to Phase 8; on the command line one
+    plain line per stored page is what stands between her and a dead screen.
+    """
+
+    def page(self, source="BA", number=1, count=50):
+        from jobfinder.sources.base import PageResult, RawPosting
+
+        postings = [
+            RawPosting(job_id=f"{source}:{i}", source=source, source_id=str(i), title=f"Job {i}")
+            for i in range(count)
+        ]
+        return PageResult(source=source, query_index=0, page=number, postings=postings)
+
+    def counts(self, found=0, new=0, duplicates=0):
+        from jobfinder.search import SourceCounts
+
+        return SourceCounts(found=found, new=new, duplicates=duplicates)
+
+    def runner_calling_on_page(self, *calls):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            on_page = kwargs.get("on_page")
+            assert on_page is not None, "the CLI must hand the runner a page printer"
+            for page, page_counts, totals in calls:
+                on_page(page, page_counts, totals)
+            return summary()
+
+        return runner
+
+    def test_every_stored_page_prints_a_line_as_it_lands(self, tmp_path, capsys):
+        runner = self.runner_calling_on_page(
+            (self.page(number=1), self.counts(50, 50, 0), self.counts(50, 50, 0)),
+            (self.page(number=2), self.counts(50, 23, 27), self.counts(100, 73, 27)),
+        )
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+
+        assert "Bundesagentur, page 1 — 50 found, 50 new" in out
+        assert "Bundesagentur, page 2 — 50 found, 23 new, 27 already known" in out
+        assert "100 so far" in out  # the run's total belongs at the end of the line
+
+    def test_the_page_line_counts_that_page_not_the_whole_run(self, tmp_path, capsys):
+        # The defect this replaced: a page that stored nothing printed the
+        # totals of the source that ran before it — "Arbeitnow — 116 found"
+        # on a page where Arbeitnow found nothing at all.
+        runner = self.runner_calling_on_page(
+            (
+                self.page(source="AN", number=1, count=0),
+                self.counts(0, 0, 0),
+                self.counts(116, 115, 1),
+            )
+        )
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+
+        assert "Arbeitnow, page 1 — 0 found, 0 new" in out
+        assert "116 found" not in out.split("\n")[0]
+
+    def test_the_page_line_names_the_source_she_would_recognise(self, tmp_path, capsys):
+        runner = self.runner_calling_on_page(
+            (self.page(source="AN", number=4), self.counts(12, 3, 9), self.counts(12, 3, 9))
+        )
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert "Arbeitnow, page 4" in capsys.readouterr().out
+
+    def test_page_lines_are_flushed_so_the_screen_moves_during_the_run(self, tmp_path, monkeypatch):
+        import io
+        import sys
+
+        class Recorder(io.StringIO):
+            flushes = 0
+
+            def flush(self):
+                Recorder.flushes += 1
+
+        monkeypatch.setattr(sys, "stdout", Recorder())
+        runner = self.runner_calling_on_page(
+            (self.page(), self.counts(50, 50, 0), self.counts(50, 50, 0))
+        )
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+
+        assert Recorder.flushes > 0  # buffered output would look frozen
+
+    def test_a_continued_leg_says_the_search_is_carrying_on(self, tmp_path, capsys):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            on_leg = kwargs.get("on_leg")
+            assert on_leg is not None, "the CLI must hand the runner a leg printer"
+            on_leg(1, summary(state="interrupted", budget_exhausted=True, found=800), summary())
+            return summary(legs=2)
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+        assert "budget" in out.casefold()
+        assert "continuing" in out.casefold()
+
+    def test_a_finished_leg_announces_nothing(self, tmp_path, capsys):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            kwargs["on_leg"](1, summary(state="done"), summary())
+            return summary()
+
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        assert "continuing" not in capsys.readouterr().out.casefold()
+
+
+class TestResumeMessages:
+    """`--resume` has to say what it actually did, not report an empty search."""
+
+    def runner_returning(self, **overrides):
+        def runner(connection, adapter_factory, spec, **kwargs):
+            return summary(**overrides)
+
+        return runner
+
+    def test_resume_after_a_finished_search_says_there_was_nothing_left(self, tmp_path, capsys):
+        # The cursor from the finished run points past the last query, so the
+        # run is correct at 0 found — the sentence was the lie.
+        runner = self.runner_returning(found=0, new=0, duplicates=0, resumed=True)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "already finished" in out.casefold()
+        assert "Search finished: 0 jobs found" not in out
+
+    def test_resume_with_nothing_interrupted_says_a_fresh_search_ran(self, tmp_path, capsys):
+        runner = self.runner_returning(found=12, new=12, duplicates=0, resumed=False)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "nothing was interrupted" in out.casefold()
+        assert "12" in out  # and the fresh search still reports what it found
+
+    def test_a_resumed_run_that_found_more_reports_the_counts_as_usual(self, tmp_path, capsys):
+        runner = self.runner_returning(found=12, new=4, duplicates=8, resumed=True)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "Search finished: 12 jobs found" in out
+        assert "already finished" not in out.casefold()
+
+    def test_a_fresh_search_that_found_nothing_is_not_called_already_finished(
+        self, tmp_path, capsys
+    ):
+        runner = self.runner_returning(found=0, new=0, duplicates=0, resumed=False)
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+
+        assert "already finished" not in out.casefold()
+        assert "Search finished: 0 jobs found" in out
+
+    def test_an_interrupted_resume_still_offers_to_continue(self, tmp_path, capsys):
+        runner = self.runner_returning(state="interrupted", found=0, new=0, resumed=True)
+        main(
+            ["search", "--root", str(tmp_path), "--resume"],
+            _client_factory=no_adapters,
+            _runner=runner,
+        )
+        out = capsys.readouterr().out
+
+        assert "already finished" not in out.casefold()  # it did not finish
+        assert "--resume" in out
 
 
 class TestValidation:

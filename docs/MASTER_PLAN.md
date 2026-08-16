@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — M1 and M2 done, Phase 4 done (phases 0-4), M3 under way
+status: in progress — M1 and M2 done, phases 0-5 done, M3 needs Phase 7
 ---
 
 # JobFinderV2 — Master Plan
@@ -175,13 +175,20 @@ an export test, so they are settled here rather than per phase.
 |---|---|---|
 | `job_id` | `{SOURCE}:{native id}` — stable, the primary key | `BA:11119-4913285274-S` |
 | `source` | Short code per adapter | `BA`, `AN`, `AZ`, `SS`, `ID`, `XI` |
-| `dedupe_key` | `sha1(normalized_title + normalized_company + plz)` — catches the same job listed on three sites | `9f2c…` |
+| `dedupe_key` | `sha1(normalized_title + normalized_company + normalized_city)` — catches the same job listed on three sites | `9f2c…` |
 | `content_hash` | `sha1(description)` — changes only when the ad text changes, drives re-enrichment | `41ab…` |
 
 **The re-run rule:** a search that finds a `job_id` already in the database updates
 `last_seen_at` and nothing else. Enrichment is skipped unless `content_hash` changed
 or the prompt version changed. This is what stops the app from spending her free LLM
 quota on the same 200 jobs every morning.
+
+The same rule governs requests: a job already stored **is not fetched in detail
+again**, because the answer would be discarded. Detail fetches stay in the search
+rather than moving into enrichment — Phase 5's cross-source merge needs the
+description at search time to decide which sighting is the richest, and
+`has_description` is a Phase 4 contract. Phase 7 revisits that only if live budgets
+prove it necessary.
 
 ### SQLite tables
 
@@ -199,8 +206,23 @@ quota on the same 200 jobs every morning.
 
 `job_id, source, source_id, dedupe_key, title, company, city, plz, lat, lon,
 employment_type_raw, is_minijob, is_parttime, is_fulltime, is_internship,
-is_werkstudent, homeoffice, published_at, apply_url, source_url, has_description,
-content_hash, first_seen_at, last_seen_at, status`
+is_werkstudent, homeoffice, published_at, apply_url, source_url, also_seen_on,
+has_description, content_hash, first_seen_at, last_seen_at, status`
+
+`also_seen_on` (added in Phase 5) lists the other sites the same ad was seen
+on, comma-joined — cross-source dedupe keeps the first row and records every
+alternate sighting there instead of storing the job twice.
+
+Two rules the key has to obey, both learned from live data:
+
+- **The location in the key is the city, never the postcode.** The BA answers
+  with a `plz`, Arbeitnow answers with none at all, so a postcode-based key
+  could never match the same ad across those two sources. City names are
+  folded before hashing — the BA's `"Ingolstadt, Donau"` is `"Ingolstadt"`.
+- **Merging happens only across sources.** One site listing two openings with
+  the same title, company and town means two jobs she can apply to: a live BA
+  query returned two Penny-Markt Werkstudent ads in Neuburg under two
+  reference numbers, and collapsing those would delete one of them.
 
 ### `jobs-enriched.csv` (exported after every enrichment run)
 
@@ -749,22 +771,29 @@ set she can trust.
 
 ### Test-first checklist
 
-- [ ] `test_arbeitnow_fixture_parses_into_raw_postings`
-- [ ] `test_arbeitnow_results_outside_her_cities_are_filtered_out`
-- [ ] `test_arbeitnow_pagination_stops_at_the_last_page`
-- [ ] `test_adzuna_adapter_is_skipped_cleanly_without_keys`
-- [ ] `test_registry_runs_only_enabled_sources`
-- [ ] `test_registry_continues_after_one_source_raises`
-- [ ] `test_same_job_from_ba_and_arbeitnow_collapses_to_one_row_with_both_sources`
-- [ ] `test_richest_record_wins_when_merging` (the one with a description)
-- [ ] `test_run_summary_counts_match_the_database`
-- [ ] `tests/live/test_arbeitnow_contract.py`
+- [x] `test_arbeitnow_fixture_parses_into_raw_postings`
+- [x] `test_arbeitnow_results_outside_her_cities_are_filtered_out`
+- [x] `test_arbeitnow_pagination_stops_at_the_last_page`
+- [x] `test_adzuna_adapter_is_skipped_cleanly_without_keys`
+- [x] `test_registry_runs_only_enabled_sources`
+- [x] `test_registry_continues_after_one_source_raises`
+- [x] `test_same_job_from_ba_and_arbeitnow_collapses_to_one_row_with_both_sources`
+- [x] `test_richest_record_wins_when_merging` (the one with a description)
+- [x] `test_run_summary_counts_match_the_database`
+- [x] `tests/live/test_arbeitnow_contract.py`
 
 ### Done when
 
-- [ ] One `jobfinder search` covers all enabled API sources and prints a per-source summary
-- [ ] Disabling a source in `config.yaml` visibly changes the summary and nothing breaks
-- [ ] Duplicate rate across sources is measured and reported, not guessed
+- [x] One `jobfinder search` covers all enabled API sources and prints a per-source summary
+- [x] Disabling a source in `config.yaml` visibly changes the summary and nothing breaks
+- [x] Duplicate rate across sources is measured and reported, not guessed —
+      **zero** between the Bundesagentur and Arbeitnow, measured over 590 live
+      postings in München and Ingolstadt. The two sources do not overlap in her
+      market; the merge is built for Phase 6's scrapers, which list the same
+      corporate ads the Bundesagentur does. Within one source, 5–9 % of postings
+      share a dedupe key — separate openings, which is why merging is
+      cross-source only. See
+      [the Phase 5 plan](superpowers/plans/2026-08-16-phase-5-api-sources.md).
 
 ---
 

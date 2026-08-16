@@ -64,9 +64,9 @@ class TestEncoding:
         assert rows[1][header.index("title")] == "Küchenhilfe (m/w/d)"
 
     def test_no_blank_lines_on_windows(self, db, tmp_path):
-        seed(db, job_id="BA:a", source_id="a")
-        seed(db, job_id="BA:b", source_id="b")
-        seed(db, job_id="BA:c", source_id="c")
+        seed(db, job_id="BA:a", source_id="a", company="Bäckerei Eins")
+        seed(db, job_id="BA:b", source_id="b", company="Bäckerei Zwei")
+        seed(db, job_id="BA:c", source_id="c", company="Bäckerei Drei")
         target = tmp_path / "jobs-init.csv"
         export_jobs_init(db, target)
 
@@ -86,7 +86,7 @@ class TestColumns:
 
     def test_status_column_comes_from_the_status_table(self, db, tmp_path):
         kept = seed(db)
-        seed(db, job_id="BA:rejected-1", source_id="rejected-1")
+        seed(db, job_id="BA:rejected-1", source_id="rejected-1", company="Anderer Laden")
         db.execute("UPDATE status SET status = 'rejected' WHERE job_id = 'BA:rejected-1'")
         db.commit()
 
@@ -99,14 +99,30 @@ class TestColumns:
         assert by_job["BA:rejected-1"][header.index("status")] == "rejected"
 
     def test_every_job_row_is_exported_sorted_by_job_id(self, db, tmp_path):
-        seed(db, job_id="BA:c", source_id="c")
-        seed(db, job_id="BA:a", source_id="a")
-        seed(db, job_id="BA:b", source_id="b")
+        seed(db, job_id="BA:c", source_id="c", company="Bäckerei Drei")
+        seed(db, job_id="BA:a", source_id="a", company="Bäckerei Eins")
+        seed(db, job_id="BA:b", source_id="b", company="Bäckerei Zwei")
         target = tmp_path / "jobs-init.csv"
         written = export_jobs_init(db, target)
         assert written == 3
         header, *body = read_rows(target)
         assert [row[header.index("job_id")] for row in body] == ["BA:a", "BA:b", "BA:c"]
+
+    def test_also_seen_on_is_exported_after_source_url(self, db, tmp_path):
+        seed(db)
+        seed(
+            db,
+            job_id="AN:werkstudent-kueche-1",
+            source="AN",
+            source_id="werkstudent-kueche-1",
+            title="Küchenhilfe (m/f/d)",  # same normalised identity → merge
+        )
+        target = tmp_path / "jobs-init.csv"
+        export_jobs_init(db, target)
+        header, *body = read_rows(target)
+        assert header[header.index("source_url") + 1] == "also_seen_on"
+        assert body[0][header.index("also_seen_on")] == "AN"
+        assert body[0][header.index("source")] == "BA"
 
 
 class TestAtomicity:

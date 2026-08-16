@@ -69,20 +69,41 @@ class TestDedupeNormalisation:
 
 
 def test_dedupe_key_is_stable_across_sources():
-    ba = make_dedupe_key(title="Werkstudent (m/w/d)", company="DEKRA Arbeit GmbH", plz="85051")
+    ba = make_dedupe_key(
+        title="Werkstudent (m/w/d)", company="DEKRA Arbeit GmbH", city="Ingolstadt"
+    )
     other_site = make_dedupe_key(
-        title="werkstudent (m/f/d)", company="dekra arbeit gmbh", plz="85051"
+        title="werkstudent (m/f/d)", company="dekra arbeit gmbh", city="ingolstadt"
     )
     assert ba == other_site
 
 
+def test_dedupe_key_is_built_from_the_city_every_source_reports():
+    # The BA answers with a postcode, Arbeitnow never does. Keying on the
+    # postcode therefore means the same ad on both sites never matches, which
+    # is the whole point of the key — so the city carries the location.
+    ba = make_dedupe_key(title="Werkstudent Küche", company="Bäckerei Müller", city="Ingolstadt")
+    arbeitnow = make_dedupe_key(
+        title="Werkstudent Küche", company="Bäckerei Müller", city="Ingolstadt"
+    )
+    assert ba == arbeitnow
+
+
+def test_dedupe_key_ignores_the_district_a_source_appends_to_the_city():
+    # The BA writes "Ingolstadt, Donau" and "Rohrbach, Ilm"; every other source
+    # writes the plain city name.
+    assert make_dedupe_key(
+        title="Kellner", company="Café Glück", city="Ingolstadt, Donau"
+    ) == make_dedupe_key(title="Kellner", company="Café Glück", city="Ingolstadt")
+
+
 def test_dedupe_key_moves_with_location_or_title():
-    base = make_dedupe_key(title="Kellner", company="Café Glück", plz="85051")
-    assert base != make_dedupe_key(title="Kellner", company="Café Glück", plz="80331")
-    assert base != make_dedupe_key(title="Barista", company="Café Glück", plz="85051")
-    assert base != make_dedupe_key(title="Kellner", company="Café Extra", plz="85051")
+    base = make_dedupe_key(title="Kellner", company="Café Glück", city="Ingolstadt")
+    assert base != make_dedupe_key(title="Kellner", company="Café Glück", city="München")
+    assert base != make_dedupe_key(title="Barista", company="Café Glück", city="Ingolstadt")
+    assert base != make_dedupe_key(title="Kellner", company="Café Extra", city="Ingolstadt")
 
 
 def test_dedupe_key_tolerates_missing_fields():
-    key = make_dedupe_key(title="Aushilfe", company=None, plz=None)
+    key = make_dedupe_key(title="Aushilfe", company=None, city=None)
     assert isinstance(key, str) and key

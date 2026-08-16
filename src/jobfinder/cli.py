@@ -206,25 +206,77 @@ def _build_search_spec(args):
 
 
 def _default_client_factory(settings: Settings):
-    from jobfinder.sources.ba import BAApi
+    """One polite client — the registry gives each adapter its own."""
     from jobfinder.sources.http import PoliteClient
 
-    client = PoliteClient(
-        cache_dir=settings.data_dir / "http-cache", budget=settings.request_budget
-    )
-    return [BAApi(client)]
+    return PoliteClient(cache_dir=settings.data_dir / "http-cache", budget=settings.request_budget)
 
 
-def _print_search_summary(result, csv_path: Path | None) -> None:
+def _adapter_factory(settings: Settings, client_factory):
+    """Build one leg's adapters — fresh clients, so fresh budgets (§8)."""
+    from jobfinder.sources.registry import build_adapters
+
+    return lambda: build_adapters(settings, client_factory).adapters
+
+
+def _source_label(source: str) -> str:
+    from jobfinder.sources.registry import SOURCE_LABELS
+
+    return SOURCE_LABELS.get(source, source)
+
+
+def _print_page(page, counts, totals) -> None:
+    """One line per stored page (§10): a cold cache means minutes of fetching.
+
+    The counts are that page's own — a line reading `Arbeitnow — 116 found`
+    because another source had found 116 is worse than no line at all. The
+    run's running total goes at the end, where it cannot be misread as this
+    source's.
+    """
+    line = f"  {_source_label(page.source)}, page {page.page} — {counts.found} found, "
+    line += f"{counts.new} new"
+    if counts.duplicates:
+        line += f", {counts.duplicates} already known"
+    line += f" · {totals.found} so far"
+    print(line, flush=True)  # unflushed output would leave the screen frozen
+
+
+def _print_leg(leg: int, leg_result, combined) -> None:
+    """Say so when a spent budget is being continued rather than ending the run."""
+    if leg_result.budget_exhausted:
+        print(
+            f"  Request budget spent — continuing with a fresh one (round {leg + 1}).",
+            flush=True,
+        )
+
+
+def _print_search_summary(
+    result, csv_path: Path | None, skipped=(), *, resume_requested: bool = False
+) -> None:
+    if resume_requested and not result.resumed:
+        print("Nothing was interrupted, so a fresh search ran instead.")
+
     if result.state == "interrupted":
         kept = f"{result.found} jobs found so far ({result.new} new) — all of them are saved."
         print(f"Run interrupted. {kept}")
         print("Continue any time with: jobfinder search --resume")
+    elif resume_requested and result.resumed and result.found == 0:
+        # The cursor of a finished search points past its last query, so the
+        # run really does find nothing. Saying "0 jobs found" reads as failure.
+        print("The last search had already finished — there was nothing left to continue.")
+        print("Everything it found is in your list.")
     else:
         print(
             f"Search finished: {result.found} jobs found — "
             f"{result.new} new, {result.duplicates} already in your list."
         )
+    per_source = getattr(result, "per_source", None) or {}
+    if per_source or skipped:
+        print("Sources:")
+        for source, counts in per_source.items():
+            print(f"  {_source_label(source)} — {counts.found} found, {counts.new} new")
+        for name, reason in skipped:
+            print(f"  {_source_label(name)} — skipped ({reason})")
     if result.legs > 1:
         print(f"It took {result.legs} rounds of requests, continued automatically.")
     if result.errors:
@@ -261,17 +313,26 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
 
     from contextlib import closing
 
+    from jobfinder.sources.registry import skipped_sources
+
     with closing(connect(settings.db_path)) as connection:
         migrate(connection)
         result = runner(
             connection,
-            lambda: client_factory(settings),  # one fresh client, and budget, per leg
+            _adapter_factory(settings, client_factory),
             spec,
             resume=args.resume,
             csv_path=settings.jobs_init_csv,
             max_legs=settings.max_search_legs,
+            on_page=_print_page,
+            on_leg=_print_leg,
         )
-    _print_search_summary(result, settings.jobs_init_csv)
+    _print_search_summary(
+        result,
+        settings.jobs_init_csv,
+        skipped=skipped_sources(settings),
+        resume_requested=args.resume,
+    )
     return 0
 
 

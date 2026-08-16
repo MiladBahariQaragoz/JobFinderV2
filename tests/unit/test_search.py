@@ -7,6 +7,7 @@ counts, and `--resume` re-enters at the stored cursor instead of page 1.
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -25,8 +26,14 @@ def spec(**overrides) -> SearchSpec:
 
 
 def posting(n: int, source: str = "BA") -> RawPosting:
+    # The company varies with the source so postings from different fake
+    # sources stay distinct jobs — the merge path has its own store tests.
     return RawPosting(
-        job_id=f"{source}:{n}", source=source, source_id=str(n), title=f"Job {n}", company="ACME"
+        job_id=f"{source}:{n}",
+        source=source,
+        source_id=str(n),
+        title=f"Job {n}",
+        company=f"{source} ACME",
     )
 
 
@@ -339,6 +346,209 @@ class TestStaleRuns:
         run_search(db, [FakeSource([page(1, page_number=1)])], spec(), now=now)
         states = [row[0] for row in db.execute("SELECT state FROM runs ORDER BY id")]
         assert states == ["running", "done"]  # fresh one untouched, ours finished
+
+
+class TestPerSourceCounts:
+    """One line per source in her summary — so counts must exist per source."""
+
+    def test_each_source_gets_its_own_counts(self, db):
+        ba = FakeSource([page(3, page_number=1)], source="BA")
+        an = FakeSource([page(2, page_number=1, source="AN")], source="AN")
+        summary = run_search(db, [ba, an], spec())
+
+        assert summary.per_source["BA"].found == 3
+        assert summary.per_source["BA"].new == 3
+        assert summary.per_source["AN"].found == 2
+        assert summary.per_source["AN"].new == 2
+
+    def test_a_failing_source_lands_in_its_own_counts_and_the_run_continues(self, db):
+        broken = FakeSource([SourceUnavailable("arbeitnow is down")], source="AN")
+        healthy = FakeSource([page(2, page_number=1)], source="BA")
+        summary = run_search(db, [broken, healthy], spec())
+
+        assert summary.per_source["AN"].found == 0
+        assert summary.per_source["AN"].errors  # the failure belongs to AN, not the run
+        assert summary.per_source["BA"].found == 2  # and BA still ran
+
+    def test_counts_add_up_across_legs_per_source(self, db):
+        from jobfinder.search import run_search_until_done
+
+        made: list[FakeSource] = []
+
+        def factory():
+            source = FakeSource(
+                [
+                    page(2, page_number=len(made) + 1),
+                    RequestBudgetExhausted("budget of 200 spent"),
+                ]
+                if len(made) < 2
+                else [page(1, page_number=3)]
+            )
+            made.append(source)
+            return [source]
+
+        summary = run_search_until_done(db, factory, spec())
+
+        assert summary.per_source["BA"].found == 5  # 2 + 2 + 1 across three legs
+        assert summary.per_source["BA"].new == 5
+
+
+class CountingSource(FakeSource):
+    """Serves canned pages and counts what its detail fetches would have cost."""
+
+    def __init__(self, pages, source: str = "BA"):
+        super().__init__(pages, source)
+        self.details = 0
+
+    def fetch_detail(self, posting: RawPosting) -> RawPosting:
+        self.details += 1
+        return dataclasses.replace(posting, description="Die vollständige Anzeige.")
+
+
+class TestDetailFetches:
+    """A detail fetch is a request at 3–4 s spacing — the dominant cost of a run.
+
+    Re-running a search must not pay it again for jobs already stored: the
+    re-run rule only moves `last_seen_at`, so the answer would be thrown away.
+    """
+
+    def test_new_postings_get_their_detail_fetched(self, db):
+        source = CountingSource([page(3, page_number=1)])
+        run_search(db, [source], spec())
+        assert source.details == 3
+
+    def test_a_rerun_fetches_no_details_for_jobs_already_known(self, db):
+        run_search(db, [CountingSource([page(3, page_number=1)])], spec())
+
+        again = CountingSource([page(3, page_number=1)])
+        summary = run_search(db, [again], spec())
+
+        assert again.details == 0  # three requests, and three seconds, saved
+        assert summary.duplicates == 3
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 3
+
+    def test_skipping_the_fetch_still_moves_last_seen_at(self, db):
+        from jobfinder.store.jobs import upsert_job
+
+        for known in page(2, page_number=1).postings:
+            upsert_job(db, known, now="2026-08-01 00:00:00")
+
+        source = CountingSource([page(2, page_number=1)])
+        run_search(db, [source], spec())
+
+        stamps = {row[0] for row in db.execute("SELECT last_seen_at FROM jobs")}
+        assert stamps != {"2026-08-01 00:00:00"}  # the re-run rule is unchanged
+        assert source.details == 0
+
+    def test_only_the_postings_that_are_new_cost_a_fetch(self, db):
+        run_search(db, [CountingSource([page(2, page_number=1)])], spec())
+
+        mixed = CountingSource(
+            [
+                PageResult(
+                    source="BA",
+                    query_index=0,
+                    page=1,
+                    postings=[posting("0-1-0"), posting("fresh")],
+                )
+            ]
+        )
+        run_search(db, [mixed], spec())
+
+        assert mixed.details == 1  # only the posting the database had never seen
+
+    def test_a_posting_that_arrives_with_its_text_is_never_fetched(self, db):
+        complete = dataclasses.replace(posting(1), description="Schon vollständig.")
+        source = CountingSource(
+            [PageResult(source="BA", query_index=0, page=1, postings=[complete])]
+        )
+        run_search(db, [source], spec())
+        assert source.details == 0
+
+
+class TestSummaryReconciliation:
+    """Her summary lines are only worth reading if they match what was stored.
+
+    The mixed run below is the realistic one: two sources that both find the
+    same ad, and a third that is down.
+    """
+
+    def twin(self, source: str, n: int) -> RawPosting:
+        """One ad as two sites list it — same identity, different job_id."""
+        return RawPosting(
+            job_id=f"{source}:{n}",
+            source=source,
+            source_id=str(n),
+            title="Aushilfe Verkauf (m/w/d)",
+            company="Bäckerei Müller",
+            city="Ingolstadt" if source == "AN" else "Ingolstadt, Donau",
+        )
+
+    def mixed_run(self, db):
+        ba = FakeSource(
+            [
+                PageResult(
+                    source="BA",
+                    query_index=0,
+                    page=1,
+                    postings=[posting(1), self.twin("BA", 7)],
+                )
+            ],
+            source="BA",
+        )
+        an = FakeSource(
+            [
+                PageResult(
+                    source="AN",
+                    query_index=0,
+                    page=1,
+                    postings=[posting(1, "AN"), self.twin("AN", 9)],
+                )
+            ],
+            source="AN",
+        )
+        broken = FakeSource([SourceUnavailable("stepstone is down")], source="SS")
+        return run_search(db, [ba, an, broken], spec())
+
+    def test_run_summary_counts_match_the_database(self, db):
+        summary = self.mixed_run(db)
+
+        stored = {
+            row["source"]: row["rows"]
+            for row in db.execute("SELECT source, COUNT(*) AS rows FROM jobs GROUP BY source")
+        }
+        for source, counts in summary.per_source.items():
+            assert counts.new == stored.get(source, 0), source
+
+    def test_found_is_new_plus_duplicates_for_every_source(self, db):
+        summary = self.mixed_run(db)
+        for source, counts in summary.per_source.items():
+            assert counts.found == counts.new + counts.duplicates, source
+
+    def test_the_ad_both_sources_found_is_stored_once_and_counted_twice(self, db):
+        summary = self.mixed_run(db)
+
+        assert summary.per_source["BA"].new == 2
+        assert summary.per_source["AN"].found == 2
+        assert summary.per_source["AN"].new == 1  # the twin merged into BA's row
+        assert summary.per_source["AN"].duplicates == 1
+        assert db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 3
+
+    def test_a_source_that_never_answered_reconciles_at_zero(self, db):
+        summary = self.mixed_run(db)
+
+        assert summary.per_source["SS"].found == 0
+        assert summary.per_source["SS"].errors
+        assert db.execute("SELECT COUNT(*) FROM jobs WHERE source = 'SS'").fetchone()[0] == 0
+
+    def test_the_run_row_totals_match_the_summary(self, db):
+        summary = self.mixed_run(db)
+        row = run_row(db, summary.run_id)
+
+        assert row["found_count"] == sum(c.found for c in summary.per_source.values())
+        assert row["new_count"] == sum(c.new for c in summary.per_source.values())
+        assert row["duplicate_count"] == sum(c.duplicates for c in summary.per_source.values())
+        assert row["new_count"] == db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
 
 
 class TestCounts:

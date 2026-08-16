@@ -129,19 +129,28 @@ stored 8 real minijob postings with full descriptions in 29 s, run recorded
 
 Not defects in what Phase 4 promised, but known and deliberately left:
 
-- **A cold run is silent.** `run_search` takes an `on_page` callback for
-  exactly this and the CLI passes nothing, so a run with no warm cache prints
-  nothing until it finishes — minutes, given a detail fetch per posting at
-  3–4 s spacing. §10's panic rule wants counts on screen while it works. The
-  hook exists; only the CLI side is missing.
-- **`--resume` with nothing to resume says "0 jobs found"** instead of saying
-  there was nothing to continue. The stored cursor from a finished run points
-  past the last query, so the run is correct and the sentence is not.
-- **A detail fetch per posting dominates the cost of a search.** Roughly 51
-  requests per page of 50: one search call and one detail call each. Phase 7
-  reads those descriptions anyway, so moving the fetch into enrichment would
-  cut a search to a few dozen requests. Deferred rather than decided — it
-  changes what `has_description` means at the end of Phase 4.
+- ~~**A cold run is silent.**~~ Closed in Phase 5 (T9): `jobfinder search`
+  hands the runner an `on_page` printer, so every stored page prints one
+  flushed line — source, page number, running found/new/already-known — and a
+  leg continued after a spent budget says so instead of pausing silently.
+- ~~**`--resume` with nothing to resume says "0 jobs found"**~~ Closed in
+  Phase 5 (T10): a resume that re-entered a finished search now says the last
+  search had already finished and everything it found is in her list, and a
+  `--resume` with no stored cursor says nothing was interrupted and a fresh
+  search ran instead.
+- ~~**A detail fetch per posting dominates the cost of a search.**~~ Decided in
+  Phase 5 (T11): the fetch **stays in the search**, because the cross-source
+  merge needs the description at search time to pick the richest sighting and
+  `has_description` is a Phase 4 contract. What was actually wasteful is
+  fixed instead — a posting whose `job_id` is already stored is no longer
+  fetched at all, since the re-run rule would discard the answer. A second run
+  over the same pages now costs its search calls and nothing else. Phase 7
+  revisits the move only if live budgets prove it necessary.
+
+  Still uncovered: a posting that was merged away as a cross-source duplicate
+  has no row of its own, so it is fetched again on every run. Free for
+  Arbeitnow (the listing carries its text), a real page fetch for the Phase 6
+  scrapers — worth revisiting there.
 
 ## For Phase 5
 
