@@ -2,7 +2,7 @@
 title: "Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T11 done, T12 (sources check) next
+status: in progress — T1-T12 done, T13 (live tests) next
 master-plan: docs/MASTER_PLAN.md#phase-6--scrapers-kleinanzeigen-stepstone-indeed-xing
 ---
 
@@ -152,7 +152,7 @@ first — it is the one that pays rent).
       same_time`, `test_scraper_never_issues_parallel_requests_to_one_host`
       (two adapters, one host, one throttle — the v0.3.0 rule at adapter
       scale).
-- [ ] T12 `jobfinder sources check`: one known query per scraper, plain
+- [x] T12 `jobfinder sources check`: one known query per scraper, plain
       English verdict per source. CLI test with fakes.
 - [ ] T13 Live tests: `test_kleinanzeigen_location_ids.py` (each mapped id
       returns ads located in its city), `test_scrapers_smoke.py` (one query

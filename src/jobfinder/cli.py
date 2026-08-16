@@ -291,6 +291,53 @@ def _print_search_summary(
         print(f"jobs-init.csv: {csv_path}")
 
 
+CHECK_SPEC_CITY = "Ingolstadt"
+
+
+def _cmd_sources_check(settings: Settings, args, *, _client_factory=None, _sources=None) -> int:
+    """Ask every source one small question and report what it said.
+
+    Scrapers break when a site is redesigned and boards block clients without
+    announcing it. This is the honest way to find out which is which, and it
+    is deliberately a report: a source saying no is the answer, not an error.
+    """
+    from jobfinder.search_spec import SearchSpec
+    from jobfinder.sources.http import SourceUnavailable
+    from jobfinder.sources.registry import build_adapters
+
+    spec = SearchSpec.build(
+        mode="general", employment_types=["minijob"], city_names=[CHECK_SPEC_CITY]
+    )
+    if _sources is not None:
+        adapters, skipped = _sources
+    else:
+        built = build_adapters(settings, _client_factory or _default_client_factory)
+        adapters, skipped = built.adapters, built.skipped
+
+    print(f"Asking each source for minijobs in {CHECK_SPEC_CITY}:")
+    for adapter in adapters:
+        label = _source_label(adapter.source)
+        try:
+            page = next(iter(adapter.search_pages(spec)), None)
+            found = len(page.postings) if page is not None else 0
+            if found:
+                print(f"  {label} — answers, {found} jobs on the first page")
+            else:
+                # Two very different things look identical from here.
+                print(
+                    f"  {label} — answers, no jobs matched. Either nothing is listed "
+                    f"for that search, or the adapter has drifted — re-record its "
+                    f"fixture to find out which."
+                )
+        except SourceUnavailable as err:
+            print(f"  {label} — no answer ({err})")
+        except Exception as err:  # a broken adapter is a finding, not a crash
+            print(f"  {label} — broken ({type(err).__name__}: {err})")
+    for name, reason in skipped:
+        print(f"  {_source_label(name)} — off ({reason})")
+    return 0
+
+
 def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None) -> int:
     from jobfinder.search import run_search_until_done
     from jobfinder.search_spec import SearchSpecError
@@ -351,6 +398,7 @@ def main(
     _pool_factory=None,
     _runner=None,
     _client_factory=None,
+    _sources=None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="jobfinder", description="Local job-search assistant")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -375,6 +423,10 @@ def main(
     suggest.add_argument(
         "--refresh", action="store_true", help="ignore stored suggestions and re-ask"
     )
+
+    sources = sub.add_parser("sources", help="check which sources still answer")
+    sources.add_argument("action", choices=["check"])
+    sources.add_argument("--root", type=Path, default=None, help="project root")
 
     search = sub.add_parser("search", help="collect jobs into jobs-init.csv")
     search.add_argument("--root", type=Path, default=None, help="project root")
@@ -415,6 +467,12 @@ def main(
     if args.command == "suggest-roles":
         settings = Settings.load(args.root or Path.cwd())
         return _cmd_suggest_roles(settings, args, _pool_factory=_pool_factory)
+
+    if args.command == "sources":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_sources_check(
+            settings, args, _client_factory=_client_factory, _sources=_sources
+        )
 
     if args.command == "search":
         settings = Settings.load(args.root or Path.cwd())
