@@ -2,7 +2,7 @@
 title: "Phase 6 — Scrapers: Kleinanzeigen, StepStone, Indeed, Xing"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T12 done, T13 (live tests) next
+status: in progress — T1-T13 done, T14 (definition of done) next
 master-plan: docs/MASTER_PLAN.md#phase-6--scrapers-kleinanzeigen-stepstone-indeed-xing
 ---
 
@@ -154,7 +154,7 @@ first — it is the one that pays rent).
       scale).
 - [x] T12 `jobfinder sources check`: one known query per scraper, plain
       English verdict per source. CLI test with fakes.
-- [ ] T13 Live tests: `test_kleinanzeigen_location_ids.py` (each mapped id
+- [x] T13 Live tests: `test_kleinanzeigen_location_ids.py` (each mapped id
       returns ads located in its city), `test_scrapers_smoke.py` (one query
       per site, ≥1 parseable result or a clean "blocked" verdict).
 - [ ] T14 Definition of Done sweep: full suite, ruff, MASTER_PLAN ticks and

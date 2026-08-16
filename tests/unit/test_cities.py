@@ -75,3 +75,14 @@ def test_lookup_folds_umluats_the_way_she_types_them():
 
 def test_a_city_outside_the_map_has_no_location(self=None):
     assert kleinanzeigen_location("Leipzig") is None
+
+
+def test_every_mapped_location_has_a_recorded_postcode_prefix():
+    """A typo'd city name in one map and not the other would go unnoticed."""
+    from jobfinder.cities import KLEINANZEIGEN_LOCATIONS, KLEINANZEIGEN_PLZ_PREFIXES
+
+    unknown = set(KLEINANZEIGEN_PLZ_PREFIXES) - set(KLEINANZEIGEN_LOCATIONS)
+    assert not unknown, f"postcode prefixes for cities that have no location id: {unknown}"
+    # Erlangen is the one deliberate gap: its browse had no ads the day the
+    # prefixes were recorded, and a guessed prefix is worse than none.
+    assert set(KLEINANZEIGEN_LOCATIONS) - set(KLEINANZEIGEN_PLZ_PREFIXES) == {"Erlangen"}

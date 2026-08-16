@@ -899,8 +899,8 @@ never a failed run and never a blocked IP. Everything in
       ("Minijob", "450 €", "520 €", "Aushilfe", "geringfügig")
 - [x] `test_gesuche_ads_are_excluded` — people *seeking* work, not offering it
 - [x] `test_a_city_without_a_location_id_is_skipped_loudly`
-- [ ] `tests/live/test_kleinanzeigen_location_ids.py` — each mapped id still returns ads
-      whose location matches the intended city
+- [x] `tests/live/test_kleinanzeigen_location_ids.py` — each mapped id still returns ads
+      whose **postcodes** match the intended city (big cities label ads by borough)
 - [ ] `test_stepstone_fixture_yields_expected_listing_urls` — URL parsing is
       tested (`test_listing_urls_parse_with_their_ids`) but against inline HTML:
       StepStone refuses this network, so no page could be recorded
@@ -923,8 +923,8 @@ never a failed run and never a blocked IP. Everything in
 - [x] `test_retry_after_header_is_honoured` + `test_exhausted_retries_raise_source_unavailable`
 - [x] `test_a_login_walled_list_page_is_detected_and_skipped_not_retried` (Kleinanzeigen and Xing)
 - [x] `test_every_request_carries_the_identifying_user_agent`
-- [ ] `tests/live/test_scrapers_smoke.py` — one query per site, marked `live`,
-      asserts ≥1 parseable result
+- [x] `tests/live/test_scrapers_smoke.py` — one query per site, marked `live`,
+      asserts ≥1 parseable result (a blocked board skips; answering-but-unparseable fails)
 
 ### Done when
 

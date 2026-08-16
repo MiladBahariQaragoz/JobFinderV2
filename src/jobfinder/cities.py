@@ -52,6 +52,30 @@ KLEINANZEIGEN_LOCATIONS: dict[str, tuple[str, str]] = {
 }
 
 
+# What postcodes a correct location id actually returns, recorded from the
+# live site on 2026-08-16 by reading the ads each id produced. The live test
+# checks *this* rather than the city name, because big cities label their ads
+# by borough — Nürnberg's browse says "Mitte" and "Südstadt", never
+# "Nürnberg", and a name check called a perfectly good id wrong. A misrouted
+# id shows up here immediately: Stockstadt's ads are 63xxx, Ingolstadt's 85xxx.
+# Erlangen is absent on purpose — its browse had no ads the day this was
+# recorded, and a guessed prefix would be worse than none.
+KLEINANZEIGEN_PLZ_PREFIXES: dict[str, tuple[str, ...]] = {
+    "Neuburg an der Donau": ("86",),
+    "Ingolstadt": ("85",),
+    "München": ("80", "81"),
+    "Nürnberg": ("90",),
+    "Würzburg": ("97",),
+    "Ansbach": ("91",),
+    "Regensburg": ("93",),
+    "Augsburg": ("86",),
+    "Landshut": ("84",),
+    "Bamberg": ("96",),
+    "Bayreuth": ("95",),
+    "Passau": ("94",),
+}
+
+
 def kleinanzeigen_location(name: str) -> tuple[str, str] | None:
     """The (slug, location id) pair for a city — None when it is not mapped.
 
