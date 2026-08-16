@@ -51,8 +51,13 @@ def run_search(
     csv_path: Path | None = None,
     stale_after: timedelta = DEFAULT_STALE_AFTER,
     now: datetime | None = None,
+    on_page=None,
 ) -> SearchSummary:
-    """Run every adapter's search, persisting as we go. Never raises adapter errors."""
+    """Run every adapter's search, persisting as we go. Never raises adapter errors.
+
+    `on_page(page, found, new, duplicates)` fires after each stored page — the
+    UI's chance to narrate progress (§10) from real counts.
+    """
     now = now or datetime.now(UTC)
     _close_stale_runs(connection, now, stale_after)
 
@@ -86,6 +91,8 @@ def run_search(
                     _progress(
                         connection, run_id, found=found, new=new, duplicates=duplicates, now=now
                     )
+                    if on_page is not None:
+                        on_page(page, found, new, duplicates)
             except (KeyboardInterrupt, RequestBudgetExhausted) as err:
                 # Her stop or the politeness limit: halt the whole run here.
                 state = "interrupted"
@@ -230,9 +237,7 @@ def _save_cursor(
     connection.commit()
 
 
-def _cursor(
-    connection: sqlite3.Connection, source: str, query_hash: str
-) -> tuple[int, int] | None:
+def _cursor(connection: sqlite3.Connection, source: str, query_hash: str) -> tuple[int, int] | None:
     """The re-entry point — but only when the stored cursor is for this spec."""
     row = connection.execute(
         "SELECT last_query_index, last_completed_page FROM source_state"

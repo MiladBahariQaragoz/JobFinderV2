@@ -125,7 +125,5 @@ class TestDedupeKey:
         )
         upsert_job(db, ba, now="2026-08-16 08:00:00")
         upsert_job(db, stepstone, now="2026-08-16 09:00:00")
-        keys = {
-            job_row(db, "dedupe_key", job_id) for job_id in (ba.job_id, stepstone.job_id)
-        }
+        keys = {job_row(db, "dedupe_key", job_id) for job_id in (ba.job_id, stepstone.job_id)}
         assert len(keys) == 1  # one ad listed on two sites, one identity

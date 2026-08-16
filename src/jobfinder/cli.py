@@ -181,7 +181,105 @@ def _cmd_suggest_roles(settings: Settings, args, *, _pool_factory=None) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None, *, _run_doctor=None, _pool_factory=None) -> int:
+DEFAULT_CITIES = ("Neuburg an der Donau", "Ingolstadt", "München")
+DEFAULT_TYPES = ("werkstudent", "minijob", "parttime")
+
+
+def _comma_list(raw: str | None) -> list[str]:
+    return [part.strip() for part in (raw or "").split(",") if part.strip()]
+
+
+def _build_search_spec(args):
+    from dataclasses import replace
+
+    from jobfinder.search_spec import SearchSpec
+
+    spec = SearchSpec.build(
+        mode="general",
+        employment_types=_comma_list(args.types) or list(DEFAULT_TYPES),
+        city_names=_comma_list(args.cities) or list(DEFAULT_CITIES),
+        keywords=_comma_list(args.keywords),
+    )
+    if args.radius is not None:
+        spec = replace(spec, cities=tuple(city.with_radius(args.radius) for city in spec.cities))
+    return spec
+
+
+def _default_client_factory(settings: Settings):
+    from jobfinder.sources.ba import BAApi
+    from jobfinder.sources.http import PoliteClient
+
+    client = PoliteClient(
+        cache_dir=settings.data_dir / "http-cache", budget=settings.request_budget
+    )
+    return [BAApi(client)]
+
+
+def _print_search_summary(result, csv_path: Path | None) -> None:
+    if result.state == "interrupted":
+        kept = f"{result.found} jobs found so far ({result.new} new) — all of them are saved."
+        print(f"Run interrupted. {kept}")
+        print("Continue any time with: jobfinder search --resume")
+    else:
+        print(
+            f"Search finished: {result.found} jobs found — "
+            f"{result.new} new, {result.duplicates} already in your list."
+        )
+    if result.errors:
+        print("Problems along the way (the rest of the search was kept):")
+        for error in result.errors:
+            print(f"  - {error}")
+    if csv_path is not None:
+        print(f"jobs-init.csv: {csv_path}")
+
+
+def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None) -> int:
+    from jobfinder.search import run_search
+    from jobfinder.search_spec import SearchSpecError
+    from jobfinder.store.db import connect, migrate
+
+    try:
+        spec = _build_search_spec(args)
+    except (SearchSpecError, ValueError) as exc:  # resolve_city speaks ValueError
+        print(exc)
+        return 1
+
+    if args.dry_run:
+        from jobfinder.sources.ba import build_queries
+
+        print("Dry run — no requests sent, nothing stored.")
+        print("The Bundesagentur search would fetch:")
+        for index, query in enumerate(build_queries(spec), start=1):
+            print(f"  {index}. {query.url()}")
+        print("Each URL is fetched page by page (size=50) until the source's total is reached.")
+        return 0
+
+    client_factory = _client_factory or _default_client_factory
+    runner = _runner or run_search
+
+    from contextlib import closing
+
+    with closing(connect(settings.db_path)) as connection:
+        migrate(connection)
+        result = runner(
+            connection,
+            client_factory(settings),
+            spec,
+            resume=args.resume,
+            csv_path=settings.jobs_init_csv,
+        )
+    _print_search_summary(result, settings.jobs_init_csv)
+    return 0
+
+
+def main(
+    argv: list[str] | None = None,
+    *,
+    _run_doctor=None,
+    _pool_factory=None,
+    _runner=None,
+    _client_factory=None,
+) -> int:
     parser = argparse.ArgumentParser(prog="jobfinder", description="Local job-search assistant")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -206,6 +304,30 @@ def main(argv: list[str] | None = None, *, _run_doctor=None, _pool_factory=None)
         "--refresh", action="store_true", help="ignore stored suggestions and re-ask"
     )
 
+    search = sub.add_parser("search", help="collect jobs into jobs-init.csv")
+    search.add_argument("--root", type=Path, default=None, help="project root")
+    search.add_argument(
+        "--cities",
+        default=None,
+        help=f"comma-separated cities (default: {', '.join(DEFAULT_CITIES)})",
+    )
+    search.add_argument(
+        "--types",
+        default=None,
+        help=f"comma-separated employment types (default: {', '.join(DEFAULT_TYPES)})",
+    )
+    search.add_argument("--keywords", default=None, help="comma-separated search keywords")
+    search.add_argument(
+        "--radius",
+        type=int,
+        default=None,
+        help="search radius in km for all cities",
+    )
+    search.add_argument(
+        "--dry-run", action="store_true", help="print the exact URLs, send nothing, store nothing"
+    )
+    search.add_argument("--resume", action="store_true", help="continue the newest interrupted run")
+
     args = parser.parse_args(argv)
 
     if args.command == "profile":
@@ -221,6 +343,10 @@ def main(argv: list[str] | None = None, *, _run_doctor=None, _pool_factory=None)
     if args.command == "suggest-roles":
         settings = Settings.load(args.root or Path.cwd())
         return _cmd_suggest_roles(settings, args, _pool_factory=_pool_factory)
+
+    if args.command == "search":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_search(settings, args, _runner=_runner, _client_factory=_client_factory)
 
     parser.error(f"unknown command {args.command!r}")  # pragma: no cover
     return 2  # pragma: no cover

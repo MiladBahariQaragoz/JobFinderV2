@@ -284,7 +284,9 @@ class TestFetchDetail:
         enriched = BAApi(client).fetch_detail(posting)
 
         url = client.calls[0]["url"]
-        assert url.startswith("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/")
+        assert url.startswith(
+            "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/"
+        )
         assert url.endswith("MTExMTktNDkxMzI4NTI3NC1T")  # base64("11119-4913285274-S")
 
         assert enriched.description is not None
