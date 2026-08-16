@@ -11,7 +11,7 @@ import sqlite3
 
 import pytest
 
-from jobfinder.store.db import SCHEMA_VERSION, connect, migrate
+from jobfinder.store.db import BUSY_TIMEOUT_MS, SCHEMA_VERSION, connect, migrate
 
 PHASE_4_TABLES = {
     "jobs",
@@ -35,6 +35,64 @@ def db(tmp_path):
 def table_names(connection: sqlite3.Connection) -> set[str]:
     rows = connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
     return {row[0] for row in rows}
+
+
+class TestConcurrentWriters:
+    """§8 rule 2's second prerequisite: a second writer waits, it does not fail.
+
+    Enrichment is meant to run while a search is still storing jobs. WAL keeps
+    readers out of a writer's way, but two writers still take turns — and
+    without `busy_timeout` the one that arrives second raises `database is
+    locked` immediately instead of waiting the moment out.
+    """
+
+    def test_every_connection_waits_for_a_busy_database(self, db):
+        # The driver happens to default to 5 s. A durability rule this load
+        # bearing is not left to a default that a Python release could change.
+        timeout = db.execute("PRAGMA busy_timeout").fetchone()[0]
+        assert timeout == BUSY_TIMEOUT_MS
+
+    def test_a_second_writer_waits_instead_of_failing(self, tmp_path):
+        # The search holds a write open; the enrichment worker arrives with its
+        # own connection on its own thread, the way §8 rule 2 requires.
+        import threading
+        import time
+
+        target = tmp_path / "jobfinder.db"
+        searcher = connect(target)
+        migrate(searcher)
+
+        outcome: dict[str, object] = {}
+
+        def enrichment_worker():
+            worker = connect(target)  # one connection per thread, never shared
+            try:
+                worker.execute(
+                    "INSERT INTO runs (kind, state, started_at)"
+                    " VALUES ('enrich', 'running', '2026-08-16')"
+                )
+                worker.commit()
+                outcome["error"] = None
+            except Exception as err:  # noqa: BLE001 — the failure is the finding
+                outcome["error"] = err
+            finally:
+                worker.close()
+
+        searcher.execute("BEGIN IMMEDIATE")
+        searcher.execute(
+            "INSERT INTO runs (kind, state, started_at) VALUES ('search', 'running', '2026-08-16')"
+        )
+
+        worker_thread = threading.Thread(target=enrichment_worker)
+        worker_thread.start()
+        time.sleep(0.25)  # the worker is now blocked on the search's write lock
+        searcher.commit()
+        worker_thread.join(timeout=10)
+
+        assert outcome["error"] is None, outcome["error"]
+        rows = searcher.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
+        searcher.close()
+        assert rows == 2  # both writers landed, one after the other
 
 
 class TestConnect:

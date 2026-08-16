@@ -376,10 +376,14 @@ These are engineering constraints that keep her searches working, and they are t
      host would each keep their own `_next_allowed` and both think they are
      clear — rule 1 broken with no test failing. A process-wide, lock-guarded
      host → next-allowed registry is the fix.
-   - The **store must tolerate concurrent writers**: `busy_timeout` on every
-     connection and one connection per thread. Neither is set today, so a
-     second writer fails immediately with `database is locked` instead of
-     waiting its turn.
+   - The **store must tolerate concurrent writers**: an explicit `busy_timeout`
+     on every connection and one connection per thread. WAL lets readers
+     through a write, but two writers still take turns, and the one that
+     arrives second must wait rather than raise `database is locked`. The
+     Python driver happens to default to 5 s, which is why this worked before
+     anyone stated it; `connect()` now sets 15 s deliberately, and the
+     per-thread rule is enforced by sqlite3's own guard — a worker calls
+     `connect()` again instead of sharing the search's connection.
 3. **Cache every fetched page for 24 h** in `data/http-cache/`. A re-run must not
    re-fetch. Tests assert the second call hits the cache.
 4. **A real identifying User-Agent** with a contact address. No pretending to be
