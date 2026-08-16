@@ -91,7 +91,18 @@ class TestStates:
         assert "No jobs match" in body
         assert "Passau" in body  # the filters, named in her words
         assert "A1" in body
-        assert "loosen" in body or "clear" in body  # the one thing to try next
+        # The one thing to try next, however the sentence is capitalised.
+        assert "loosen" in body.lower() or "clear" in body.lower()
+
+    def test_the_empty_state_only_names_filters_she_actually_set(self, client):
+        """§10 asks for the one filter to loosen — hers, not a menu of them.
+
+        Seen on her real store: filtering by city and type alone still offered
+        "loosen the German level", plus the note that unclear ads are hidden
+        while a level filter is on. Neither was true of that search."""
+        body = client.get("/?city=Passau&type=internship").text
+        assert "No jobs match" in body
+        assert "German" not in body.split("No jobs match", 1)[1].split("</div>", 1)[0]
 
     def test_a_store_with_no_jobs_says_how_to_start(self, settings):
 
