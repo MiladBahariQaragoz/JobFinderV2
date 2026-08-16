@@ -72,6 +72,4 @@ class TestBoardsAllowedToRefuse:
         except SourceUnavailable:
             pytest.skip(f"{code} still refuses this client — the state Phase 6 shipped")
         assert page is not None
-        assert page.postings, (
-            f"{code} answered but nothing parsed — record a fixture and enable it"
-        )
+        assert page.postings, f"{code} answered but nothing parsed — record a fixture and enable it"
