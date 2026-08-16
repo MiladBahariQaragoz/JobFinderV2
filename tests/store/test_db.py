@@ -165,6 +165,39 @@ class TestSchemaV3:
         finally:
             connection.close()
 
+    def test_keys_stored_before_v3_are_recomputed_on_migration(self, tmp_path):
+        # A v2 row's dedupe_key was hashed over the postcode. Left alone it
+        # would never match the same ad arriving from a source that has no
+        # postcode — the merge would be silently dead on her existing 42 jobs.
+        import sqlite3
+
+        from jobfinder.sources.base import make_dedupe_key
+
+        target = tmp_path / "jobfinder.db"
+        legacy = sqlite3.connect(target)
+        legacy.execute(V2_JOBS_DDL)
+        legacy.execute(
+            "INSERT INTO jobs (job_id, source, source_id, dedupe_key, title, company, city, plz,"
+            " first_seen_at, last_seen_at) VALUES ('BA:1', 'BA', '1', 'the-old-plz-based-key',"
+            " 'Werkstudent Küche', 'Bäckerei Müller', 'Ingolstadt, Donau', '85051',"
+            " '2026-08-01', '2026-08-01')"
+        )
+        legacy.commit()
+        legacy.close()
+
+        connection = connect(target)
+        try:
+            migrate(connection)
+            stored = connection.execute(
+                "SELECT dedupe_key FROM jobs WHERE job_id = 'BA:1'"
+            ).fetchone()[0]
+        finally:
+            connection.close()
+
+        assert stored == make_dedupe_key(
+            title="Werkstudent Küche", company="Bäckerei Müller", city="Ingolstadt, Donau"
+        )
+
     def test_the_cross_source_merge_lookup_uses_an_index(self, db):
         # Every posting that is not already known runs this query once. Without
         # an index that is a full scan of `jobs` per posting, and a run over a

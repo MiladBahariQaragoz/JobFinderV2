@@ -144,10 +144,30 @@ def connect(db_path: Path) -> sqlite3.Connection:
 
 def migrate(connection: sqlite3.Connection) -> None:
     """Bring the database up to SCHEMA_VERSION. Safe to run on every open."""
+    was = int(connection.execute("PRAGMA user_version").fetchone()[0])
     connection.executescript(_SCHEMA)
     _add_missing_columns(connection)
+    if was < 3:
+        _rebuild_dedupe_keys(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
+
+
+def _rebuild_dedupe_keys(connection: sqlite3.Connection) -> None:
+    """v3 keys the location on the city, not the plz — old rows must catch up.
+
+    A key left in the v2 shape can never match the same ad from a source that
+    reports no postcode, so the cross-source merge would be dead for every job
+    stored before this migration.
+    """
+    from jobfinder.sources.base import make_dedupe_key
+
+    rows = connection.execute("SELECT job_id, title, company, city FROM jobs").fetchall()
+    for job_id, title, company, city in rows:
+        connection.execute(
+            "UPDATE jobs SET dedupe_key = ? WHERE job_id = ?",
+            (make_dedupe_key(title=title, company=company, city=city), job_id),
+        )
 
 
 def _add_missing_columns(connection: sqlite3.Connection) -> None:
