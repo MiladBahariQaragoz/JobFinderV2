@@ -225,11 +225,19 @@ def _source_label(source: str) -> str:
     return SOURCE_LABELS.get(source, source)
 
 
-def _print_page(page, found: int, new: int, duplicates: int) -> None:
-    """One line per stored page (§10): a cold cache means minutes of fetching."""
-    line = f"  {_source_label(page.source)}, page {page.page} — {found} found, {new} new"
-    if duplicates:
-        line += f", {duplicates} already known"
+def _print_page(page, counts, totals) -> None:
+    """One line per stored page (§10): a cold cache means minutes of fetching.
+
+    The counts are that page's own — a line reading `Arbeitnow — 116 found`
+    because another source had found 116 is worse than no line at all. The
+    run's running total goes at the end, where it cannot be misread as this
+    source's.
+    """
+    line = f"  {_source_label(page.source)}, page {page.page} — {counts.found} found, "
+    line += f"{counts.new} new"
+    if counts.duplicates:
+        line += f", {counts.duplicates} already known"
+    line += f" · {totals.found} so far"
     print(line, flush=True)  # unflushed output would leave the screen frozen
 
 

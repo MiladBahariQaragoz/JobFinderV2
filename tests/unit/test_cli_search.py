@@ -228,29 +228,54 @@ class TestNarration:
         ]
         return PageResult(source=source, query_index=0, page=number, postings=postings)
 
+    def counts(self, found=0, new=0, duplicates=0):
+        from jobfinder.search import SourceCounts
+
+        return SourceCounts(found=found, new=new, duplicates=duplicates)
+
     def runner_calling_on_page(self, *calls):
         def runner(connection, adapter_factory, spec, **kwargs):
             on_page = kwargs.get("on_page")
             assert on_page is not None, "the CLI must hand the runner a page printer"
-            for page, found, new, duplicates in calls:
-                on_page(page, found, new, duplicates)
+            for page, page_counts, totals in calls:
+                on_page(page, page_counts, totals)
             return summary()
 
         return runner
 
     def test_every_stored_page_prints_a_line_as_it_lands(self, tmp_path, capsys):
         runner = self.runner_calling_on_page(
-            (self.page(number=1), 50, 50, 0),
-            (self.page(number=2), 100, 73, 27),
+            (self.page(number=1), self.counts(50, 50, 0), self.counts(50, 50, 0)),
+            (self.page(number=2), self.counts(50, 23, 27), self.counts(100, 73, 27)),
         )
         main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
         out = capsys.readouterr().out
 
         assert "Bundesagentur, page 1 — 50 found, 50 new" in out
-        assert "Bundesagentur, page 2 — 100 found, 73 new, 27 already known" in out
+        assert "Bundesagentur, page 2 — 50 found, 23 new, 27 already known" in out
+        assert "100 so far" in out  # the run's total belongs at the end of the line
+
+    def test_the_page_line_counts_that_page_not_the_whole_run(self, tmp_path, capsys):
+        # The defect this replaced: a page that stored nothing printed the
+        # totals of the source that ran before it — "Arbeitnow — 116 found"
+        # on a page where Arbeitnow found nothing at all.
+        runner = self.runner_calling_on_page(
+            (
+                self.page(source="AN", number=1, count=0),
+                self.counts(0, 0, 0),
+                self.counts(116, 115, 1),
+            )
+        )
+        main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
+        out = capsys.readouterr().out
+
+        assert "Arbeitnow, page 1 — 0 found, 0 new" in out
+        assert "116 found" not in out.split("\n")[0]
 
     def test_the_page_line_names_the_source_she_would_recognise(self, tmp_path, capsys):
-        runner = self.runner_calling_on_page((self.page(source="AN", number=4), 12, 3, 9))
+        runner = self.runner_calling_on_page(
+            (self.page(source="AN", number=4), self.counts(12, 3, 9), self.counts(12, 3, 9))
+        )
         main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
         assert "Arbeitnow, page 4" in capsys.readouterr().out
 
@@ -265,7 +290,9 @@ class TestNarration:
                 Recorder.flushes += 1
 
         monkeypatch.setattr(sys, "stdout", Recorder())
-        runner = self.runner_calling_on_page((self.page(), 50, 50, 0))
+        runner = self.runner_calling_on_page(
+            (self.page(), self.counts(50, 50, 0), self.counts(50, 50, 0))
+        )
         main(["search", "--root", str(tmp_path)], _client_factory=no_adapters, _runner=runner)
 
         assert Recorder.flushes > 0  # buffered output would look frozen

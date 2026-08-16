@@ -86,8 +86,9 @@ def run_search(
 ) -> SearchSummary:
     """Run every adapter's search, persisting as we go. Never raises adapter errors.
 
-    `on_page(page, found, new, duplicates)` fires after each stored page — the
-    UI's chance to narrate progress (§10) from real counts.
+    `on_page(page, counts, totals)` fires after each stored page with that
+    page's own `SourceCounts` and the run's running ones — the UI's chance to
+    narrate progress (§10) from real counts.
     """
     now = now or datetime.now(UTC)
     _close_stale_runs(connection, now, stale_after)
@@ -130,7 +131,11 @@ def run_search(
                         connection, run_id, found=found, new=new, duplicates=duplicates, now=now
                     )
                     if on_page is not None:
-                        on_page(page, found, new, duplicates)
+                        on_page(
+                            page,
+                            SourceCounts(*outcome_counts),
+                            SourceCounts(found=found, new=new, duplicates=duplicates),
+                        )
             except (KeyboardInterrupt, RequestBudgetExhausted) as err:
                 # Her stop or the politeness limit: halt the whole run here.
                 state = "interrupted"
