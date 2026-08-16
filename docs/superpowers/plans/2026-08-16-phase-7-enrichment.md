@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T7 done, T8 (search --enrich) next
+status: in progress — T1-T8 done, T9 (one real posting) next
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -151,11 +151,25 @@ joins Settings (default 4) — the pool paces itself per provider, so more
 workers would only mean more of them queueing.
 Commit: `feat: jobfinder enrich, narrated and resumable`.
 
-### T8 — `jobfinder search --enrich`
+### T8 — `jobfinder search --enrich` ✅
 The §9 promise: enrichment as a second worker over the same store while the
 search is still writing to it, its own connection, its own narration. Either
 command alone must behave exactly as before.
 `tests/unit/test_cli_search.py` + `tests/unit/test_search.py`.
+Three things the writing found, all now tested:
+- A job that fails must be retried on the next **run**, not the next poll two
+  seconds later — `EnrichmentRun.failed_job_ids` feeds `run_enrichment(skip=…)`
+  so one unanswerable ad cannot eat an evening of her quota.
+- The companion reaches the database before the search has created it, so it
+  migrates on its own connection.
+- `PRAGMA journal_mode = WAL` is refused while another connection holds a write
+  lock, and SQLite does **not** consult the busy handler for it, so
+  `busy_timeout` cannot cover it. Two connections opening a brand-new file at
+  once — exactly what `--enrich` does — could therefore raise on a first run.
+  `connect()` now sets a short setup timeout, tolerates losing that race, and
+  the CLI migrates once before starting the companion so the race is avoided
+  rather than merely survived.
+
 Commit: `feat: enrich while the search is still running`.
 
 ### T9 — one real posting, end to end

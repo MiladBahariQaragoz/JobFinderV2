@@ -359,3 +359,39 @@ class TestNarration:
 
         assert result.enriched == 3
         assert result.remaining == 4
+
+
+class TestSkippingWhatAlreadyFailed:
+    """§9's failure rule: a job that fails is retried on the *next run*.
+
+    Not on the next poll — the companion asks the store again every couple of
+    seconds while a search runs, and a job no provider can answer would
+    otherwise be re-sent dozens of times in one evening, on her free tier.
+    """
+
+    def test_the_run_names_the_jobs_that_failed(self, db, settings):
+        store_jobs(db, 2)
+        pool = FakePool([RuntimeError("blew up"), answer()])
+
+        result = enrich(db, pool, settings)
+
+        assert result.failed_job_ids == ("BA:000",)
+
+    def test_a_job_on_the_skip_list_is_not_sent(self, db, settings):
+        store_jobs(db, 2)
+        pool = FakePool([answer()])
+
+        result = enrich(db, pool, settings, skip=("BA:000",))
+
+        assert len(pool.calls) == 1
+        assert enriched_ids(db) == ["BA:001"]
+        assert result.total == 1
+
+    def test_skipping_everything_left_makes_no_calls_at_all(self, db, settings):
+        store_jobs(db, 2)
+        pool = FakePool([])
+
+        result = enrich(db, pool, settings, skip=("BA:000", "BA:001"))
+
+        assert pool.calls == []
+        assert result.total == 0

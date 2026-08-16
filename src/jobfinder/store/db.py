@@ -20,6 +20,12 @@ SCHEMA_VERSION = 5
 # than inherited, with room for a laptop that is busy doing something else.
 BUSY_TIMEOUT_MS = 15_000
 
+# The timeout in force while a connection is only setting itself up. The two
+# durability pragmas can block on a database still in rollback-journal mode,
+# and waiting the full BUSY_TIMEOUT_MS to find that out would make opening a
+# second connection feel like a hang. Losing that race is handled below.
+SETUP_TIMEOUT_MS = 500
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
     job_id              TEXT PRIMARY KEY,
@@ -164,11 +170,33 @@ def connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA journal_mode = WAL")
-    connection.execute("PRAGMA synchronous = NORMAL")
+    # Short first, so a lost race costs a moment rather than BUSY_TIMEOUT_MS.
+    connection.execute(f"PRAGMA busy_timeout = {SETUP_TIMEOUT_MS}")
+    _apply_durability(connection)
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
     return connection
+
+
+def _apply_durability(connection: sqlite3.Connection) -> None:
+    """Set WAL and synchronous, tolerating a database another writer holds.
+
+    Both of these need a lock while the file is still in rollback-journal mode,
+    and `search --enrich` opens two connections at once — so on a first run,
+    before anything has switched the file to WAL, one of them can lose that
+    race. Raising there would break the one run that must work.
+
+    Losing is survivable and raising is not: the connection that won sets WAL
+    for the whole file, every later connection re-applies these, and a
+    connection that never manages falls back to the rollback journal — slower,
+    not unsafe.
+    """
+    for pragma in ("journal_mode = WAL", "synchronous = NORMAL"):
+        try:
+            connection.execute(f"PRAGMA {pragma}")
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower() and "busy" not in str(exc).lower():
+                raise
 
 
 def migrate(connection: sqlite3.Connection) -> None:

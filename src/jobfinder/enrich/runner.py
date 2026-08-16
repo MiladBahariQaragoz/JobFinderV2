@@ -33,7 +33,7 @@ from jobfinder.store.enrichment import jobs_needing_enrichment, save_enrichment
 from jobfinder.store.export import append_enriched_row
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection
 
     from jobfinder.config import Settings
 
@@ -54,6 +54,10 @@ class EnrichmentRun:
     remaining: int = 0  # still unexplained when the run ended
     quota_spent: bool = False
     errors: list[str] = field(default_factory=list)
+    # §9: a job that fails is retried on the next *run*. A caller that asks
+    # again within the same run — the companion polls every couple of seconds —
+    # passes these back as `skip` so one unanswerable ad cannot eat her quota.
+    failed_job_ids: tuple[str, ...] = ()
 
 
 def run_enrichment(
@@ -68,12 +72,16 @@ def run_enrichment(
     on_progress: Callable[[int, int, sqlite3.Row], None] | None = None,
     workers: int = 4,
     prompt_version: str | None = None,
+    skip: Collection[str] = (),
 ) -> EnrichmentRun:
     """Explain every job that still needs it, saving each answer as it lands."""
     spec = load_prompt("enrich")
     version = prompt_version or spec.version
 
     pending = jobs_needing_enrichment(connection, version, force=force)
+    if skip:
+        already_tried = set(skip)
+        pending = [job for job in pending if job["job_id"] not in already_tried]
     total = len(pending)
     if not pending:
         return EnrichmentRun(total=0, remaining=0)
@@ -95,6 +103,7 @@ def run_enrichment(
 
     enriched = failed = 0
     errors: list[str] = []
+    failed_ids: list[str] = []
     quota_spent = False
 
     def remember(result, _done: int, _total: int) -> None:
@@ -103,6 +112,7 @@ def run_enrichment(
         job = result.item
         if result.error is not None:
             failed += 1
+            failed_ids.append(job["job_id"])
             errors.append(f"{job['job_id']}: {result.error}")
             return
 
@@ -111,6 +121,7 @@ def run_enrichment(
             # The pool validates too; this is the database's own guard, and it
             # is what catches an answer that came back from the cache.
             failed += 1
+            failed_ids.append(job["job_id"])
             errors.append(f"{job['job_id']}: unusable answer ({reason})")
             return
 
@@ -167,6 +178,7 @@ def run_enrichment(
         remaining=len(jobs_needing_enrichment(connection, version)),
         quota_spent=quota_spent,
         errors=errors,
+        failed_job_ids=tuple(failed_ids),
     )
 
 

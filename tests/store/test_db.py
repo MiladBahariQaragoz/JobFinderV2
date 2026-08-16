@@ -272,3 +272,50 @@ class TestSchemaV3:
         migrate(db)  # an ALTER path run twice must not try to add it again
         columns = [row[1] for row in db.execute("PRAGMA table_info(jobs)")]
         assert columns.count("also_seen_on") == 1
+
+
+def test_connecting_while_another_writer_holds_a_new_database_still_works(tmp_path):
+    """`search --enrich` opens two connections at once, and on a first run the
+    file is not in WAL yet.
+
+    SQLite refuses `PRAGMA journal_mode = WAL` with "database is locked" while
+    any other connection holds a write lock, and — unlike every other statement
+    — it does not consult the busy handler, so `busy_timeout` cannot save it.
+    Left unhandled, that is an exception on the one run that must work: the
+    first one.
+    """
+    path = tmp_path / "fresh.db"
+    holder = sqlite3.connect(path)  # a plain, not-yet-WAL database
+    holder.execute("CREATE TABLE placeholder (id INTEGER)")
+    holder.commit()
+    holder.execute("BEGIN EXCLUSIVE")
+
+    try:
+        connection = connect(path)
+    finally:
+        holder.rollback()
+        holder.close()
+
+    assert connection.execute("SELECT 1").fetchone()[0] == 1
+    connection.close()
+
+
+def test_a_connection_reaches_wal_once_the_database_is_free(tmp_path):
+    # Giving up on WAL under contention is only acceptable because the next
+    # connection sets it. If it never did, her durability rule would be a
+    # comment rather than a setting.
+    path = tmp_path / "fresh.db"
+    holder = sqlite3.connect(path)
+    holder.execute("CREATE TABLE placeholder (id INTEGER)")
+    holder.commit()
+    holder.execute("BEGIN EXCLUSIVE")
+    blocked = connect(path)
+    holder.rollback()
+    holder.close()
+    blocked.close()
+
+    connection = connect(path)
+    mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
+    connection.close()
+
+    assert mode == "wal"

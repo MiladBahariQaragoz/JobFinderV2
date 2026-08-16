@@ -312,6 +312,9 @@ def _print_enrichment_summary(result, csv_path: Path) -> None:
             f"  {result.failed} could not be explained this time — they stay on the "
             f"list and the next run picks them up."
         )
+    if result.errors:
+        # Printed even when nothing was counted as failed: a worker that died
+        # before it sent anything reports here and nowhere else.
         for error in result.errors[:5]:
             print(f"    - {error}")
         if len(result.errors) > 5:
@@ -438,7 +441,50 @@ def _cmd_sources_check(settings: Settings, args, *, _client_factory=None, _sourc
     return 0
 
 
-def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None) -> int:
+def _start_companion(settings: Settings, args, *, _pool_factory=None):
+    """Build the second worker for `search --enrich`, or explain why it cannot.
+
+    Returns `(companion, exit_code)`: a started companion and None, or None and
+    the code to exit with. Her CV and the LLM keys are checked here, before a
+    single request goes out — a search that runs for ten minutes and then finds
+    it cannot enrich anything has wasted her evening.
+    """
+    from jobfinder.enrich.companion import EnrichmentCompanion
+    from jobfinder.llm.pool import LLMConfigError, build_pool
+    from jobfinder.llm.schema import enrichment_answer_validator
+    from jobfinder.profile import load_profile
+    from jobfinder.roles import build_cv_digest
+
+    try:
+        resume = load_profile(args.path or settings.pool_path)
+    except ProfileError as exc:
+        print(exc)
+        return None, 1
+
+    pool_factory = _pool_factory or (lambda: build_pool(settings, enrichment_answer_validator))
+    try:
+        pool = pool_factory()
+    except LLMConfigError as exc:
+        print(exc)
+        return None, 1
+
+    companion = EnrichmentCompanion(
+        settings.db_path,
+        pool,
+        settings,
+        cv_digest=build_cv_digest(resume),
+        csv_path=settings.jobs_enriched_csv,
+        on_progress=_print_enrichment_progress,
+        workers=settings.llm_workers,
+    )
+    companion.start()
+    print("Explaining jobs in English as they arrive, while the search runs.")
+    return companion, None
+
+
+def _cmd_search(
+    settings: Settings, args, *, _runner=None, _client_factory=None, _pool_factory=None
+) -> int:
     from jobfinder.search import run_search_until_done
     from jobfinder.search_spec import SearchSpecError
     from jobfinder.store.db import connect, migrate
@@ -466,28 +512,55 @@ def _cmd_search(settings: Settings, args, *, _runner=None, _client_factory=None)
 
     from jobfinder.sources.registry import skipped_sources
 
-    with closing(connect(settings.db_path)) as connection:
-        migrate(connection)
-        result = runner(
-            connection,
-            _adapter_factory(settings, client_factory),
-            spec,
-            resume=args.resume,
-            csv_path=settings.jobs_init_csv,
-            max_legs=settings.max_search_legs,
-            on_page=_print_page,
-            on_leg=_print_leg,
-            # Lets the runner give each source its own thread and its own
-            # connection — §8 rule 2, and the reason four scrapers cost the
-            # slowest one rather than the sum of them.
-            db_path=settings.db_path,
-        )
+    companion = None
+    if args.enrich:
+        # The schema first, on one connection alone: two connections racing to
+        # switch a brand-new file to WAL is a fight only one of them can win.
+        with closing(connect(settings.db_path)) as connection:
+            migrate(connection)
+        # Then her CV and a usable pool — checked before the first request, so
+        # a ten-minute search cannot end by discovering it could not enrich.
+        companion, failure = _start_companion(settings, args, _pool_factory=_pool_factory)
+        if companion is None:
+            return failure
+
+    try:
+        with closing(connect(settings.db_path)) as connection:
+            migrate(connection)
+            result = runner(
+                connection,
+                _adapter_factory(settings, client_factory),
+                spec,
+                resume=args.resume,
+                csv_path=settings.jobs_init_csv,
+                max_legs=settings.max_search_legs,
+                on_page=_print_page,
+                on_leg=_print_leg,
+                # Lets the runner give each source its own thread and its own
+                # connection — §8 rule 2, and the reason four scrapers cost the
+                # slowest one rather than the sum of them.
+                db_path=settings.db_path,
+            )
+    finally:
+        # Even a failed search leaves stored jobs behind, and the answers the
+        # companion already wrote are hers to keep.
+        enrichment = companion.finish() if companion is not None else None
+
     _print_search_summary(
         result,
         settings.jobs_init_csv,
         skipped=skipped_sources(settings),
         resume_requested=args.resume,
     )
+    if enrichment is not None:
+        with closing(connect(settings.db_path)) as connection:
+            from jobfinder.llm.prompting import load_prompt
+            from jobfinder.store.export import export_jobs_enriched
+
+            export_jobs_enriched(
+                connection, settings.jobs_enriched_csv, load_prompt("enrich").version
+            )
+        _print_enrichment_summary(enrichment, settings.jobs_enriched_csv)
     return 0
 
 
@@ -561,6 +634,12 @@ def main(
         "--dry-run", action="store_true", help="print the exact URLs, send nothing, store nothing"
     )
     search.add_argument("--resume", action="store_true", help="continue the newest interrupted run")
+    search.add_argument(
+        "--enrich",
+        action="store_true",
+        help="explain jobs in English as the search stores them",
+    )
+    search.add_argument("--path", type=Path, default=None, help="path to pool.yaml (with --enrich)")
 
     args = parser.parse_args(argv)
 
@@ -590,7 +669,13 @@ def main(
 
     if args.command == "search":
         settings = Settings.load(args.root or Path.cwd())
-        return _cmd_search(settings, args, _runner=_runner, _client_factory=_client_factory)
+        return _cmd_search(
+            settings,
+            args,
+            _runner=_runner,
+            _client_factory=_client_factory,
+            _pool_factory=_pool_factory,
+        )
 
     parser.error(f"unknown command {args.command!r}")  # pragma: no cover
     return 2  # pragma: no cover
