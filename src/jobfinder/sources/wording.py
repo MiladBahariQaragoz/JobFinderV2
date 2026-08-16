@@ -32,9 +32,12 @@ MINIJOB_WORDS = (
     # minimum wage and rises most years, so an ad quoting this year's figure
     # reads as a full-time post until its number is on this list. Check the
     # current ceiling each January and add it here.
+    # 603 € is the one live ads quote today — seen on Xing on 2026-08-16 as
+    # "Standortleitung auf Aushilfsbasis/Minijob/603€". The older figures stay
+    # because older ads stay listed.
     *(
         spelling
-        for amount in ("450", "520", "538", "556")
+        for amount in ("450", "520", "538", "556", "603")
         for spelling in (f"{amount} €", f"{amount}€", f"{amount} euro", f"{amount}-basis")
     ),
 )

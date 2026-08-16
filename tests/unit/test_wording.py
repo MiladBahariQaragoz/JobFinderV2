@@ -39,8 +39,17 @@ class TestEmploymentTypeSignals:
     def test_every_threshold_the_minijob_limit_has_had(self):
         # The limit is indexed to the minimum wage and has moved repeatedly.
         # An ad quoting this year's figure must not read as a full-time post.
-        for amount in ("450 €", "520 €", "538 €", "556 €"):
-            assert "minijob" in employment_type_signals(f"Aushilfstätigkeit auf {amount} Basis")
+        # The carrier sentence says nothing else a minijob is known by — an
+        # earlier version said "Aushilfstätigkeit" and passed on that word
+        # alone, testing none of the amounts.
+        for amount in ("450 €", "520 €", "538 €", "556 €", "603 €"):
+            assert "minijob" in employment_type_signals(f"Verdienst bis {amount} im Monat"), amount
+
+    def test_this_years_ceiling_reads_as_a_minijob(self):
+        # Seen live on Xing, 2026-08-16: "Standortleitung auf
+        # Aushilfsbasis/Minijob/603€". Ads quote the current figure, and the
+        # current figure is the one a hardcoded list is most likely to lack.
+        assert "minijob" in employment_type_signals("Standortleitung, 603€ im Monat")
 
     def test_a_quiet_ad_signals_nothing(self):
         assert employment_type_signals("Produktionsmitarbeiter (m/w/d)") == set()
