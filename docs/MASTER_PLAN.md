@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — phases 0-6 done (v0.4.0), Phase 7 under way; M3 needs it
+status: in progress — phases 0-7 done, Phase 7 verified on her real store; M3 unblocked
 ---
 
 # JobFinderV2 — Master Plan
@@ -1015,12 +1015,12 @@ German it needs**, what type of contract it is, how well it fits her, and how to
 
 ### Done when
 
-- [ ] 20 real Bavarian postings enriched; she reads five and confirms the English
+- [x] 20 real Bavarian postings enriched; she reads five and confirms the English
       summaries match the ads
-- [ ] `german_level` is right on a hand-checked sample of ten, including at least
+- [x] `german_level` is right on a hand-checked sample of ten, including at least
       three kitchen/retail ads where the requirement is often implicit
-- [ ] Interrupting the batch and re-running resumes without re-spending calls
-- [ ] A full re-run with no new jobs makes **zero** provider calls
+- [x] Interrupting the batch and re-running resumes without re-spending calls
+- [x] A full re-run with no new jobs makes **zero** provider calls
 
 **Out of scope:** writing her applications. Tailored CVs and cover letters are backlog
 (§ [Later](#later--explicitly-not-now)); the `/job-scout` command already covers the

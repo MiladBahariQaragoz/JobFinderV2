@@ -2,7 +2,7 @@
 title: "Phase 7 — Enrichment: German ad in, English answer out"
 date: 2026-08-16
 type: phase-plan
-status: in progress — T1-T9 done, T10 (her real data) next
+status: done — T1-T10 complete, verified on her real store 2026-08-16
 master-plan: docs/MASTER_PLAN.md#phase-7--enrichment-german-ad-in-english-answer-out
 ---
 
@@ -190,12 +190,85 @@ What the live run taught, and what it did not:
 
 Commit: `test: one real posting enriched end to end`.
 
-### T10 — done-when on her real data
+### T10 — done-when on her real data ✅
 Enrich 20 real Bavarian postings. Read five against their ads. Hand-check
 `german_level` on ten, including three kitchen or retail ads where the
 requirement is implicit. Measure what a teaser-only Adzuna row produces
 against what a full BA ad produces, and write both into this file. Interrupt
 and resume; re-run and confirm zero calls. Tick the MASTER_PLAN boxes, merge.
+
+## What the first real run produced
+
+`jobfinder enrich --limit 20` against her store, 2026-08-16. Twenty
+Bundesagentur postings from Ingolstadt, Eichstätt, Munich and around: retail,
+fast food, a beverage market, an organic supermarket, a law office, vehicle
+transfer driving, a neurological clinic, and four public-sector IT roles.
+
+### `german_level` — hand-checked on all twenty, not ten
+
+| | |
+|---|---|
+| Levelled, and the quoted phrase is genuinely in the ad | **10 of 10** |
+| `unclear`, and the ad really does state no requirement | **10 of 10** |
+| Fabricated quotations | 0 |
+| Requirements the model missed | 0 |
+
+The levels it did give: A2 (McDonald's, "Mindestens Deutsch A2
+Sprachkenntnisse erforderlich"), B1 ×2 (Hunkemöller, "Gute Deutschkenntnisse
+(mindestens B1-Niveau)"), B2 ×3 (FRISTO's "sichere Deutschkenntnisse", Lucky
+Bike's "Sprachniveau B2, C1, C2", Global Climate's "fit in Deutsch und
+Englisch"), C1 ×4 (AKDB ×2, Käfer, Mercer — all quoting an explicit
+"C1-Niveau" or "Sehr gute Deutsch- und Englischkenntnisse").
+
+The three implicit-requirement cases the plan asked for all answered
+`unclear`, which is the correct answer and the hard one:
+
+- **denns Biomarkt, Grünwald** — advising customers on organic products. Needs
+  German in practice; the ad never says so.
+- **Schön Klinik München, speech and swallowing therapy** — therapy conducted
+  in German with neurological patients. The ad never says so.
+- **Logiston, vehicle transfer driver** ×3 — handing new cars over to German
+  customers. The ad lists an age, a licence class and a clean record, and says
+  nothing about language.
+
+This is §5 working exactly as written: the honest answer to an unstated
+requirement is `unclear`, not a plausible guess she would plan around.
+
+### A teaser against a full ad
+
+Eight Adzuna rows (every one exactly 500 characters — the API truncates) run
+against the twenty Bundesagentur ads (50–4 755 characters, mean 1 721):
+
+| | Adzuna teaser (n=8) | Bundesagentur ad (n=20) |
+|---|---|---|
+| `german_level` given | **0 %** — all eight `unclear` | **50 %** — ten evidenced, ten genuinely unstated |
+| Duties listed | 1–3 (mean 2.2) | 3–5 |
+| Requirements listed | 0–3 | 2–6 |
+| A real application route | 3 of 8 | most; email or portal, extracted from the text |
+| `summary_en` | short but correct and useful | full, and matches the ad |
+
+So a teaser buys her a readable one-line summary and an honest "we cannot tell
+how much German this needs" — which is exactly what the phase promised, and
+the reason the two must never be allowed to look alike.
+
+### Surviving an interrupt, and not paying twice
+
+On a copy of her store with the enrichment table emptied:
+
+- `jobfinder enrich --limit 12`, killed with `kill -9` after the third answer:
+  **3 answers in SQLite, 3 complete rows in the CSV**, no partial line.
+- Re-running the same command: **674 → 671 jobs to explain**. The three were
+  skipped, not re-sent, and the run continued with the next four.
+- A store whose every job is already explained, against a pool that raises on
+  any call at all: **zero calls**.
+
+### The one thing this cannot check itself
+
+"She reads five and confirms the English summaries match the ads" is hers to
+do. Five were read against their German originals here — Hunkemöller,
+McDonald's, FRISTO, denns Biomarkt and Bird & Bird — and each summary, duty
+list and application route matched the posting. Her confirmation is still the
+one that counts.
 
 ## Done when (mirrored from MASTER_PLAN)
 
