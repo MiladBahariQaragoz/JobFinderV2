@@ -110,9 +110,7 @@ class IndeedScraper:
         for page in self.search_pages(spec):
             yield from page.postings
 
-    def search_pages(
-        self, spec: SearchSpec, *, start_query_index: int = 0, start_page: int = 1
-    ):
+    def search_pages(self, spec: SearchSpec, *, start_query_index: int = 0, start_page: int = 1):
         for query_index, query in enumerate(build_queries(spec)):
             if query_index < start_query_index:
                 continue
