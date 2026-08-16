@@ -30,6 +30,43 @@ CITY_COORDS: dict[str, tuple[float, float]] = {
 
 CITY_NAMES = tuple(CITY_COORDS)
 
+# City name -> (URL slug, Kleinanzeigen location id), recorded by hand from
+# their location picker's own links on 2026-08-16 (Bayern page -> Landkreis
+# page -> city). The `l{id}` code is a Kleinanzeigen location id, not a city
+# name — `l7414` looks like Ingolstadt and is Stockstadt — so the map is a
+# deliverable, asserted by a live test, never guessed at runtime.
+KLEINANZEIGEN_LOCATIONS: dict[str, tuple[str, str]] = {
+    "Neuburg an der Donau": ("neuburg-ad-donau", "6603"),
+    "Ingolstadt": ("ingolstadt", "7586"),
+    "München": ("muenchen", "6411"),
+    "Erlangen": ("erlangen", "6791"),
+    "Nürnberg": ("nuernberg", "6810"),
+    "Würzburg": ("wuerzburg", "7667"),
+    "Ansbach": ("ansbach", "6095"),
+    "Regensburg": ("regensburg", "7636"),
+    "Augsburg": ("augsburg", "7518"),
+    "Landshut": ("landshut", "6388"),
+    "Bamberg": ("bamberg", "6885"),
+    "Bayreuth": ("bayreuth", "7483"),
+    "Passau": ("passau", "7441"),
+}
+
+
+def kleinanzeigen_location(name: str) -> tuple[str, str] | None:
+    """The (slug, location id) pair for a city — None when it is not mapped.
+
+    Accepts the same umlaut-free spellings `resolve_city` does, so one
+    keyboard produces both answers.
+    """
+    if name in KLEINANZEIGEN_LOCATIONS:
+        return KLEINANZEIGEN_LOCATIONS[name]
+    try:
+        canonical = resolve_city(name).name
+    except ValueError:
+        return None
+    return KLEINANZEIGEN_LOCATIONS.get(canonical)
+
+
 # A keyboard without umlauts produces both "Muenchen" and "Munchen" — accept either.
 _FULL = {"ü": "ue", "ö": "oe", "ä": "ae", "ß": "ss"}
 _BARE = {"ü": "u", "ö": "o", "ä": "a", "ß": "s"}
