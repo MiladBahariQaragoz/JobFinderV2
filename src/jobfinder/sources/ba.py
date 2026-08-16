@@ -80,53 +80,56 @@ class BAQuery:
         )
 
 
-def _search_terms(spec: SearchSpec) -> list[str | None]:
-    """One search term per keyword she gave; type keywords are appended modifiers.
+def _query_shapes(spec: SearchSpec) -> list[tuple[str | None, tuple[str, ...]]]:
+    """One `(extra search term, arbeitszeit code)` pair per employment type.
 
-    "Werkstudent" and "Praktikum" have no API filter, so they travel in `was`.
-    They modify each of her keywords rather than spawning their own queries —
-    "Datenanalyse" plus a werkstudent filter means one search, not two — and a
-    keyword that already says it is not repeated.
+    Her employment types are alternatives, not conditions stacked on one
+    search: "werkstudent and minijob" means either kind of job. Each type
+    therefore gets its own query — a type the API can filter carries only its
+    `arbeitszeit` code, and "Werkstudent"/"Praktikum", which have no filter,
+    carry a `was` term instead. Stacking them would search for a Werkstudent
+    job that is also a minijob, which in Ingolstadt is 1 posting rather than
+    the 116 an unqualified minijob search answers (verified live 2026-08-16).
     """
-    bases = [keyword.strip() for keyword in spec.keywords if keyword.strip()] or [""]
-    modifiers = [
-        fallback
-        for employment_type, fallback in KEYWORD_FOR_TYPE.items()
-        if employment_type in spec.employment_types
-    ]
-    terms: list[str | None] = []
-    for base in bases:
-        folded = base.casefold()
-        additions = [m for m in modifiers if m.casefold() not in folded]
-        parts = [part for part in (base, *additions) if part]
-        terms.append(" ".join(parts) or None)
-    return terms
+    shapes: list[tuple[str | None, tuple[str, ...]]] = []
+    for employment_type in spec.employment_types:
+        code = ARBEITSZEIT_FOR_TYPE.get(employment_type)
+        if code:
+            shapes.append((None, (code,)))
+        else:
+            shapes.append((KEYWORD_FOR_TYPE.get(employment_type), ()))
+    return shapes or [(None, ())]
+
+
+def _search_term(base: str, addition: str | None) -> str | None:
+    """Her keyword, plus the type's own word unless the keyword already says it."""
+    parts = [part for part in (base, addition) if part]
+    if addition and base and addition.casefold() in base.casefold():
+        parts = [base]
+    return " ".join(parts) or None
 
 
 def build_queries(spec: SearchSpec) -> list[BAQuery]:
-    """One query per search term per city per arbeitszeit code.
+    """One query per keyword per city per employment type.
 
     The API accepts exactly one `arbeitszeit` value per request — repeated
     keys or comma-joined values are dropped silently and answer 0 results
     (verified live 2026-08-16) — so each code becomes its own query. Overlap
     costs nothing: postings upsert under their job_id.
     """
-    codes = tuple(
-        ARBEITSZEIT_FOR_TYPE[t] for t in spec.employment_types if t in ARBEITSZEIT_FOR_TYPE
-    ) or (None,)  # types without a code (werkstudent…) ride in `was` instead
-    terms = _search_terms(spec)  # always at least one entry, possibly with was=None
-    queries: list[BAQuery] = [
+    bases = [keyword.strip() for keyword in spec.keywords if keyword.strip()] or [""]
+    shapes = _query_shapes(spec)
+    return [
         BAQuery(
             wo=city.name,
             umkreis=city.radius_km,
-            was=term,
-            arbeitszeit=(code,) if code else (),
+            was=_search_term(base, addition),
+            arbeitszeit=code,
         )
-        for term in terms
+        for base in bases
         for city in spec.cities
-        for code in codes
+        for addition, code in shapes
     ]
-    return queries
 
 
 DETAIL_PAGE_URL = "https://www.arbeitsagentur.de/jobsuche/jobdetail/{ref}"
