@@ -218,8 +218,81 @@ nothing breaks. Tick the Phase 5 done-when boxes, merge, push.
 
 ## Done when (mirrored from MASTER_PLAN)
 
-- One `jobfinder search` covers all enabled API sources and prints a
+- [x] One `jobfinder search` covers all enabled API sources and prints a
   per-source summary
-- Disabling a source in `config.yaml` visibly changes the summary and nothing
-  breaks
-- Duplicate rate across sources is measured and reported, not guessed
+- [x] Disabling a source in `config.yaml` visibly changes the summary and
+  nothing breaks
+- [x] Duplicate rate across sources is measured and reported, not guessed
+
+## T12 — what the live runs actually did (2026-08-16)
+
+### One search, every enabled source
+
+`jobfinder search --cities Ingolstadt --types minijob`, against her real
+database (42 Bundesagentur jobs from Phase 4, schema v2):
+
+```
+  Bundesagentur, page 1 — 50 found, 49 new, 1 already known · 50 so far
+  Bundesagentur, page 2 — 50 found, 49 new, 1 already known · 100 so far
+  Bundesagentur, page 3 — 16 found, 16 new · 116 so far
+  Arbeitnow, page 1..10 — 0 found, 0 new · 116 so far
+Search finished: 116 jobs found — 115 new, 1 already in your list.
+Sources:
+  Bundesagentur — 116 found, 115 new
+  Arbeitnow — 0 found, 0 new
+  Adzuna — skipped (disabled in config.yaml)
+```
+
+The v2 → v3 migration ran on that database in the same command: `also_seen_on`
+added, `jobs_dedupe_key` index created, and all 42 pre-existing keys
+recomputed to the city-based form (verified afterwards: 0 rows still holding a
+stale key).
+
+### Disabling a source
+
+With `enabled_sources: [ba]` in `config.yaml`, the same command walks no
+Arbeitnow pages and the summary says `Arbeitnow — skipped (disabled in
+config.yaml)`. Deleting the file puts it back. Nothing else changed.
+
+That re-run also demonstrated two rules at once: `116 found, 0 new, 116
+already in your list` (the re-run rule) and a runtime of seconds rather than
+the seven minutes 116 detail fetches would have cost (T11).
+
+### Duplicate rate across sources — measured
+
+Search pages only, no detail fetches, because the dedupe key needs only
+title + company + city (script: `scratchpad/duplicate_rate.py`):
+
+| Spec | BA postings | Arbeitnow postings | Same ad on both |
+|---|---|---|---|
+| München, werkstudent + parttime | 324 | 17 | **0** |
+| Ingolstadt, minijob + parttime | 266 | 0 | **0** |
+
+**The cross-source duplicate rate between the Bundesagentur and Arbeitnow is
+zero**, over 590 Bundesagentur postings. The two sources do not overlap in her
+market: Arbeitnow carries English-speaking tech roles (17 matches in München,
+none at all in Ingolstadt) and the Bundesagentur carries everything else. The
+merge machinery is therefore built for Phase 6's scrapers — StepStone and
+Indeed list the same corporate ads the Bundesagentur does — rather than for
+the pair that exists today.
+
+What the same measurement did find is **duplicates within one source**: 16 of
+324 München postings and 25 of 266 Ingolstadt postings share a dedupe key with
+another Bundesagentur posting (5–9 %). Those are separate reference numbers
+for genuinely separate openings. Had the merge not been restricted to
+cross-source matches (T7), a single search would have silently dropped roughly
+one job in fifteen.
+
+### Two things the live runs exposed, both now fixed or recorded
+
+- **The page line reported the run's totals, not the page's.** Arbeitnow pages
+  printed `116 found, 115 new` — the Bundesagentur's numbers. Fixed in its own
+  commit; the line now carries its own page's counts and puts the run total
+  after a `·`.
+- **A hard kill mid-page leaves the run row under-reporting.** A München run
+  killed after four minutes had stored 25 postings, but its `runs` row still
+  read `running` with `found_count = 0`, because progress is journaled per
+  completed page and the kill landed inside one. Nothing was lost — §9's first
+  rule held — and the stale-run detector closes the row on the next start
+  after the ten-minute cutoff. Phase 8's progress surface should journal per
+  posting, not per page.

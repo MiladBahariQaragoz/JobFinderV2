@@ -2,7 +2,7 @@
 title: JobFinderV2 Master Plan
 date: 2026-08-15
 type: master-plan
-status: in progress — M1 and M2 done, Phase 4 done (phases 0-4), M3 under way
+status: in progress — M1 and M2 done, phases 0-5 done, M3 needs Phase 7
 ---
 
 # JobFinderV2 — Master Plan
@@ -784,9 +784,16 @@ set she can trust.
 
 ### Done when
 
-- [ ] One `jobfinder search` covers all enabled API sources and prints a per-source summary
-- [ ] Disabling a source in `config.yaml` visibly changes the summary and nothing breaks
-- [ ] Duplicate rate across sources is measured and reported, not guessed
+- [x] One `jobfinder search` covers all enabled API sources and prints a per-source summary
+- [x] Disabling a source in `config.yaml` visibly changes the summary and nothing breaks
+- [x] Duplicate rate across sources is measured and reported, not guessed —
+      **zero** between the Bundesagentur and Arbeitnow, measured over 590 live
+      postings in München and Ingolstadt. The two sources do not overlap in her
+      market; the merge is built for Phase 6's scrapers, which list the same
+      corporate ads the Bundesagentur does. Within one source, 5–9 % of postings
+      share a dedupe key — separate openings, which is why merging is
+      cross-source only. See
+      [the Phase 5 plan](superpowers/plans/2026-08-16-phase-5-api-sources.md).
 
 ---
 
