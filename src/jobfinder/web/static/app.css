@@ -100,8 +100,8 @@ button, .button {
 }
 button:hover, .button:hover { background: var(--accent-soft); border-color: var(--accent); }
 button:active, .button:active { transform: scale(0.97); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-button.primary:hover { opacity: 0.9; background: var(--accent); }
+button.primary, .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover, .button.primary:hover { opacity: 0.9; background: var(--accent); }
 button.danger { color: var(--danger); }
 button.danger:hover { background: #f9efef; border-color: var(--danger); }
 button[disabled] { opacity: 0.55; cursor: default; }

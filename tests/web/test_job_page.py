@@ -173,6 +173,32 @@ class TestHerActions:
         body = client.get("/jobs/BA%3A1").text
         assert "Called — come by Tuesday with a printed CV" in body
 
+    def test_an_unexplained_job_still_links_to_the_ad_she_applies_through(self, settings, client):
+        """The apply link cannot live inside the enrichment branch.
+
+        Measured on her store: 839 of 859 jobs have no English answer yet, and
+        every one of those pages offered no way to reach the ad — while
+        `source_url` was stored for all 859. Applying is the point of the
+        product; it cannot wait for an LLM."""
+        connection = connect(settings.db_path)
+        try:
+            store_job(connection, job_id="BA:91", title="Werkstudent Verkauf")  # no answer
+        finally:
+            connection.close()
+
+        body = client.get("/jobs/BA%3A91").text
+        assert "Not explained yet" in body  # the honest state stays
+        assert "https://www.arbeitsagentur.de/jobsuche/jobdetail/91" in body
+
+    def test_the_apply_link_opens_a_new_tab_and_does_not_lose_her_place(self, client):
+        body = client.get("/jobs/BA%3A1").text
+        link = body.split("<a", 1)
+        anchor = next(part for part in body.split("<a ") if "arbeitsagentur" in part.split(">")[0])
+        opening = anchor.split(">")[0]
+        assert 'target="_blank"' in opening, "the ad replaces her app in the same tab"
+        assert "noopener" in opening
+        assert link  # the page had links at all
+
     def test_a_section_the_ad_says_nothing_about_says_so(self, settings, client):
         """A heading with an empty list under it reads as a broken page.
 
