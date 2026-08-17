@@ -105,6 +105,14 @@
 </article>
 {% endfor %}
 
+{% if prev_url or next_url %}
+<nav class="pages">
+  {% if prev_url %}<a class="button" href="{{ prev_url }}">Previous</a>{% endif %}
+  <span class="meta">page <span class="num">{{ page }}</span> of <span class="num">{{ pages }}</span></span>
+  {% if next_url %}<a class="button" href="{{ next_url }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+
 {% if waiting %}
 <section class="waiting">
   <h2><span class="num">{{ waiting | length }}</span> with no phone or email yet</h2>

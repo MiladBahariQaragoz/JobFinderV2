@@ -165,11 +165,18 @@ def list_contacts(
 
 
 def contact_counts(connection: sqlite3.Connection) -> dict[str, int]:
-    """What the page and the run summary say: how many, how many reachable."""
+    """What the page and the run summary say about the list.
+
+    `pending` counts only places she can *actually* try — one with no phone and
+    no email is not something left to do, it is something waiting on an imprint
+    lookup. Counting those together produced "255 places you can reach · 357
+    still to try" on her real list, which cannot both be true.
+    """
     row = connection.execute(
         "SELECT COUNT(*) AS total,"
         " SUM(CASE WHEN phone IS NOT NULL OR email IS NOT NULL THEN 1 ELSE 0 END) AS reachable,"
-        " SUM(CASE WHEN outcome IS NULL THEN 1 ELSE 0 END) AS pending"
+        " SUM(CASE WHEN outcome IS NULL AND (phone IS NOT NULL OR email IS NOT NULL)"
+        "     THEN 1 ELSE 0 END) AS pending"
         " FROM contacts"
     ).fetchone()
     return {

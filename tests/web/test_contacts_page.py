@@ -153,6 +153,91 @@ class TestTheList:
 
         assert ">3<" in body  # three of the four have a phone or an email
 
+    def test_still_to_try_counts_only_places_she_can_actually_try(self, stocked, client):
+        """Found on the real 357-place list: the header read "255 places you can
+        reach · 357 still to try", which cannot both be true. `pending` counted
+        every place without an answer, including the ones with no phone or email
+        — places she cannot try at all."""
+        client.post("/contacts/node%2F1/outcome", data={"outcome": "called"})
+
+        body = client.get("/contacts").text
+
+        # 3 reachable, 1 answered for → 2 left to try. Never 3, and never the
+        # 4 that includes the website-only place.
+        assert '<span class="num">2</span> still to try' in body
+
+    def test_no_still_to_try_line_when_nothing_has_been_answered(self, client):
+        """With every reachable place still open, the second number would just
+        repeat the first."""
+        body = client.get("/contacts").text
+
+        assert "still to try" not in body
+
+
+class TestPaging:
+    """Found on the real list: three cities returned **357** places, and every
+    one of them rendered as a card on a single page. A call-list is worked
+    through from the top, a few at a time, so it pages like the job list does.
+    """
+
+    @pytest.fixture
+    def many(self, settings) -> Settings:
+        connection = connect(settings.db_path)
+        try:
+            migrate(connection)
+            for index in range(60):
+                upsert_contact(
+                    connection,
+                    place(osm_id=f"node/{index}", name=f"Bäckerei {index:02d}"),
+                    score=90 - index % 10,
+                    reason="",
+                )
+        finally:
+            connection.close()
+        return settings
+
+    def test_only_one_page_of_places_is_rendered(self, many):
+        from jobfinder.web.routes import CONTACTS_PAGE_SIZE
+
+        with TestClient(create_app(many)) as client:
+            body = client.get("/contacts").text
+
+        assert body.count('class="contact-row"') == CONTACTS_PAGE_SIZE
+
+    def test_the_next_page_is_offered_and_shows_the_rest(self, many):
+        with TestClient(create_app(many)) as client:
+            first = client.get("/contacts").text
+            assert "page=2" in first
+
+            second = client.get("/contacts?page=2").text
+
+        assert 'class="contact-row"' in second
+        assert "Bäckerei 00" not in second  # the first page's places are not repeated
+
+    def test_the_first_page_offers_no_previous(self, many):
+        with TestClient(create_app(many)) as client:
+            body = client.get("/contacts").text
+
+        assert "page=0" not in body
+
+    def test_a_short_list_offers_no_paging_at_all(self, client):
+        body = client.get("/contacts").text
+
+        assert "page=2" not in body
+
+    def test_a_page_beyond_the_end_is_not_an_error(self, many):
+        with TestClient(create_app(many)) as client:
+            response = client.get("/contacts?page=99")
+
+        assert response.status_code == 200
+        assert "Traceback" not in response.text
+
+    def test_an_unreadable_page_number_falls_back_to_the_first(self, many):
+        with TestClient(create_app(many)) as client:
+            body = client.get("/contacts?page=banana").text
+
+        assert "Bäckerei 00" in body
+
 
 class TestTheScript:
     def test_the_page_offers_the_script_for_that_place(self, client):

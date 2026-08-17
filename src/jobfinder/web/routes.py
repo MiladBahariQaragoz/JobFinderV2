@@ -489,6 +489,11 @@ def _settings_context(request: Request) -> dict:
 
 # -- the call-list (Phase 9) ----------------------------------------------------
 
+# How many places to put on one page. Smaller than the job list's 50: each of
+# these is a card with a script and three buttons, and she works down them a
+# few at a time with a phone in her hand. Her three cities returned 357.
+CONTACTS_PAGE_SIZE = 20
+
 
 def _contacts_context(request: Request) -> dict:
     """The call-list as the page needs it: best first, with her decisions."""
@@ -496,6 +501,10 @@ def _contacts_context(request: Request) -> dict:
 
     settings = request.app.state.settings
     show_all = request.query_params.get("show") == "all"
+    try:
+        page = max(1, int(request.query_params.get("page", "1")))
+    except ValueError:
+        page = 1
 
     connection = connect(settings.db_path)
     try:
@@ -512,11 +521,24 @@ def _contacts_context(request: Request) -> dict:
     finally:
         connection.close()
 
+    pages = max(1, -(-len(queue) // CONTACTS_PAGE_SIZE))
+    page = min(page, pages)
+    start = (page - 1) * CONTACTS_PAGE_SIZE
+    shown = queue[start : start + CONTACTS_PAGE_SIZE]
+
+    def link(number: int) -> str:
+        params = [("show", "all")] if show_all else []
+        return "/contacts?" + urlencode([*params, ("page", number)])
+
     return {
-        "contacts": queue,
-        "waiting": waiting,
+        "contacts": shown,
+        "waiting": waiting if page == pages else [],
         "counts": counts,
         "show_all": show_all,
+        "page": page,
+        "pages": pages,
+        "prev_url": link(page - 1) if page > 1 else None,
+        "next_url": link(page + 1) if page < pages else None,
         "worked_through": counts["total"] > 0 and not queue and not show_all,
     }
 
