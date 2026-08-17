@@ -282,6 +282,22 @@ class TestMarkingWhatHappened:
 
         assert "called" in body
 
+    def test_marking_it_reaches_the_csv_she_prints(self, stocked, client):
+        """Found by comparing the two on real data: the CSV is only rewritten by a
+        run, so 357 rows of it said nothing about the place she had just rung. The
+        call-list is the one part of this app meant to be printed and carried, so
+        a CSV that disagrees with the screen is a defect, not a lag."""
+        import csv
+
+        client.post("/contacts/node%2F1/outcome", data={"outcome": "called"})
+        client.post("/contacts/node%2F1/notes", data={"notes": "Come by Tuesday"})
+
+        with open(stocked.contacts_csv, encoding="utf-8-sig", newline="") as handle:
+            rows = {row["osm_id"]: row for row in csv.DictReader(handle)}
+
+        assert rows["node/1"]["outcome"] == "called"
+        assert rows["node/1"]["notes"] == "Come by Tuesday"
+
     def test_a_note_is_saved_and_shown_back(self, stocked, client):
         client.post(
             "/contacts/node%2F1/notes",

@@ -586,9 +586,26 @@ async def set_outcome(osm_id: str, request: Request):
                 {"heading": "That did not work", "sentence": str(exc), "back": "/contacts"},
                 status_code=status,
             )
+        _refresh_contacts_csv(connection, settings)
     finally:
         connection.close()
     return _contacts_response(request)
+
+
+def _refresh_contacts_csv(connection, settings) -> None:
+    """Keep the printable list in step with the screen.
+
+    The CSV used to be rewritten only by a run, so a place she had just rung
+    still read as untouched in the file she would print and carry. It is a few
+    hundred rows and an atomic replace, so writing it on every decision costs
+    nothing worth measuring.
+    """
+    from jobfinder.store.contacts_export import export_contacts
+
+    try:
+        export_contacts(connection, settings.contacts_csv)
+    except OSError:
+        pass  # the file being open in Excel must not lose her decision
 
 
 @router.post("/contacts/{osm_id:path}/notes", response_class=HTMLResponse)
@@ -611,6 +628,7 @@ async def save_contact_notes(osm_id: str, request: Request):
                 {"heading": "No place here", "sentence": str(exc), "back": "/contacts"},
                 status_code=404,
             )
+        _refresh_contacts_csv(connection, settings)
     finally:
         connection.close()
     return _contacts_response(request)
