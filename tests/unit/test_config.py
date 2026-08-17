@@ -119,9 +119,7 @@ class TestHerSearch:
         assert settings.employment_types == ("werkstudent", "minijob", "parttime")
 
     def test_config_yaml_can_override_the_cities(self, tmp_path):
-        (tmp_path / "config.yaml").write_text(
-            "cities: [Augsburg, Nürnberg]\n", encoding="utf-8"
-        )
+        (tmp_path / "config.yaml").write_text("cities: [Augsburg, Nürnberg]\n", encoding="utf-8")
 
         settings = Settings.load(project_root=tmp_path)
 
