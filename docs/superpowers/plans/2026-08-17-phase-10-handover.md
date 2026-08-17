@@ -97,9 +97,9 @@ was quietly finished by Phases 8 and 9:
 
 ## T1 — A free port, chosen rather than assumed
 
-- [ ] `test_the_preferred_port_is_used_when_it_is_free`
-- [ ] `test_the_next_port_is_chosen_when_the_preferred_one_is_busy`
-- [ ] `test_a_wall_of_busy_ports_is_refused_with_a_sentence`
+- [x] `test_the_preferred_port_is_used_when_it_is_free`
+- [x] `test_the_next_port_is_chosen_when_the_preferred_one_is_busy`
+- [x] `test_a_wall_of_busy_ports_is_refused_with_a_sentence`
 
 `launch.py` `choose_port(preferred, host)` binds to find out rather than asking
 a list — the only way to know a port is free is to take it.
