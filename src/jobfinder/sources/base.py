@@ -89,6 +89,19 @@ class RawPosting:
         return bool(self.description and self.description.strip())
 
     @property
+    def published_on(self) -> str | None:
+        """The posting date as one comparable `YYYY-MM-DD`, or None.
+
+        Derived here rather than in each adapter: the five sources report three
+        different shapes, and "posted within a week" cannot be asked of a column
+        that holds all three. `published_at` keeps whatever the source said —
+        that is what the job page shows.
+        """
+        from jobfinder.dates import published_on
+
+        return published_on(self.published_at)
+
+    @property
     def content_hash(self) -> str | None:
         """sha1 of the ad text — changes only when the ad changes."""
         if not self.has_description:
