@@ -27,6 +27,8 @@ from jobfinder.store.status import set_notes, set_status
 from jobfinder.web.app import templates
 from jobfinder.web.queries import (
     PAGE_SIZE,
+    POSTED_WITHIN,
+    POSTED_WITHIN_LABELS,
     STALE_AFTER_DAYS,
     describe_filters,
     filter_options,
@@ -82,6 +84,8 @@ def _list_context(request: Request) -> dict:
         "active_filters": describe_filters(filters),
         "source_labels": SOURCE_LABELS,
         "stale_days": STALE_AFTER_DAYS,
+        "posted_within_options": POSTED_WITHIN_LABELS,
+        "posted_within": POSTED_WITHIN,
     }
 
 

@@ -30,6 +30,17 @@ EMPLOYMENT_TYPES = {
     "internship": "is_internship",
 }
 STATUSES = ("new", "interested", "applied", "rejected", "deleted")
+# The ages she can ask for, and the only ones. A closed set rather than a free
+# number of days: four answers cover the question ("is this still worth
+# applying to?"), and anything outside them is a stale link, not an error.
+POSTED_WITHIN = {"3": 3, "7": 7, "30": 30}
+# How each one reads on the page and in the active-filters line, in her words.
+POSTED_WITHIN_LABELS = (
+    ("", "Any time", ""),
+    ("3", "Last 3 days", "posted in the last 3 days"),
+    ("7", "Last week", "posted in the last week"),
+    ("30", "Last month", "posted in the last month"),
+)
 SORTS = ("fit", "date", "distance")
 PAGE_SIZE = 50
 # Cross-cutting concern: a posting none of her searches has seen in two weeks
@@ -64,6 +75,9 @@ class JobFilters:
     max_german: str | None = None
     min_fit: int | None = None
     statuses: tuple[str, ...] = ()  # empty = everything except deleted
+    # How old an ad may be, in days. None means any age — her store reaches back
+    # to 2022, so "any" is a real answer and not the same as "recent".
+    posted_within_days: int | None = None
     sort: str = "fit"
     page: int = 1
 
@@ -121,6 +135,9 @@ def parse_filters(params) -> JobFilters:
     except ValueError:
         page = 1
 
+    posted_within = params.get("posted_within") or ""
+    posted_within_days = POSTED_WITHIN.get(posted_within)
+
     return JobFilters(
         cities=cities,
         sources=sources,
@@ -128,6 +145,7 @@ def parse_filters(params) -> JobFilters:
         max_german=max_german,
         min_fit=min_fit,
         statuses=statuses,
+        posted_within_days=posted_within_days,
         sort=sort,
         page=page,
     )
@@ -232,6 +250,13 @@ def list_jobs(
     if filters.min_fit is not None:
         where.append(f"{_SQL_FIT} IS NOT NULL AND {_SQL_FIT} >= ?")
         parameters.append(filters.min_fit)
+    if filters.posted_within_days is not None:
+        # `published_on` is the v7 column: one shape for all five sources, so
+        # this is a date comparison and not a string one. An ad with no date
+        # cannot keep a bound she set, so it is excluded — the same rule the
+        # German-level bound follows.
+        where.append("j.published_on IS NOT NULL AND j.published_on >= date('now', ?)")
+        parameters.append(f"-{filters.posted_within_days} days")
 
     clause = ("WHERE " + " AND ".join(where)) if where else ""
     base = (
@@ -345,6 +370,14 @@ def describe_filters(filters: JobFilters) -> list[str]:
         parts.append(f"German at most {filters.max_german}")
     if filters.min_fit is not None:
         parts.append(f"fit at least {filters.min_fit}")
+    if filters.posted_within_days is not None:
+        parts.append(
+            next(
+                phrase
+                for value, _label, phrase in POSTED_WITHIN_LABELS
+                if POSTED_WITHIN.get(value) == filters.posted_within_days
+            )
+        )
     if filters.sources:
         parts.append(f"from {_or_list(filters.sources)}")
     if filters.statuses:
