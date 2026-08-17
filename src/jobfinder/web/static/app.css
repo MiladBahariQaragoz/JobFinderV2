@@ -300,5 +300,13 @@ details.original .body {
   padding: 0.75rem 0.25rem;
   border-bottom: 1px solid var(--rule);
 }
+/* A status word must not be wrapped down the right-hand edge by a long CV
+   headline beside it. */
+.settings-list .row > span:last-child { white-space: nowrap; }
+/* ...unless it is a whole sentence, which several of these rows are. */
+.settings-list .row > span.wrap:last-child { white-space: normal; }
+/* The reason a role was suggested belongs under its title, not butted against
+   the English gloss on the same line. */
+.settings-list .row .meta { display: block; margin-top: 0.15rem; }
 .ok { color: var(--accent); }
 .missing { color: var(--warn); }

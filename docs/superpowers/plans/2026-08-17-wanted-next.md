@@ -81,10 +81,13 @@ every plain-date ad posted today.
 3. **Resume is the same button.** §9 already makes a second pass skip what the
    first stored, so there is nothing to resume *to* — pressing Enrich again
    continues. The panel says so rather than growing a second control.
-4. **The CV is uploaded, validated, and only then written.** The upload lands
-   in a temp file, `load_profile` parses it, and `pool.yaml` is replaced only
-   if that succeeds — a bad paste must never destroy the CV she already had.
-   The old file is kept as `pool.yaml.bak` for exactly that reason.
+4. **The CV is uploaded, validated, and only then written.** The text is parsed
+   before anything on disk is touched, and `pool.yaml` is replaced only if that
+   succeeds — a bad paste must never destroy the CV she already had. The old
+   file is kept as `pool.yaml.bak` for exactly that reason. (Corrected at B5:
+   this originally said the upload lands in a temp file first. It does not, and
+   should not — a temp file is one more thing to leak, and it would put its own
+   name in her error sentences.)
 5. **`published_on` is a new column, not a rewrite of `published_at`.** The raw
    value stays exactly as the source gave it (it is what the job page shows);
    the comparable date is derived once, on the way in, by one function every
@@ -213,28 +216,28 @@ trusting the model. It appears in the run's `errors` list, not as a failure.
 
 ### B1 — The template is downloadable
 
-- [ ] `test_get_pool_template_serves_the_file_as_an_attachment`
-- [ ] `test_the_template_download_is_utf8_and_keeps_its_umlauts`
+- [x] `test_get_pool_template_serves_the_file_as_an_attachment`
+- [x] `test_the_template_download_is_utf8_and_keeps_its_umlauts`
 
 `pool.template.yaml` ships in the repo root today. It is served from
 `/settings/cv/template` so she never has to find it on disk.
 
 ### B2 — An upload is validated before it replaces anything
 
-- [ ] `test_a_valid_upload_is_written_to_pool_yaml`
-- [ ] `test_a_valid_upload_keeps_the_previous_file_as_a_backup`
-- [ ] `test_an_invalid_upload_leaves_the_existing_pool_yaml_untouched`
-- [ ] `test_an_invalid_upload_shows_the_profile_error_sentence`
-- [ ] `test_an_upload_that_is_not_yaml_at_all_is_refused_readably`
-- [ ] `test_an_empty_upload_is_refused_readably`
-- [ ] `test_the_upload_is_never_logged` (her name and address are in it)
+- [x] `test_a_valid_upload_is_written_to_pool_yaml`
+- [x] `test_a_valid_upload_keeps_the_previous_file_as_a_backup`
+- [x] `test_an_invalid_upload_leaves_the_existing_pool_yaml_untouched`
+- [x] `test_an_invalid_upload_shows_the_profile_error_sentence`
+- [x] `test_an_upload_that_is_not_yaml_at_all_is_refused_readably`
+- [x] `test_an_empty_upload_is_refused_readably`
+- [x] `test_the_upload_is_never_logged` (her name and address are in it)
 
 ### B3 — The Settings page shows whether a CV is there, and what it says
 
-- [ ] `test_settings_says_no_cv_yet_and_offers_the_template`
-- [ ] `test_settings_summarises_the_cv_it_found`
-- [ ] `test_settings_names_the_field_and_line_when_the_cv_will_not_parse`
-- [ ] `test_settings_never_renders_her_address_or_phone_number`
+- [x] `test_settings_says_no_cv_yet_and_offers_the_template`
+- [x] `test_settings_summarises_the_cv_it_found`
+- [x] `test_settings_names_the_field_and_line_when_the_cv_will_not_parse`
+- [x] `test_settings_never_renders_her_address_or_phone_number`
 
 The summary is the one `jobfinder profile validate` prints — name withheld:
 languages, years of experience, education, skills count. Enough to recognise
@@ -243,18 +246,64 @@ might see.
 
 ### B4 — Role suggestions can be asked for from the browser
 
-- [ ] `test_suggest_roles_button_appears_once_a_cv_is_present`
-- [ ] `test_post_suggest_roles_stores_and_renders_the_titles`
-- [ ] `test_suggest_roles_without_a_key_refuses_with_a_link_not_a_500`
-- [ ] `test_stored_suggestions_are_shown_without_spending_a_call`
-- [ ] `test_a_suggested_role_links_into_the_search_form_as_a_keyword`
+- [x] `test_suggest_roles_button_appears_once_a_cv_is_present`
+- [x] `test_post_suggest_roles_stores_and_renders_the_titles`
+- [x] `test_suggest_roles_without_a_key_refuses_with_a_link_not_a_500`
+- [x] `test_stored_suggestions_are_shown_without_spending_a_call`
+- [x] `test_a_suggested_role_links_into_the_search_form_as_a_keyword`
 
 ### B5 — Run it for real
 
-- [ ] Upload her actual `pool.yaml` through the browser, confirm the summary
-      matches `jobfinder profile validate`, and that the backup exists
-- [ ] Upload a deliberately broken copy; confirm the good file survived
-- [ ] Confirm fit scores appear on the list once a CV is present
+Against her actual `pool.yaml` on 2026-08-17, with a byte-exact copy kept aside
+first so nothing here could cost her the file.
+
+- [x] **The summary matches the CLI, field for field.** `jobfinder profile
+      validate` prints Persian (Native proficiency), English (Fluent), German
+      (Basic); Engineering & Simulation 11, General PC & Office 9,
+      Sustainability & Environment 7; 3.4 years. The Settings page shows exactly
+      those, plus `4 roles`.
+- [x] **Nothing identifying reaches the page.** Her email and her location are
+      both in `pool.yaml` and neither appears in the rendered HTML; checked by
+      searching the response for each value read straight out of the file.
+- [x] **Upload round trip, byte for byte.** Uploading her own file back through
+      the browser left `pool.yaml` byte-identical to the copy taken beforehand,
+      and `pool.yaml.bak` byte-identical to it as well.
+- [x] **A broken upload cost her nothing.** A file with only a name in it was
+      refused with `pool.yaml: 'basics' … is missing 'email', 'location'.
+      Required fields: name, email, location.` and the line "Your previous CV is
+      untouched" — and her CV was still byte-identical afterwards.
+- [x] **Role suggestions, one real call.** Ten roles came back, each with a
+      German title, an English gloss and a reason, and each linking to
+      `/search?keywords=…`; following one put `Werkstudent Umwelttechnik` into
+      the search form's keyword field. They are stored, so the page re-renders
+      them without spending anything.
+- [x] **Fit scores are on the list.** 46 of 46 stored answers carry one, and the
+      list sorted by fit leads with 88, 70, 58, 58, 55.
+
+**One defect, and it was the CV file itself.** The first round trip came back
+*not* byte-identical: `write_text` translates newlines on Windows, so her CRLF
+file was written back with every line ending turned into `\r\r\n` — 258 of them
+— and the next upload would have doubled them again. The backup had the same
+disease in reverse (an LF file came back CRLF). Both now go through
+`write_bytes`, held by `test_a_windows_file_is_written_back_unchanged`,
+`test_a_unix_file_is_written_back_unchanged_too` and a parametrised
+`test_the_backup_is_a_faithful_copy_of_what_it_replaced`. This is the
+"Windows reality" row of the cross-cutting table, which is in the plan precisely
+because it is the failure nobody notices until the file is already wrong.
+
+**Two layout defects, found in the browser rather than in the HTML.** The
+`CV in place` badge was being wrapped down the right-hand edge by her long CV
+headline, and each suggested role ran its reason straight on from its English
+gloss as one paragraph. Both were CSS: the status cell no longer wraps, a
+sentence cell opts back in with `.wrap`, and `.meta` inside a settings row is a
+block. The row's action is now an explicit `Search for this` link rather than a
+title that happened to be clickable.
+
+**Decision 4 in this file was written wrong and the code does better.** It says
+the upload "lands in a temp file"; it does not. `parse_profile` validates the
+text before anything touches the disk, so there is no temporary file to leak or
+clean up, and the error sentences still name `pool.yaml` rather than whatever
+the upload arrived as.
 
 ---
 

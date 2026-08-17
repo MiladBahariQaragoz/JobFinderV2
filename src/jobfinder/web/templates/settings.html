@@ -42,11 +42,11 @@
   </div>
   <div class="row">
     <span>Languages</span>
-    <span>{{ cv.languages | join(" · ") if cv.languages else "none listed" }}</span>
+    <span class="wrap">{{ cv.languages | join(" · ") if cv.languages else "none listed" }}</span>
   </div>
   <div class="row">
     <span>Strongest skill groups</span>
-    <span>
+    <span class="wrap">
       {% for group in cv.skill_groups %}
       {{ group.name }} (<span class="num">{{ group.count }}</span>){% if not loop.last %} · {% endif %}
       {% else %}
@@ -102,10 +102,10 @@
   {% for role in roles %}
   <div class="row">
     <span>
-      <a href="{{ role.search_url }}">{{ role.title_de }}</a>
-      — {{ role.title_en }}
+      <strong>{{ role.title_de }}</strong> — {{ role.title_en }}
       <span class="meta">{{ role.why }}</span>
     </span>
+    <span><a href="{{ role.search_url }}">Search for this</a></span>
   </div>
   {% endfor %}
 </div>

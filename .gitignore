@@ -5,6 +5,9 @@
 .env.*.local
 # her filled CV — name, address, contact details
 pool.yaml
+pool.yaml.bak
+# Anything the app writes beside her CV — a rescued copy is still her CV.
+pool.yaml.*
 !pool.template.yaml
 # her original CV documents never leave this machine
 *.docx
