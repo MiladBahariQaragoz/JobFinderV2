@@ -11,7 +11,8 @@ import socket
 
 import pytest
 
-from jobfinder.launch import NoFreePort, choose_port
+from jobfinder.config import Settings
+from jobfinder.launch import NoFreePort, choose_port, install_root
 
 HOST = "127.0.0.1"
 
@@ -47,3 +48,37 @@ def test_a_wall_of_busy_ports_is_refused_with_a_sentence():
             choose_port(busy_port, host=HOST, tries=1)
 
     assert str(busy_port) in str(refused.value)
+
+
+# -- where the data lives ------------------------------------------------------
+
+
+def test_the_install_root_is_the_working_directory_when_running_from_source(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    assert install_root() == tmp_path
+
+
+def test_the_install_root_is_beside_the_exe_when_frozen(tmp_path, monkeypatch):
+    installed = tmp_path / "JobFinder"
+    installed.mkdir()
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.executable", str(installed / "JobFinder.exe"))
+
+    assert install_root() == installed
+
+
+def test_data_dir_resolves_next_to_the_exe_when_frozen(tmp_path, monkeypatch):
+    """The point of the whole function: PyInstaller unpacks itself into a temp
+    directory it deletes on exit, so a `data/` resolved from the running module
+    would take her database with it."""
+    installed = tmp_path / "JobFinder"
+    installed.mkdir()
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.executable", str(installed / "JobFinder.exe"))
+    monkeypatch.setattr("sys._MEIPASS", str(tmp_path / "_MEI12345"), raising=False)
+
+    settings = Settings(project_root=install_root())
+
+    assert settings.data_dir == installed / "data"
+    assert settings.db_path == installed / "data" / "jobfinder.db"

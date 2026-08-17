@@ -106,9 +106,9 @@ a list — the only way to know a port is free is to take it.
 
 ## T2 — Where the data lives when there is no project root
 
-- [ ] `test_the_install_root_is_the_project_root_when_running_from_source`
-- [ ] `test_the_install_root_is_beside_the_exe_when_frozen`
-- [ ] `test_data_dir_resolves_next_to_the_exe_when_frozen`
+- [x] `test_the_install_root_is_the_working_directory_when_running_from_source`
+- [x] `test_the_install_root_is_beside_the_exe_when_frozen`
+- [x] `test_data_dir_resolves_next_to_the_exe_when_frozen`
 
 `launch.py` `install_root()` reads `sys.frozen` and `sys.executable`. Nothing
 else in the codebase learns that an exe exists (decision 6).

@@ -8,6 +8,8 @@ directory, and what the little console window says while the browser opens.
 from __future__ import annotations
 
 import socket
+import sys
+from pathlib import Path
 
 # Where to start looking. 8000 is the port the CLI has always used, and the
 # likeliest thing holding it is a JobFinder she already has open.
@@ -19,6 +21,20 @@ PORT_TRIES = 20
 
 class NoFreePort(Exception):
     """Every port we tried was taken — said in a sentence, not a stack trace."""
+
+
+def install_root() -> Path:
+    """The directory `data/`, `.env` and `config.yaml` belong to.
+
+    Frozen, that is the folder holding `JobFinder.exe`. PyInstaller unpacks the
+    program itself into a temporary directory (`sys._MEIPASS`) and deletes it on
+    exit, so anything resolved from the running module would take her database
+    with it. Unfrozen, it is the working directory, exactly as the CLI has
+    always treated it.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path.cwd()
 
 
 def choose_port(preferred: int = DEFAULT_PORT, *, host: str = "127.0.0.1", tries: int = PORT_TRIES):
