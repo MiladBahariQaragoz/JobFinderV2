@@ -23,6 +23,11 @@ class NoFreePort(Exception):
     """Every port we tried was taken — said in a sentence, not a stack trace."""
 
 
+def say(line: str) -> None:
+    """One line to the console window, on screen the moment it is written."""
+    print(line, flush=True)
+
+
 def start(
     *,
     root: Path | None = None,
@@ -49,18 +54,22 @@ def start(
     settings = Settings.load(root or install_root())
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
-    print("JobFinder")
-    print(f"  Your files are in {settings.data_dir}")
+    # Every line is flushed as it is written. A frozen build block-buffers its
+    # output, so without this her console window stays empty for as long as the
+    # app runs and only fills in once she has closed it — measured on the first
+    # real build.
+    say("JobFinder")
+    say(f"  Your files are in {settings.data_dir}")
 
     try:
         chosen = pick_port(port, host=SERVER_HOST)
     except NoFreePort as exc:
-        print(f"  {exc}")
+        say(f"  {exc}")
         return 1
 
     url = f"http://{SERVER_HOST}:{chosen}"
-    print(f"  Open {url} in your browser if it does not open by itself.")
-    print("  Leave this window open while you use JobFinder — close this window to stop it.")
+    say(f"  Open {url} in your browser if it does not open by itself.")
+    say("  Leave this window open while you use JobFinder - closing it stops the app.")
 
     def ready() -> None:
         if open_browser_at_start:
@@ -68,6 +77,22 @@ def start(
 
     serve(create_app(settings), host=SERVER_HOST, port=chosen, on_ready=ready)
     return 0
+
+
+def entry(argv: list[str] | None = None) -> int:
+    """What `JobFinder.exe` runs. Two flags, and no way to fail on a third.
+
+    `argparse` would exit with "unrecognized arguments" on a stray argument
+    from a Windows shortcut nobody remembers making, which is the whole app
+    lost to a typo she did not type.
+    """
+    argv = list(sys.argv[1:] if argv is None else argv)
+    port = DEFAULT_PORT
+    if "--port" in argv:
+        index = argv.index("--port")
+        if index + 1 < len(argv) and argv[index + 1].isdigit():
+            port = int(argv[index + 1])
+    return start(port=port, open_browser_at_start="--no-browser" not in argv)
 
 
 def _open_browser(url: str) -> None:
@@ -117,5 +142,5 @@ def choose_port(preferred: int = DEFAULT_PORT, *, host: str = "127.0.0.1", tries
         return port
     raise NoFreePort(
         f"Ports {preferred} to {preferred + tries - 1} are all in use. "
-        "JobFinder may already be running — look for its window before starting another."
+        "JobFinder may already be running - look for its window before starting another."
     )

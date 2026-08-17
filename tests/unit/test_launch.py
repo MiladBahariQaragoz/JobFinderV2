@@ -12,7 +12,14 @@ import socket
 import pytest
 
 from jobfinder.config import Settings
-from jobfinder.launch import NoFreePort, choose_port, install_root, start
+from jobfinder.launch import (
+    DEFAULT_PORT,
+    NoFreePort,
+    choose_port,
+    entry,
+    install_root,
+    start,
+)
 
 HOST = "127.0.0.1"
 
@@ -129,7 +136,7 @@ def test_the_launcher_says_how_to_stop_it(tmp_path, capsys, monkeypatch):
 
     start(root=tmp_path, serve=recorder.serve, open_browser=recorder.open_browser)
 
-    assert "close this window" in capsys.readouterr().out.lower()
+    assert "closing it stops the app" in capsys.readouterr().out.lower()
 
 
 def test_the_launcher_creates_the_data_directory_when_it_is_missing(tmp_path, monkeypatch):
@@ -174,3 +181,56 @@ def test_the_launcher_does_not_open_a_browser_when_asked_not_to(tmp_path, monkey
     )
 
     assert recorder.opened == []
+
+
+class TestTheExeEntryPoint:
+    """`JobFinder.exe --port 8123 --no-browser` — the two flags a build smoke
+    test needs, and nothing else. She double-clicks and passes none of them."""
+
+    def test_no_arguments_means_the_default_port_and_a_browser(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        seen = {}
+
+        def fake_start(**kwargs):
+            seen.update(kwargs)
+            return 0
+
+        monkeypatch.setattr("jobfinder.launch.start", fake_start)
+        assert entry([]) == 0
+        assert seen["port"] == DEFAULT_PORT
+        assert seen["open_browser_at_start"] is True
+
+    def test_the_flags_reach_the_launcher(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        seen = {}
+
+        def fake_start(**kwargs):
+            seen.update(kwargs)
+            return 0
+
+        monkeypatch.setattr("jobfinder.launch.start", fake_start)
+        entry(["--port", "8123", "--no-browser"])
+        assert seen["port"] == 8123
+        assert seen["open_browser_at_start"] is False
+
+    def test_an_unknown_flag_is_ignored_rather_than_fatal(self, tmp_path, monkeypatch):
+        """A double-click can carry a stray argument from a shortcut, and the
+        program exiting with "unrecognized arguments" would be the whole app
+        lost to a typo in a shortcut she did not make."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("jobfinder.launch.start", lambda **kwargs: 0)
+
+        assert entry(["--nonsense"]) == 0
+
+
+def test_the_console_lines_are_plain_ascii(tmp_path, capsys, monkeypatch):
+    """A Windows console is not always UTF-8. Under the older code pages an em
+    dash is either mojibake or a crash inside `print` — and the console window
+    is the one surface she cannot reload."""
+    monkeypatch.chdir(tmp_path)
+    recorder = Recorder()
+
+    start(root=tmp_path, serve=recorder.serve, open_browser=recorder.open_browser)
+
+    out = capsys.readouterr().out
+    assert out.isascii(), f"non-ASCII in the console output: {out!r}"

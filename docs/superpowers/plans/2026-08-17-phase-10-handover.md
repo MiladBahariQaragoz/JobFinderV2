@@ -216,11 +216,18 @@ proof a build works.
 
 ## T9 — The build
 
-- [ ] `test_the_bundle_includes_every_template`
-- [ ] `test_the_bundle_includes_the_static_files_the_app_serves_offline`
-- [ ] `test_the_bundle_names_the_hidden_imports_uvicorn_needs`
-- [ ] `test_the_spec_file_reads_its_lists_from_the_packaging_module`
-- [ ] `tests/live/test_built_exe.py` — the built exe starts and answers `/healthz`
+- [x] `test_the_bundle_includes_every_template`
+- [x] `test_the_bundle_includes_the_static_files_the_app_serves_offline`
+- [x] `test_the_bundle_includes_the_prompt_files`
+- [x] `test_the_bundle_includes_the_llmpool_catalog` — found by building it
+- [x] `test_the_bundle_names_the_hidden_imports_uvicorn_needs`
+- [x] `test_every_bundled_path_exists` +
+      `test_the_destinations_keep_the_package_layout` +
+      `test_the_declared_data_is_relative_to_the_package`
+- [x] `test_the_spec_file_reads_its_lists_from_the_packaging_module`
+- [x] `test_the_console_lines_are_plain_ascii` — also found by building it
+- [x] `tests/live/test_built_exe.py` — the built exe starts, answers `/healthz`,
+      serves a real page and writes `data/` beside itself
 
 `packaging.py` holds the lists; `jobfinder.spec` imports them;
 `scripts/build_exe.py` runs PyInstaller with the spec and prints where the exe
@@ -228,11 +235,13 @@ landed.
 
 ## T10 — The update path
 
-- [ ] `test_an_update_replaces_the_exe`
-- [ ] `test_an_update_keeps_the_previous_exe_as_a_rollback`
-- [ ] `test_an_update_leaves_the_data_directory_untouched`
-- [ ] `test_an_update_refuses_something_that_is_not_an_exe`
-- [ ] `test_an_update_refuses_to_overwrite_a_running_exe_readably`
+- [x] `test_an_update_replaces_the_exe`
+- [x] `test_an_update_keeps_the_previous_exe_as_a_rollback`
+- [x] `test_an_update_leaves_her_data_untouched`
+- [x] `test_an_update_refuses_something_that_is_not_a_program` +
+      `test_an_update_refuses_a_file_that_is_not_there`
+- [x] `test_a_running_exe_is_refused_readably`
+- [x] `test_installing_where_nothing_is_installed_yet_just_works`
 
 `packaging.py` `apply_update(new_exe, install_dir)`, with `scripts/update.ps1`
 as the two-line wrapper she or I actually run.

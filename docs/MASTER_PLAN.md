@@ -1275,7 +1275,7 @@ machine has not been delivered.
 - [x] `test_the_search_button_starts_a_run_the_progress_panel_narrates` (Phase 8)
 - [x] `test_backup_rotation_keeps_five_and_deletes_the_sixth`
 - [x] `test_data_dir_resolves_next_to_the_exe_when_frozen` (PyInstaller `sys.frozen`)
-- [ ] `test_built_exe_starts_and_answers_healthcheck` (build smoke, marked `live`)
+- [x] `test_built_exe_starts_and_answers_healthcheck` (build smoke, marked `live`)
 
 ### Done when
 
