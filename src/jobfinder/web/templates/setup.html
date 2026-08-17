@@ -32,12 +32,21 @@
   <label for="types">Kinds of work</label>
   <input type="text" id="types" name="types" value="{{ default_types }}">
 
-  <h2>A free language model key</h2>
+  <h2>English explanations</h2>
+  {% if ready %}
   <p class="meta">
-    This is what writes the English explanation of each German advert. Searching
-    works without it, so you can skip this now and add one later. Pick a
-    provider, open its link, sign up for the free tier, and paste the key it
-    gives you.
+    Ready — nothing for you to do here. This app already has
+    {% if ready | length == 1 %}a language model key{% else %}language model
+    keys{% endif %} set up for it
+    ({% for provider in ready %}{{ provider.name }}{% if not loop.last %}, {% endif %}{% endfor %}),
+    so every German advert can be explained in English straight away.
+  </p>
+  {% else %}
+  <p class="meta">
+    A free language model key is what writes the English explanation of each
+    German advert. Searching works without it, so you can skip this now and add
+    one later. Pick a provider, open its link, sign up for the free tier, and
+    paste the key it gives you.
   </p>
   <label for="env_var">Provider</label>
   <select id="env_var" name="env_var">
@@ -60,14 +69,15 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
   <button type="submit" class="primary">Save and start</button>
 </form>
 
 <p class="meta">
   Your answers are written to <span class="num wrap">{{ project_root }}</span>,
-  as <span class="num">config.yaml</span> and — if you pasted a key —
-  <span class="num">.env</span>. The key is never shown again anywhere in this
-  app.
+  as <span class="num">config.yaml</span>{% if not ready %} and, if you add a
+  key, <span class="num">.env</span>. A key is never shown again anywhere in
+  this app{% endif %}.
 </p>
 {% endblock %}

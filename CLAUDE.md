@@ -43,6 +43,7 @@ jobfinder search --enrich           # both at once, enrichment as a second worke
 jobfinder contacts [--scripts]      # the call-list of places that never post -> data/contacts.csv
 jobfinder serve [--port N]          # the browser app on 127.0.0.1 (default port 8000)
 python scripts/build_exe.py         # JobFinder.exe -> dist/  (needs the dev extras)
+python scripts/stage_install.py <dir>  # the exe + the provider keys, ready to hand over
 python scripts/shoot_screenshots.py # re-take the images in docs/HER_README.md
 pytest -m live tests/live/test_built_exe.py   # the built exe starts and answers
 ```
@@ -51,6 +52,11 @@ pytest -m live tests/live/test_built_exe.py   # the built exe starts and answers
 `launch.start`, which picks a free port, creates `data/` and prints the address.
 A frozen build keeps `data/`, `config.yaml` and `.env` beside the exe, never
 inside the folder PyInstaller unpacks itself into.
+
+`stage_install.py` copies the provider keys from this checkout's `.env` into the
+folder it builds, so she is never asked for one — only the variables JobFinder
+uses travel, and a key is never baked into the binary, where it could be neither
+seen nor rotated.
 
 `--limit` on `enrich` is the flag to reach for while developing: a full pass
 over the store is hundreds of real free-tier calls.

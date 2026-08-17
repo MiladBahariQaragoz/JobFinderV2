@@ -21,6 +21,7 @@ from jobfinder.packaging import (
     UpdateRefused,
     apply_update,
     bundled_pairs,
+    stage_install,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -202,3 +203,81 @@ def test_the_bundle_includes_the_llmpool_catalog():
 
     assert catalog.exists(), "llmpool has no catalog.yaml — this test is out of date"
     assert any(catalog == source or source in catalog.parents for source in bundled)
+
+
+class TestStagingAnInstall:
+    """Handing it over means a folder, not a file.
+
+    The person this is built for has no provider accounts and cannot sign up for
+    any, so the keys travel with the app — as a `.env` beside the exe, which is
+    what `Settings.load` already reads. Never baked into the binary: a key
+    inside a 19 MB program cannot be rotated, cannot be seen, and goes wherever
+    that program goes.
+    """
+
+    def test_the_folder_gets_the_exe(self, tmp_path):
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the build")
+
+        target = stage_install(exe, tmp_path / "handover")
+
+        assert (target / "JobFinder.exe").read_bytes() == b"the build"
+
+    def test_the_keys_travel_beside_it(self, tmp_path):
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the build")
+        env = tmp_path / ".env"
+        env.write_text("GROQ_API_KEY=hers\n", encoding="utf-8")
+
+        target = stage_install(exe, tmp_path / "handover", env_file=env)
+
+        assert (target / ".env").read_text(encoding="utf-8") == "GROQ_API_KEY=hers\n"
+
+    def test_only_the_keys_travel_and_not_the_rest_of_the_env(self, tmp_path):
+        """A developer `.env` collects things that are nobody else's business.
+        Only the variables a provider or a source needs are copied."""
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the build")
+        env = tmp_path / ".env"
+        env.write_text(
+            "GROQ_API_KEY=hers\nADZUNA_APP_ID=123\nSOME_PERSONAL_TOKEN=nope\n", encoding="utf-8"
+        )
+
+        target = stage_install(exe, tmp_path / "handover", env_file=env)
+
+        written = (target / ".env").read_text(encoding="utf-8")
+        assert "GROQ_API_KEY" in written
+        assert "ADZUNA_APP_ID" in written
+        assert "SOME_PERSONAL_TOKEN" not in written
+
+    def test_a_folder_with_her_data_in_it_is_not_overwritten(self, tmp_path):
+        """Staging over an install she has been using must not touch her work."""
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the new build")
+        target = tmp_path / "handover"
+        (target / "data").mkdir(parents=True)
+        (target / "data" / "jobfinder.db").write_bytes(b"her jobs")
+        (target / "config.yaml").write_text("cities: [Ingolstadt]\n", encoding="utf-8")
+
+        stage_install(exe, target)
+
+        assert (target / "data" / "jobfinder.db").read_bytes() == b"her jobs"
+        assert (target / "config.yaml").exists()
+
+    def test_it_says_what_it_put_there(self, tmp_path):
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the build")
+        env = tmp_path / ".env"
+        env.write_text("GROQ_API_KEY=hers\n", encoding="utf-8")
+
+        target = stage_install(exe, tmp_path / "handover", env_file=env)
+
+        assert target.name == "handover"
+
+    def test_no_env_file_means_no_env_file(self, tmp_path):
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the build")
+
+        target = stage_install(exe, tmp_path / "handover")
+
+        assert not (target / ".env").exists()

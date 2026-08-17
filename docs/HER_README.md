@@ -27,11 +27,11 @@ To stop JobFinder, close the black window.
   within about 25 km, so a nearby town brings in the villages around it.
 - **What kind of work?** Any of `werkstudent`, `minijob`, `parttime`,
   `fulltime`, separated by commas.
-- **A free language model key.** This is what writes the English explanation of
-  each German advert. Searching works perfectly well without it, so you can pick
-  *Skip for now* and add one later on the Settings page. If you want one now:
-  pick a provider, open its "get a free key" link, sign up for the free tier, and
-  paste the key it gives you. It is stored on your laptop and never shown again.
+- **English explanations.** If the page says *Ready — nothing for you to do
+  here*, the app already has the keys it needs and you can ignore this part
+  entirely. If instead it asks for a key: that key is what writes the English
+  explanation of each German advert, searching works perfectly well without one,
+  and you can pick *Skip for now* and add one later on the Settings page.
 
 Press **Save and start**. You will not be asked these again.
 
