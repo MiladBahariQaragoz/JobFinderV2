@@ -1,7 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Jobs — JobFinder{% endblock %}
 {% block content %}
-{% include "_progress.html" %}
+{#
+  The search lives on its own page. Side by side, the search form and the
+  filters read as one control, and pressing the wrong one either spends
+  minutes on the internet or silently narrows the list. What stays here is a
+  line saying a run is going, because §10 forbids a screen that hides work.
+#}
+{% if run_state == "running" %}
+<div class="banner">
+  <span>
+    A search is running —
+    <span class="num">{{ run.found_count or 0 }}</span> found,
+    <span class="num">{{ run.new_count or 0 }}</span> new so far.
+  </span>
+  <a class="button" href="/search">Watch it</a>
+</div>
+{% elif interrupted %}
+<div class="banner">
+  <span>
+    Your last search was interrupted —
+    <span class="num">{{ interrupted.found_count }}</span> jobs were kept
+    (<span class="num">{{ interrupted.new_count }}</span> new).
+  </span>
+  <a class="button" href="/search">Resume it</a>
+</div>
+{% endif %}
 {% if not has_any_jobs %}
 <section class="empty-state">
   <h1>No jobs yet</h1>
@@ -9,7 +33,10 @@
     Run a search and the jobs land here — each one explained in English,
     with the German original one click away.
   </p>
-  <p class="hint">Press Search above, or from a terminal: <span class="num">jobfinder search</span></p>
+  <p class="hint">
+    Start one on the <a href="/search">Search</a> page, or from a terminal:
+    <span class="num">jobfinder search</span>
+  </p>
 </section>
 {% else %}
 {% include "_filters.html" %}

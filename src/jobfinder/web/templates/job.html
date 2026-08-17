@@ -96,15 +96,6 @@
     </div>
     {% endif %}
 
-    <div class="section">
-      <h2>How to apply</h2>
-      <p>{{ answer.application_method or "method not stated" }}</p>
-      {% if answer.contact_email %}<p>Email: <a href="mailto:{{ answer.contact_email }}">{{ answer.contact_email }}</a></p>{% endif %}
-      {% if answer.contact_phone %}<p>Phone: <span class="num">{{ answer.contact_phone }}</span></p>{% endif %}
-      {% if job.apply_url or job.source_url %}
-      <p><a href="{{ job.apply_url or job.source_url }}" rel="noopener">Open the original listing</a></p>
-      {% endif %}
-    </div>
     {% else %}
     <div class="empty-state">
       <h1>Not explained yet</h1>
@@ -112,6 +103,33 @@
       <p class="hint">Run <span class="num">jobfinder enrich</span> and this page fills in.</p>
     </div>
     {% endif %}
+
+    {#
+      Applying is the point of the whole product, so this block sits outside
+      the enrichment branch: a job nobody has explained yet is still a job she
+      can apply to, and every stored posting carries a link back to its ad.
+    #}
+    <div class="section apply">
+      <h2>How to apply</h2>
+      {% if job.apply_url or job.source_url %}
+      <p>
+        <a class="button primary" target="_blank" rel="noopener noreferrer"
+           href="{{ job.apply_url or job.source_url }}">Open the ad and apply</a>
+      </p>
+      <p class="meta">Opens in a new tab, so this page stays where it is.</p>
+      {% else %}
+      <p>No link was stored for this posting — search for it by title and company.</p>
+      {% endif %}
+      {% if job.answer %}
+      {% set answer = job.answer %}
+      {% if answer.contact_email %}<p>Email: <a href="mailto:{{ answer.contact_email }}">{{ answer.contact_email }}</a></p>{% endif %}
+      {% if answer.contact_phone %}<p>Phone: <span class="num">{{ answer.contact_phone }}</span></p>{% endif %}
+      {% if answer.application_method and answer.application_method != "not stated" %}
+      <p class="meta">The ad asks for: {{ answer.application_method }}</p>
+      {% endif %}
+      {% if answer.deadline %}<p class="meta">Deadline <span class="num">{{ answer.deadline }}</span></p>{% endif %}
+      {% endif %}
+    </div>
 
     <div class="section">
       <h2>Facts from {{ job.source_label }}</h2>

@@ -63,6 +63,8 @@ def store_job(
     answer: dict | None = None,
     status: str | None = None,
     last_seen_days_ago: int = 0,
+    source_url: str | None = None,
+    apply_url: str | None = None,
 ) -> str:
     """One job in the store, the way the search and enrichment would leave it."""
     from datetime import UTC, datetime, timedelta
@@ -70,12 +72,20 @@ def store_job(
     from jobfinder.store.jobs import upsert_job
     from jobfinder.store.status import set_status
 
+    source_id = job_id.split(":", 1)[1]
+    # Every real posting carries a link back to its ad — measured 859/859 on
+    # her store — so the fixture does too, or the apply path tests nothing.
+    if source_url is None:
+        source_url = f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{source_id}"
+
     upsert_job(
         connection,
         RawPosting(
             job_id=job_id,
             source=source,
-            source_id=job_id.split(":", 1)[1],
+            source_id=source_id,
+            source_url=source_url,
+            apply_url=apply_url,
             title=title,
             company=company,
             city=city,

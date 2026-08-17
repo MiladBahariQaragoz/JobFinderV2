@@ -49,36 +49,66 @@ _SQL_LEVEL_RANK = (
 
 @dataclass(frozen=True)
 class JobFilters:
-    """What she asked for, already validated — invalid input never reaches SQL."""
+    """What she asked for, already validated — invalid input never reaches SQL.
 
-    city: str | None = None
-    source: str | None = None
-    type: str | None = None
+    The four categorical filters hold **sets**: she can reach Ingolstadt and
+    Munich, and she will take a minijob or a Werkstudent contract, so asking
+    for one at a time was the wrong question. Empty means no filter. The query
+    parameter names are unchanged and simply repeat (`?city=A&city=B`), so an
+    old single-value link still means what it always did.
+    """
+
+    cities: tuple[str, ...] = ()
+    sources: tuple[str, ...] = ()
+    types: tuple[str, ...] = ()
     max_german: str | None = None
     min_fit: int | None = None
-    status: str | None = None  # None = everything except deleted
+    statuses: tuple[str, ...] = ()  # empty = everything except deleted
     sort: str = "fit"
     page: int = 1
+
+
+def _picked(params, key: str, valid=None) -> tuple[str, ...]:
+    """Every value she gave for one parameter, de-duplicated, order kept.
+
+    Anything not in `valid` is dropped rather than raising: a stale link with
+    a since-renamed value should still show her a list.
+    """
+    getlist = getattr(params, "getlist", None)
+    values = list(getlist(key)) if getlist else _as_list(params.get(key))
+    seen: dict[str, None] = {}
+    for value in values:
+        value = value.strip()
+        if value and (valid is None or value in valid):
+            seen.setdefault(value, None)
+    return tuple(seen)
+
+
+def _as_list(value) -> list[str]:
+    if value is None:
+        return []
+    return list(value) if isinstance(value, list) else [value]
+
+
+def _places(values) -> str:
+    """`?, ?, ?` for an IN clause — the values themselves stay bound."""
+    return ", ".join("?" for _ in values)
 
 
 def parse_filters(params) -> JobFilters:
     """Query params → validated filters. Anything unparseable is dropped —
     a bad value in a URL is a stale link, not a reason to 500."""
-    city = params.get("city") or None
-    source = params.get("source") or None
-    type_ = params.get("type") or None
+    cities = _picked(params, "city")
+    sources = _picked(params, "source")
+    types = _picked(params, "type", EMPLOYMENT_TYPES)
+    statuses = _picked(params, "status", STATUSES)
     max_german = params.get("max_german") or None
     sort = params.get("sort") or "fit"
-    status = params.get("status") or None
 
-    if type_ not in EMPLOYMENT_TYPES:
-        type_ = None
     if max_german not in GERMAN_ORDER:
         max_german = None
     if sort not in SORTS:
         sort = "fit"
-    if status not in STATUSES:
-        status = None
 
     try:
         min_fit = int(params.get("min_fit", ""))
@@ -92,12 +122,12 @@ def parse_filters(params) -> JobFilters:
         page = 1
 
     return JobFilters(
-        city=city,
-        source=source,
-        type=type_,
+        cities=cities,
+        sources=sources,
+        types=types,
         max_german=max_german,
         min_fit=min_fit,
-        status=status,
+        statuses=statuses,
         sort=sort,
         page=page,
     )
@@ -174,20 +204,24 @@ def list_jobs(
     where: list[str] = []
     parameters: list[Any] = [version]
 
-    if filters.status is not None:
-        where.append("COALESCE(s.status, 'new') = ?")
-        parameters.append(filters.status)
+    if filters.statuses:
+        where.append(f"COALESCE(s.status, 'new') IN ({_places(filters.statuses)})")
+        parameters.extend(filters.statuses)
     else:
         where.append("COALESCE(s.status, 'new') != 'deleted'")
 
-    if filters.city:
-        where.append("j.city = ?")
-        parameters.append(filters.city)
-    if filters.source:
-        where.append("j.source = ?")
-        parameters.append(filters.source)
-    if filters.type:
-        where.append(f"j.{EMPLOYMENT_TYPES[filters.type]} = 1")
+    if filters.cities:
+        where.append(f"j.city IN ({_places(filters.cities)})")
+        parameters.extend(filters.cities)
+    if filters.sources:
+        where.append(f"j.source IN ({_places(filters.sources)})")
+        parameters.extend(filters.sources)
+    if filters.types:
+        # Types are alternatives, never a stack: a job matching any one of the
+        # contracts she will take belongs in the list (Phase 4 learned the same
+        # thing about the BA's query parameters).
+        columns = " OR ".join(f"j.{EMPLOYMENT_TYPES[name]} = 1" for name in filters.types)
+        where.append(f"({columns})")
     if filters.max_german is not None:
         # A bound she set is a promise: `unclear` and unanswered jobs cannot
         # keep it, so they are excluded — and the empty state says so. The
@@ -303,19 +337,27 @@ def _type_label(row: sqlite3.Row | dict) -> str:
 def describe_filters(filters: JobFilters) -> list[str]:
     """The applied filters in her words — the empty state names them (§10)."""
     parts = []
-    if filters.city:
-        parts.append(f"jobs in {filters.city}")
-    if filters.type:
-        parts.append(f"{filters.type} positions")
+    if filters.cities:
+        parts.append(f"jobs in {_or_list(filters.cities)}")
+    if filters.types:
+        parts.append(f"{_or_list(filters.types)} positions")
     if filters.max_german is not None:
         parts.append(f"German at most {filters.max_german}")
     if filters.min_fit is not None:
         parts.append(f"fit at least {filters.min_fit}")
-    if filters.source:
-        parts.append(f"from {filters.source}")
-    if filters.status:
-        parts.append(f"marked {filters.status}")
+    if filters.sources:
+        parts.append(f"from {_or_list(filters.sources)}")
+    if filters.statuses:
+        parts.append(f"marked {_or_list(filters.statuses)}")
     return parts
+
+
+def _or_list(values: tuple[str, ...]) -> str:
+    """`Ingolstadt or München`, `A, B or C` — she picked alternatives, and the
+    empty state has to read like the question she asked."""
+    if len(values) == 1:
+        return values[0]
+    return f"{', '.join(values[:-1])} or {values[-1]}"
 
 
 def filter_options(connection: sqlite3.Connection) -> dict[str, list[str]]:

@@ -1273,6 +1273,79 @@ Checked at the end of every phase, not saved for the end of the project.
 
 ---
 
+## Wanted next — asked for after using the app
+
+Three gaps she named while clicking through the finished Phase 8, on
+2026-08-16. They are ideas, not a phase plan: each says why it matters, what
+already exists to build it on, and what to measure first. None is started.
+
+### An Enrich button, to run and resume enrichment from the browser
+
+**Why.** Enrichment is the heart of the product and today it only runs from a
+terminal, so **20 of her 859 jobs** carry an English answer. Everything the
+list and job pages promise — the summary, the German level, the fit score — is
+blank for the other 839, and she has no way to change that from the app.
+
+**What already exists.** Nearly all of it. The store is the queue, so
+enrichment needs no handover from a search. `enrich/companion.py` already
+journals a `runs` row of kind `enrich` and has `cancel()`. `web/runs.py`
+`RunManager` already owns one daemon thread per run, and `_progress.html`
+already renders `Explaining jobs in English as they arrive — N explained so
+far`. The skip logic (§5's re-run rule) already means pressing it twice costs
+nothing.
+
+**What is actually new.** A `POST /run/enrich`, its own progress line with a
+Cancel, and — the part that needs thought — telling her **what it will spend
+before it spends it**. A full pass over 839 unenriched jobs is 839 real
+free-tier calls; the cross-cutting rule says a run announces its cost first,
+and `--limit` exists on the CLI precisely because a full pass is expensive.
+A quota spent mid-run already stops cleanly and resumes, so Resume is the same
+button.
+
+### Somewhere to put her CV, so the rest of the app comes alive
+
+**Why.** `pool.yaml` is the input to her profile, the role suggestions, and
+every `fit_score`. Today it can only be edited as a file next to the source
+code, which is not something to ask of her — and until it exists,
+`jobfinder suggest-roles` cannot run and the fit column has nothing to say.
+
+**Shape.** The Settings page offers `pool.template.yaml` as a download and
+takes the filled file back as an upload, validated by the existing
+`load_profile` — Phase 1 already answers every failure with one sentence
+naming the field and the line, so the error state is written. With a CV
+present, role suggestions can be requested from the browser and their keywords
+handed to the search form.
+
+**Where it belongs.** Phase 10's first-run wizard already promises "point at
+`pool.yaml`", so this is that deliverable, brought forward if the fit scores
+are wanted sooner. **Privacy is the constraint, not a footnote:** `pool.yaml`
+holds her name, address and email, stays gitignored, and never leaves the
+machine — only the skills-and-education digest goes to a provider (§
+Cross-cutting concerns, tested in Phase 3).
+
+### A posting-date filter
+
+**Why.** She can see how old an ad is on its page but cannot ask for "posted in
+the last week", and an old posting is a wasted application. This is a
+different question from the 14-day greying, which says whether *her searches*
+still see the ad listed, not when it was written.
+
+**Measured first, because it decides the implementation.** `published_at` is
+present on **859 of 859** stored jobs — but in two shapes: the Bundesagentur,
+Kleinanzeigen and Xing store plain dates (`2022-12-15`), while Arbeitnow and
+Adzuna store full ISO timestamps (`2026-08-16T12:37:59Z`). A string comparison
+across both is wrong at the boundary, so the filter needs a normalised
+comparable value — and the honest place to fix it is the adapters, on the way
+in, rather than every query afterwards. The stored range starts in **2022**,
+so ads far older than they look are already in her store.
+
+**Shape.** A "posted within" filter on the list (any / 3 days / week / month),
+alongside the existing ones. The search side is a second question: the
+Bundesagentur and Adzuna both take a date parameter, so a date bound could
+also stop old postings being fetched at all.
+
+---
+
 ## Later — explicitly not now
 
 - Tailored CV and cover letter generation per job (the `pool.template.yaml` `tags`

@@ -60,12 +60,15 @@ def _list_context(request: Request) -> dict:
         connection.close()
 
     pages = max(1, -(-total // PAGE_SIZE))
-    params = dict(request.query_params)
+    # Repeated parameters are the point now (?city=A&city=B), so the paging
+    # links are rebuilt from every pair — a dict() here would keep only the
+    # last value of each and quietly drop the rest of her selection.
+    params = [(key, value) for key, value in request.query_params.multi_items() if key != "page"]
     prev_url = next_url = None
     if filters.page > 1:
-        prev_url = "/?" + urlencode({**params, "page": filters.page - 1})
+        prev_url = "/?" + urlencode([*params, ("page", filters.page - 1)])
     if filters.page < pages:
-        next_url = "/?" + urlencode({**params, "page": filters.page + 1})
+        next_url = "/?" + urlencode([*params, ("page", filters.page + 1)])
     return {
         "jobs": jobs,
         "total": total,
@@ -86,6 +89,13 @@ def index(request: Request):
     context = _list_context(request)
     context.update(_progress_context(request))  # the panel ships with the page
     return render(request, "index.html", context)
+
+
+@router.get("/search", response_class=HTMLResponse)
+def search_page(request: Request):
+    """Searching has its own page: it asks the internet for more jobs, which
+    is a different question from narrowing the ones already stored."""
+    return render(request, "search.html", _progress_context(request))
 
 
 @router.get("/jobs/rows", response_class=HTMLResponse)
