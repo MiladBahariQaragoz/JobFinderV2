@@ -221,11 +221,15 @@ def save_profile_text(text: str, path: Path) -> Resume:
 
     resume = parse_profile(text, name=path.name)  # raises ProfileError, naming the field
 
+    # Bytes, not text, on both sides. `write_text` translates newlines on
+    # Windows, so a CV saved by any editor on this laptop — CRLF — came back
+    # with every line ending doubled to \r\r\n, and doubled again on the next
+    # upload. A backup whose bytes differ from the file it saved is not a
+    # backup either (§ Cross-cutting concerns, "Windows reality").
     if path.exists():
-        backup = path.with_suffix(".yaml.bak")
-        backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        path.with_suffix(".yaml.bak").write_bytes(path.read_bytes())
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    path.write_bytes(text.encode("utf-8"))
     return resume
 
 

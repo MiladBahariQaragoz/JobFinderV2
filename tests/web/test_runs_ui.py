@@ -226,16 +226,28 @@ class TestInterruptedBanner:
             data={"cities": "Ingolstadt", "types": "minijob", "resume": "on"},
             follow_redirects=True,
         )
-        manager.wait(timeout=10)
+        # `SlowSource` waits on its own gate for up to 10 s before yielding page
+        # two, so joining for a fixed 10 s is a race the busy machine loses —
+        # wait for the journal to say `done` instead of assuming a duration.
+        slow_page_two = 10 + 5
+        deadline = time.time() + slow_page_two
+        state = None
+        while time.time() < deadline:
+            connection = connect(_settings.db_path)
+            try:
+                row = connection.execute(
+                    "SELECT state FROM runs WHERE kind = 'search' ORDER BY id DESC LIMIT 1"
+                ).fetchone()
+            finally:
+                connection.close()
+            state = row["state"] if row is not None else None
+            if state == "done":
+                break
+            time.sleep(0.1)
+        manager.wait(timeout=5)
+
         # the run started, journalled, and finished on the fake source
-        connection = connect(_settings.db_path)
-        try:
-            run = connection.execute(
-                "SELECT state FROM runs WHERE kind = 'search' ORDER BY id DESC LIMIT 1"
-            ).fetchone()
-        finally:
-            connection.close()
-        assert run["state"] == "done"
+        assert state == "done"
 
 
 class TestMissingKey:

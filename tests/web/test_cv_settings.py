@@ -143,6 +143,35 @@ class TestUploadingACv:
         assert "empty" in response.text.lower()
         assert not app_settings.pool_path.exists()
 
+    def test_a_windows_file_is_written_back_unchanged(self, app_settings, client):
+        """Found by uploading her real CV: a file with Windows line endings —
+        which is what any editor on this laptop produces — was written back with
+        every `\\r\\n` turned into `\\r\\r\\n`, 258 of them in her file, and doubling
+        again on the next upload. §Cross-cutting concerns, "Windows reality"."""
+        crlf = VALID_CV.replace("\n", "\r\n")
+
+        upload(client, crlf)
+
+        written = app_settings.pool_path.read_bytes()
+        assert b"\r\r\n" not in written
+        assert written == crlf.encode("utf-8")
+
+    def test_a_unix_file_is_written_back_unchanged_too(self, app_settings, client):
+        upload(client, VALID_CV)
+
+        assert app_settings.pool_path.read_bytes() == VALID_CV.encode("utf-8")
+
+    @pytest.mark.parametrize("newline", ["\n", "\r\n"])
+    def test_the_backup_is_a_faithful_copy_of_what_it_replaced(self, app_settings, client, newline):
+        """A backup whose bytes differ from the file it saved is not a backup —
+        and it has to hold whichever line endings that file happened to use."""
+        original = VALID_CV.replace("Maryam", "Earlier").replace("\n", newline).encode("utf-8")
+        app_settings.pool_path.write_bytes(original)
+
+        upload(client, VALID_CV)
+
+        assert app_settings.pool_path.with_suffix(".yaml.bak").read_bytes() == original
+
     def test_a_valid_upload_survives_its_umlauts(self, app_settings, client):
         upload(client, VALID_CV)
 
