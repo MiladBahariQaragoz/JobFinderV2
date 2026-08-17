@@ -2,7 +2,7 @@
 title: "Phase 9 — General work: a call-list, not a job board"
 date: 2026-08-17
 type: phase-plan
-status: complete — shipped and verified on her real store 2026-08-17; Munich unverified (Overpass throttling)
+status: complete — shipped and verified on her real store 2026-08-17; Munich probed but not built (its data is fine, the 6 km query is not)
 master-plan: docs/MASTER_PLAN.md#phase-9--general-work-a-call-list-not-a-job-board
 ---
 
@@ -258,9 +258,11 @@ All on 2026-08-17, against her real database.
       every place** with their note and the day shown.
 - [x] **`contacts.csv` matches the store row for row** — 357 rows each, same
       ids, no field disagreeing, her two decisions included.
-- [ ] **Munich could not be verified.** Two attempts, 90 minutes each, both left
-      a `running` run row and zero places. See the defect below: by then this
-      machine was being refused by Overpass entirely.
+- [ ] **Munich is still not in the list — but it was probed, and the numbers are
+      below.** Two attempts of 90 minutes each left a `running` run row and zero
+      places. A read-only probe the same evening separated the two causes that
+      looked like one, and found that Munich's data is fine while the query this
+      app sends is too large: see [Munich, probed](#munich-probed-after-the-fact).
 
 ### Four defects, all found by using it rather than by testing it
 
@@ -303,8 +305,67 @@ comment:
 
 **What is left for whoever picks this up:** Munich, at a radius that a public
 Overpass will actually serve. 6 km around Marienplatz over nine tags is a large
-query and it never came back; Ingolstadt at the same radius took 77 seconds. The
-honest next step is to measure Munich at 2–3 km before assuming 6 works.
+query and it never came back; Ingolstadt at the same radius took 77 seconds. That
+"measure it before assuming" is the next section — it was measured.
+
+## Munich, probed after the fact
+
+Later on 2026-08-17, read-only: no database, no CSV, no run row, one query at a
+time with ten seconds between them, and every query capped so that nothing large
+was ever downloaded. The point was to answer one question — *is Munich broken, or
+is this machine?* — before spending another 90 minutes on it.
+
+**The throttle is still on, and it is per-instance.** All five configured
+endpoints refused this machine at the transport level, hours after the run that
+earned the block:
+
+| endpoint (`/api/status`, the cheapest thing it serves) | result |
+|---|---|
+| `lz4.overpass-api.de` | no answer, timed out at 12.0 s |
+| `overpass-api.de` | no answer, 24.0 s |
+| `lambert.openstreetmap.de` | no answer, 12.1 s |
+| `gall.openstreetmap.de` | no answer, 12.1 s |
+| `z.overpass-api.de` | no answer, 12.0 s |
+
+In the same run, `openstreetmap.org` returned 32 KB in **0.2 s** and
+`arbeitnow.com` 1.4 MB in **0.4 s**. The network is not the problem, and neither
+is OSM as a whole — it is these five hosts, which are the only five the app
+knows.
+
+**A mirror outside that list answered immediately.**
+`overpass.kumi.systems/api/interpreter` served a 1 km query around Marienplatz in
+43 s: 10 elements, **7 of them usable, all 7 reachable**, parsed by the shipped
+`parse_places` with no change to it — Müller `+4989296992`, Wimmer
+`info@privatbaeckereiwimmer.de`, Brotmanufaktur Schmidt `+49892913566`. So
+Munich's data is good and the code that reads it is right. The block belongs to
+one operator's instances, not to Overpass as a protocol.
+
+**6 km is genuinely too large, and the volume is the reason.** Counted rather
+than downloaded (`out count`, which returns a number and no places):
+
+| radius, all nine tags | result |
+|---|---|
+| 6 km, `amenity=restaurant` alone, capped at 10 | `504` after 66 s |
+| 6 km, counted | `504` after 60 s |
+| 3 km, counted | **3019 elements**, 50 s |
+| 2 km, counted | `504` after 78 s |
+| 1 km, counted | timed out at 91 s |
+
+The 1 km and 2 km failures came *after* a 1 km query had already succeeded, so
+those are the mirror queueing rather than a clean radius threshold. The number
+that matters is the third row: Neuburg gives **118** elements at 6 km, Munich
+gives **3019** at 3 km — twenty-five times as much on half the radius, and the
+list she works through by hand already holds 357 places.
+
+**What this changes for whoever finishes it**, none of it done here:
+
+1. **Munich needs its own radius**, and probably its own cap. A city radius is a
+   per-city number, not the one `DEFAULT_RADIUS_KM` the whole run shares.
+2. **The endpoint list needs a member that is not run by the operator that
+   blocked us.** Today's probe could only answer at all because it went outside
+   `ENDPOINTS`; the shipped code would still see five dead hosts.
+3. **The throttle lifts on its own** — that is what the refusal message already
+   tells her, and it is still the right thing to do about it.
 
 ## Definition of done
 

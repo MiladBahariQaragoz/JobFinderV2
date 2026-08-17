@@ -282,7 +282,7 @@ assumptions, and the failures are recorded so nobody re-discovers them.
 | | ⚠️ | ~1 in 3 ads has an empty `stellenangebotsBeschreibung` and only an `externeURL` | Fallback: fetch the external URL and extract text (Phase 4). |
 | **Arbeitnow** | ✅ verified `200` | `GET www.arbeitnow.com/api/job-board-api`, no key, CORS open | Tech/English-friendly DACH roles, paginated. Good for her qualified-role search, weak on Bavaria-specific and non-tech work. |
 | **Adzuna** | ✅ verified `200`, key registered 2026-08-16 | `api.adzuna.com/v1/api/jobs/de/search/{page}` with free `app_id`/`app_key` | Measured, not assumed: **204** minijobs for Ingolstadt, **84 %** of rows absent from the Bundesagentur set. Its description is a **500-character teaser**, so `fetch_detail` follows `redirect_url` for the real ad — good for the first ~40 of a run, after which adzuna.de serves a sign-in wall and the rest keep teasers. Which board is behind a row is never visible. A source of leads, not of readable ads. Absent keys mean skipped, never an error. |
-| **OpenStreetMap Overpass** | ✅ shipped (Phase 9) | `POST` one small query per tag, to the first of five endpoints that answers | The cold-contact engine. Measured 2026-08-17: Neuburg **118** places / **34** reachable at 6 km, Ingolstadt **304** / **219**. Hotels are `tourism=hotel`, not `amenity=hotel`. **It rate-limits by IP:** after a few hundred queries every endpoint refused this machine at once while the rest of the internet was fine, so the gap is 10 s and a tag is retried on two hosts, not five. Munich at 6 km never returned. |
+| **OpenStreetMap Overpass** | ✅ shipped (Phase 9) | `POST` one small query per tag, to the first of five endpoints that answers | The cold-contact engine. Measured 2026-08-17: Neuburg **118** places / **34** reachable at 6 km, Ingolstadt **304** / **219**. Hotels are `tourism=hotel`, not `amenity=hotel`. **It rate-limits by IP:** after a few hundred queries every endpoint refused this machine at once while the rest of the internet was fine, so the gap is 10 s and a tag is retried on two hosts, not five. **Munich at 6 km never returned**, and a later probe says why: 3 km around Marienplatz holds **3019** elements against Neuburg's 118 at 6 km, so the city needs its own radius. That probe also had to go outside the endpoint list to get an answer at all — the block is one operator's, and a public mirror served Munich in 43 s. |
 | **StepStone** | ⛔ blocked below HTTP (re-probed 2026-08-16) | Search results page → listing pages | Every request is reset at the transport level — TLS-fingerprint filtering, so a User-Agent change buys nothing. Adapter built and tested against the failure path, **off by default**, skip line says why. Only a real browser would change this, which Phase 6 rules out. |
 | **Indeed** | ⛔ `403` + WAF page (re-probed 2026-08-16) | Search results page → listing pages | Answers with a 27 KB block page. No sanctioned API exists — their publisher API is closed to new signups. Built, tested against the recorded 403, **off by default**. |
 | **Xing** | 🔨 scraper | Public job pages | `robots.txt` disallows `/search/` and `/publicsearch/`. Public listing pages only, never anything behind login. |
@@ -1202,7 +1202,10 @@ posting feed. Verified: Neuburg alone has 60 such places, 28 with contact detail
       **357 places, 255 reachable**, five times the target, from Neuburg (53/36)
       and Ingolstadt (304/219). Ranked bakeries and hotels first, bars last.
       **Munich is not in that number**: 6 km over nine tags never came back, and
-      by then Overpass was refusing this machine altogether (below).
+      by then Overpass was refusing this machine altogether (below). Probed
+      afterwards, its data reads correctly and its volume is the problem — the
+      measurements are in
+      [the phase plan](superpowers/plans/2026-08-17-phase-9-call-list.md#munich-probed-after-the-fact).
 - [x] She can print or open the list and start calling, script in hand —
       `contacts.csv` holds all 357 rows and matches the store field for field,
       and 352 of them carry a five-line German script with an English gloss under
