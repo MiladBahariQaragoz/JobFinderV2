@@ -110,9 +110,23 @@ class TestUploadingACv:
 
         upload(client, VALID_CV)
 
-        backup = app_settings.pool_path.with_suffix(".yaml.bak")
+        backup = app_settings.pool_backup_path
         assert backup.exists()
         assert "Earlier Bäcker" in backup.read_text(encoding="utf-8")
+
+    def test_the_backup_goes_into_data_and_never_beside_the_source(self, app_settings, client):
+        """It happened: the first version wrote `pool.yaml.bak` into the project
+        root, `.gitignore` covered `pool.yaml` and not the backup, and one commit
+        put her name, email and work history into a public repository. A file
+        derived from her CV belongs in `data/`, which is ignored wholesale, so
+        the next such file is safe before anyone remembers to list it."""
+        app_settings.pool_path.write_text(VALID_CV, encoding="utf-8")
+
+        upload(client, VALID_CV.replace("Maryam", "Newer"))
+
+        assert app_settings.pool_backup_path.parent == app_settings.data_dir
+        assert not (app_settings.project_root / "pool.yaml.bak").exists()
+        assert list(app_settings.project_root.glob("pool.yaml.*")) == []
 
     def test_an_invalid_upload_leaves_the_existing_file_untouched(self, app_settings, client):
         app_settings.pool_path.write_text(VALID_CV, encoding="utf-8")
@@ -170,7 +184,7 @@ class TestUploadingACv:
 
         upload(client, VALID_CV)
 
-        assert app_settings.pool_path.with_suffix(".yaml.bak").read_bytes() == original
+        assert app_settings.pool_backup_path.read_bytes() == original
 
     def test_a_valid_upload_survives_its_umlauts(self, app_settings, client):
         upload(client, VALID_CV)

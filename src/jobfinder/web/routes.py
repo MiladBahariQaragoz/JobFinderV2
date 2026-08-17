@@ -534,7 +534,11 @@ async def upload_cv(request: Request):
     try:
         # Her CV is one file she typed; a stray BOM from a Windows editor is
         # hers, not a reason to refuse the upload.
-        save_profile_text(raw.decode("utf-8-sig"), settings.pool_path)
+        save_profile_text(
+            raw.decode("utf-8-sig"),
+            settings.pool_path,
+            backup_path=settings.pool_backup_path,
+        )
     except (ProfileError, UnicodeDecodeError) as exc:
         context["upload_error"] = str(exc)
         return render(request, "settings.html", context, status_code=200)

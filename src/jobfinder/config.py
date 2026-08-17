@@ -92,6 +92,18 @@ class Settings:
         return self.project_root / "pool.yaml"
 
     @property
+    def pool_backup_path(self) -> Path:
+        """The CV she is replacing, kept in `data/` rather than beside the CV.
+
+        Anything derived from `pool.yaml` carries her name, address and contact
+        details, and `data/` is gitignored wholesale — so a copy is safe from
+        the moment it is written, instead of safe only once someone remembers to
+        add its name to `.gitignore`. That mistake has been made here once
+        already, on a public repository.
+        """
+        return self.data_dir / "pool.yaml.bak"
+
+    @property
     def pool_state_path(self) -> Path:
         return self.data_dir / "pool_state.json"
 

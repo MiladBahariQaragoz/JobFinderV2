@@ -205,13 +205,18 @@ def is_unfilled_template(resume: Resume) -> bool:
     )
 
 
-def save_profile_text(text: str, path: Path) -> Resume:
+def save_profile_text(text: str, path: Path, *, backup_path: Path) -> Resume:
     """Validate an uploaded CV, then write it — never the other way round.
 
     Nothing on disk is touched until the text parses, so a bad paste costs her
-    the upload and not the CV she already had. What she had is kept beside the
-    new one as `.yaml.bak` anyway: replacing a file that took an afternoon to
-    write is not otherwise recoverable.
+    the upload and not the CV she already had. What she had is copied to
+    `backup_path` anyway: replacing a file that took an afternoon to write is
+    not otherwise recoverable.
+
+    `backup_path` is required rather than derived, because the obvious
+    derivation — `pool.yaml.bak`, beside the CV — is the one that put her name
+    and contact details into a public repository. The caller has to name a
+    directory that is safe to write her CV into.
     """
     path = Path(path)
     if not text.strip():
@@ -227,7 +232,9 @@ def save_profile_text(text: str, path: Path) -> Resume:
     # upload. A backup whose bytes differ from the file it saved is not a
     # backup either (§ Cross-cutting concerns, "Windows reality").
     if path.exists():
-        path.with_suffix(".yaml.bak").write_bytes(path.read_bytes())
+        backup_path = Path(backup_path)
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        backup_path.write_bytes(path.read_bytes())
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(text.encode("utf-8"))
     return resume
