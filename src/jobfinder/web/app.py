@@ -27,9 +27,13 @@ STATIC_DIR = WEB_DIR / "static"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
-def create_app(settings: Settings, *, run_manager=None) -> FastAPI:
-    """Build the app for one project root. `run_manager` is the test seam for
-    the run engine (`web/runs.py`); production builds its own."""
+def create_app(settings: Settings, *, run_manager=None, roles_pool_factory=None) -> FastAPI:
+    """Build the app for one project root.
+
+    `run_manager` is the test seam for the run engine (`web/runs.py`) and
+    `roles_pool_factory` the one for the single LLM call the Settings page can
+    make; production builds both itself.
+    """
     app = FastAPI(title="JobFinder", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     if run_manager is None:
@@ -37,6 +41,7 @@ def create_app(settings: Settings, *, run_manager=None) -> FastAPI:
 
         run_manager = RunManager(settings)
     app.state.run_manager = run_manager
+    app.state.roles_pool_factory = roles_pool_factory
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     from jobfinder.web.routes import router

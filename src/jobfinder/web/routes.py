@@ -95,8 +95,14 @@ def index(request: Request):
 @router.get("/search", response_class=HTMLResponse)
 def search_page(request: Request):
     """Searching has its own page: it asks the internet for more jobs, which
-    is a different question from narrowing the ones already stored."""
-    return render(request, "search.html", _progress_context(request))
+    is a different question from narrowing the ones already stored.
+
+    `?keywords=…` arrives from a suggested role, so the title the model
+    proposed lands in the form rather than being retyped.
+    """
+    context = _progress_context(request)
+    context["keywords"] = request.query_params.get("keywords", "")
+    return render(request, "search.html", context)
 
 
 @router.get("/jobs/rows", response_class=HTMLResponse)
@@ -430,6 +436,29 @@ def _cv_context(request: Request) -> dict:
     }
 
 
+def _roles_context(request: Request) -> dict:
+    """Whatever was suggested last — no CV, no key and no call needed (Phase 3
+    stores its answers), so the page never spends anything to render."""
+    from jobfinder.roles import stored_suggestions
+
+    settings = request.app.state.settings
+    roles = stored_suggestions(settings)
+    return {
+        "roles": [
+            {
+                "title_de": role.title_de,
+                "title_en": role.title_en,
+                "why": role.why,
+                "keywords": list(role.search_keywords),
+                # The point of the suggestion: the German title, handed to the
+                # search form as a keyword rather than retyped by hand.
+                "search_url": "/search?" + urlencode({"keywords": role.title_de}),
+            }
+            for role in roles or []
+        ]
+    }
+
+
 def _settings_context(request: Request) -> dict:
     import llmpool
 
@@ -450,6 +479,7 @@ def _settings_context(request: Request) -> dict:
     providers.sort(key=lambda provider: (not provider["present"], provider["name"]))
     context = {"providers": providers, "project_root": app_settings.project_root}
     context.update(_cv_context(request))
+    context.update(_roles_context(request))
     return context
 
 
@@ -511,4 +541,45 @@ async def upload_cv(request: Request):
 
     if request.headers.get("HX-Request"):
         return render(request, "settings.html", _settings_context(request))
+    return RedirectResponse("/settings", status_code=303)
+
+
+@router.post("/settings/roles", response_class=HTMLResponse)
+def suggest_roles_now(request: Request):
+    """One LLM call: her CV in, job titles worth searching for out (Phase 3).
+
+    Every way this can fail is a sentence on the page — no CV, no key, an
+    unusable answer, a spent quota. The answer is stored, so this is the only
+    press that costs anything.
+    """
+    from llmpool import PoolExhausted
+
+    from jobfinder.llm.pool import LLMConfigError, build_pool
+    from jobfinder.llm.schema import roles_answer_validator
+    from jobfinder.profile import ProfileError, load_profile
+    from jobfinder.roles import RolesError, suggest_roles
+
+    settings = request.app.state.settings
+    factory = getattr(request.app.state, "roles_pool_factory", None) or (
+        lambda: build_pool(settings, roles_answer_validator)
+    )
+
+    error = None
+    try:
+        resume = load_profile(settings.pool_path)
+        suggest_roles(settings, resume, factory(), refresh=True)
+    except (ProfileError, RolesError, LLMConfigError) as exc:
+        error = str(exc)
+    except PoolExhausted as exc:
+        error = (
+            f"The free-tier quota is spent for now ({exc}). Nothing was lost — "
+            "try again later, or add a second free key."
+        )
+
+    context = _settings_context(request)
+    if error is not None:
+        context["roles_error"] = error
+        return render(request, "settings.html", context)
+    if request.headers.get("HX-Request"):
+        return render(request, "settings.html", context)
     return RedirectResponse("/settings", status_code=303)

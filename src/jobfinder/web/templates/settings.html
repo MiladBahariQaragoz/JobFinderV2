@@ -85,6 +85,45 @@
   </form>
 </div>
 
+{% if cv or roles %}
+<h2>Roles worth searching for</h2>
+{% if roles_error %}
+<div class="error-state">
+  <h3>That did not work</h3>
+  <p>{{ roles_error }}</p>
+</div>
+{% endif %}
+{% if roles %}
+<p class="meta">
+  Read from your CV. Each German title is what to type into a German job site —
+  the link puts it straight into the search form.
+</p>
+<div class="settings-list">
+  {% for role in roles %}
+  <div class="row">
+    <span>
+      <a href="{{ role.search_url }}">{{ role.title_de }}</a>
+      — {{ role.title_en }}
+      <span class="meta">{{ role.why }}</span>
+    </span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="meta">
+  Your CV can be read for the job titles that match it, in German and English.
+  It costs one call and the answer is kept, so this is a once-in-a-while button.
+</p>
+{% endif %}
+{% if cv and not cv_is_template %}
+<form class="filters" method="post" action="/settings/roles">
+  <button type="submit" class="primary">
+    {% if roles %}Suggest roles again{% else %}Suggest roles{% endif %}
+  </button>
+</form>
+{% endif %}
+{% endif %}
+
 <h2>Language model keys</h2>
 <p class="meta">
   The list below says which free providers have a key — one is enough to
