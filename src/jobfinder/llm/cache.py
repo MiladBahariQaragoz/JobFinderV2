@@ -69,6 +69,18 @@ class LLMCache:
             )
             self._db.commit()
 
+    def delete(self, key: str) -> None:
+        """Forget one answer.
+
+        For the case where an answer arrived, was cached, and then failed a check
+        the validator could not make — a phone script with a missing English
+        gloss, say. Left in place it would be served forever as if it were good,
+        and the retry the caller offers her would never reach a provider.
+        """
+        with self._lock:
+            self._db.execute("DELETE FROM llm_cache WHERE key = ?", (key,))
+            self._db.commit()
+
     def close(self) -> None:
         with self._lock:
             self._db.close()
