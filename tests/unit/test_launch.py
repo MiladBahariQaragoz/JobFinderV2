@@ -12,7 +12,7 @@ import socket
 import pytest
 
 from jobfinder.config import Settings
-from jobfinder.launch import NoFreePort, choose_port, install_root
+from jobfinder.launch import NoFreePort, choose_port, install_root, start
 
 HOST = "127.0.0.1"
 
@@ -82,3 +82,95 @@ def test_data_dir_resolves_next_to_the_exe_when_frozen(tmp_path, monkeypatch):
 
     assert settings.data_dir == installed / "data"
     assert settings.db_path == installed / "data" / "jobfinder.db"
+
+
+# -- the console window she actually sees --------------------------------------
+
+
+class Recorder:
+    """What the launcher would have done, without doing any of it."""
+
+    def __init__(self):
+        self.served = None
+        self.opened = []
+
+    def serve(self, app, *, host, port, on_ready):
+        self.served = (host, port)
+        on_ready()
+
+    def open_browser(self, url):
+        self.opened.append(url)
+
+
+def test_the_launcher_says_which_address_to_open(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    recorder = Recorder()
+
+    start(root=tmp_path, serve=recorder.serve, open_browser=recorder.open_browser)
+
+    out = capsys.readouterr().out
+    host, port = recorder.served
+    assert f"http://{host}:{port}" in out
+
+
+def test_the_launcher_opens_the_browser_at_the_port_it_got(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    recorder = Recorder()
+
+    start(root=tmp_path, serve=recorder.serve, open_browser=recorder.open_browser)
+
+    _host, port = recorder.served
+    assert recorder.opened == [f"http://127.0.0.1:{port}"]
+
+
+def test_the_launcher_says_how_to_stop_it(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    recorder = Recorder()
+
+    start(root=tmp_path, serve=recorder.serve, open_browser=recorder.open_browser)
+
+    assert "close this window" in capsys.readouterr().out.lower()
+
+
+def test_the_launcher_creates_the_data_directory_when_it_is_missing(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    recorder = Recorder()
+
+    start(root=tmp_path, serve=recorder.serve, open_browser=recorder.open_browser)
+
+    assert (tmp_path / "data").is_dir()
+
+
+def test_the_launcher_says_something_readable_when_every_port_is_taken(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+
+    def no_ports(*args, **kwargs):
+        raise NoFreePort("Ports 8000 to 8019 are all in use.")
+
+    exit_code = start(
+        root=tmp_path,
+        serve=lambda *a, **k: None,
+        open_browser=lambda url: None,
+        pick_port=no_ports,
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == 1
+    assert "8000" in out
+    assert "Traceback" not in out
+
+
+def test_the_launcher_does_not_open_a_browser_when_asked_not_to(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    recorder = Recorder()
+
+    start(
+        root=tmp_path,
+        serve=recorder.serve,
+        open_browser=recorder.open_browser,
+        open_browser_at_start=False,
+    )
+
+    assert recorder.opened == []

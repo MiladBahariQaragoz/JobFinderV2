@@ -759,21 +759,21 @@ def _her_languages(settings: Settings) -> tuple[str, ...]:
 
 
 def _cmd_serve(settings: Settings, args, *, _serve=None, _browser=None) -> int:
-    """Start the app and open her browser at it (§10: one double-click)."""
-    import webbrowser
+    """Start the app and open her browser at it (§10: one double-click).
 
-    from jobfinder.web.app import SERVER_HOST, create_app
+    This is a thin call into `launch.start`, which is also what `JobFinder.exe`
+    runs — so the way she starts the app is the way this command starts it, and
+    neither is the untested one.
+    """
+    from jobfinder.launch import start
 
-    serve = _serve or _uvicorn_serve
-    open_browser = _browser or webbrowser.open
-    url = f"http://{SERVER_HOST}:{args.port}"
-
-    def open_when_ready() -> None:
-        if not args.no_browser:
-            open_browser(url)
-
-    serve(create_app(settings), host=SERVER_HOST, port=args.port, on_ready=open_when_ready)
-    return 0
+    return start(
+        root=settings.project_root,
+        port=args.port,
+        open_browser_at_start=not args.no_browser,
+        serve=_serve or _uvicorn_serve,
+        open_browser=_browser,
+    )
 
 
 def main(

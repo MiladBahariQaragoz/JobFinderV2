@@ -177,3 +177,59 @@ def test_serve_starts_and_answers_over_http(tmp_path):
     finally:
         server.should_exit = True
         thread.join(timeout=10)
+
+
+def test_healthcheck_answers_ok(tmp_path):
+    """The build smoke test's only question: did the exe actually come up?
+
+    It is exempt from the first-run redirect on purpose — a health check that
+    answers 303 before setup would report a healthy app as broken.
+    """
+    from fastapi.testclient import TestClient
+
+    (tmp_path / "config.yaml").unlink(missing_ok=True)
+    with TestClient(create_app(Settings(project_root=tmp_path))) as client:
+        response = client.get("/healthz", follow_redirects=False)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
+class TestServeGoesThroughTheLauncher:
+    """`jobfinder serve` and `JobFinder.exe` must be the same code path.
+
+    They were not: the CLI had its own copy of "make an app, serve it, open a
+    browser", so the exe would have been the only untested way in. The CLI is
+    now a thin call into `launch.start`, and a port that is busy is handled
+    for both.
+    """
+
+    def call(self, tmp_path, argv, serve, browser):
+        from jobfinder.cli import main
+
+        return main(["serve", "--root", str(tmp_path), *argv], _serve=serve, _browser=browser)
+
+    def test_serve_says_where_the_data_is(self, tmp_path, capsys):
+        self.call(tmp_path, ["--port", "8123", "--no-browser"], lambda *a, **k: None, browser=None)
+
+        assert str(tmp_path / "data") in capsys.readouterr().out
+
+    def test_serve_moves_to_a_free_port_when_the_asked_one_is_taken(self, tmp_path, capsys):
+        seen = {}
+
+        def fake_serve(app, *, host, port, on_ready):
+            seen["port"] = port
+
+        with socket.socket() as taken:
+            taken.bind((SERVER_HOST, 0))
+            taken.listen()
+            busy = taken.getsockname()[1]
+
+            self.call(
+                tmp_path,
+                ["--port", str(busy), "--no-browser"],
+                fake_serve,
+                browser=None,
+            )
+
+        assert seen["port"] != busy

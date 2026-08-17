@@ -23,6 +23,66 @@ class NoFreePort(Exception):
     """Every port we tried was taken — said in a sentence, not a stack trace."""
 
 
+def start(
+    *,
+    root: Path | None = None,
+    port: int = DEFAULT_PORT,
+    open_browser_at_start: bool = True,
+    serve=None,
+    open_browser=None,
+    pick_port=None,
+) -> int:
+    """Start the app the way `JobFinder.exe` starts it, and narrate it.
+
+    The little console window is the only thing she sees before her browser
+    opens, so it is written for her: where the app is, that the window has to
+    stay open, and how to stop it. Nothing here prints a traceback — a launcher
+    that fails with one has failed twice.
+    """
+    from jobfinder.config import Settings
+    from jobfinder.web.app import SERVER_HOST, create_app
+
+    serve = serve or _uvicorn_serve
+    open_browser = open_browser or _open_browser
+    pick_port = pick_port or choose_port
+
+    settings = Settings.load(root or install_root())
+    settings.data_dir.mkdir(parents=True, exist_ok=True)
+
+    print("JobFinder")
+    print(f"  Your files are in {settings.data_dir}")
+
+    try:
+        chosen = pick_port(port, host=SERVER_HOST)
+    except NoFreePort as exc:
+        print(f"  {exc}")
+        return 1
+
+    url = f"http://{SERVER_HOST}:{chosen}"
+    print(f"  Open {url} in your browser if it does not open by itself.")
+    print("  Leave this window open while you use JobFinder — close this window to stop it.")
+
+    def ready() -> None:
+        if open_browser_at_start:
+            open_browser(url)
+
+    serve(create_app(settings), host=SERVER_HOST, port=chosen, on_ready=ready)
+    return 0
+
+
+def _open_browser(url: str) -> None:
+    import webbrowser
+
+    webbrowser.open(url)
+
+
+def _uvicorn_serve(app, *, host: str, port: int, on_ready) -> None:
+    """Run the server; `on_ready` fires once, as soon as the port answers."""
+    from jobfinder.cli import _uvicorn_serve as serve
+
+    serve(app, host=host, port=port, on_ready=on_ready)
+
+
 def install_root() -> Path:
     """The directory `data/`, `.env` and `config.yaml` belong to.
 

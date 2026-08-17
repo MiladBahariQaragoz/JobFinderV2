@@ -196,12 +196,18 @@ as a page with a next step on it.
 
 ## T8 — The launcher, and the console window she sees
 
-- [ ] `test_the_launcher_says_which_address_to_open`
-- [ ] `test_the_launcher_opens_the_browser_at_the_port_it_got`
-- [ ] `test_the_launcher_says_how_to_stop_it`
-- [ ] `test_the_launcher_creates_the_data_directory_when_it_is_missing`
-- [ ] `test_the_launcher_says_something_readable_when_the_port_wall_is_hit`
-- [ ] `test_healthcheck_answers_ok`
+- [x] `test_the_launcher_says_which_address_to_open`
+- [x] `test_the_launcher_opens_the_browser_at_the_port_it_got`
+- [x] `test_the_launcher_says_how_to_stop_it`
+- [x] `test_the_launcher_creates_the_data_directory_when_it_is_missing`
+- [x] `test_the_launcher_says_something_readable_when_every_port_is_taken`
+- [x] `test_the_launcher_does_not_open_a_browser_when_asked_not_to`
+- [x] `test_serve_says_where_the_data_is` +
+      `test_serve_moves_to_a_free_port_when_the_asked_one_is_taken` — the CLI
+      is now the same code path as the exe
+- [x] `test_healthcheck_answers_ok`
+- [x] `test_the_package_version_matches_pyproject` — `/healthz` reports a
+      version, and it was 0.1.0 while the project was 0.7.0
 
 `launch.py` `main()` is what `JobFinder.exe` runs and what `jobfinder serve`
 calls, so the thing she double-clicks is the thing that is tested. `/healthz`

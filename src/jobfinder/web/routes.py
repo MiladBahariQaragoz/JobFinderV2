@@ -670,6 +670,19 @@ def cancel_contacts_run(request: Request):
     return _contacts_response(request)
 
 
+@router.get("/healthz")
+def healthcheck():
+    """Is this server up? The one question a built exe can be asked from outside.
+
+    Deliberately the only JSON in the app, and deliberately exempt from the
+    first-run redirect: a health check that answers 303 before setup would
+    report a perfectly healthy app as broken.
+    """
+    from jobfinder import __version__
+
+    return {"status": "ok", "version": __version__}
+
+
 @router.get("/setup", response_class=HTMLResponse)
 def setup_page(request: Request):
     """The first thing she ever sees — and nothing at all on the second start."""
