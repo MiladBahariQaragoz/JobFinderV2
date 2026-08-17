@@ -100,16 +100,29 @@ def shareable_env(text: str) -> str:
     return "\n".join(kept) + "\n" if kept else ""
 
 
-def stage_install(exe: Path, target: Path, *, env_file: Path | None = None) -> Path:
-    """Put a build, and optionally the keys it needs, into a folder to hand over.
+def stage_install(
+    exe: Path,
+    target: Path,
+    *,
+    env_file: Path | None = None,
+    seed_from: Path | None = None,
+    cv: Path | None = None,
+) -> Path:
+    """Put a build, its keys, and the work already done into a folder to hand over.
 
     The keys travel as a `.env` beside the exe — the file `Settings.load`
     already reads — and never inside the binary. A key baked into 19 MB of
     program cannot be seen, cannot be rotated, and goes wherever a copy of that
     program goes.
 
-    Anything already in the folder is left alone: `data/`, `config.yaml` and her
-    CV belong to whoever has been using it.
+    `seed_from` is a `data/` directory whose *files* are copied: the database,
+    the CSVs, the cache of answers already paid for. Its *directories* are not —
+    `http-cache/` is pages any run can fetch again, and `backups/` are backups of
+    a machine that is not hers.
+
+    **Nothing already in the folder is ever replaced.** A store, a CV or a
+    `config.yaml` in the target belongs to whoever has been using it, and this
+    runs again every time a new build is installed.
     """
     exe = Path(exe)
     target = Path(target)
@@ -118,9 +131,32 @@ def stage_install(exe: Path, target: Path, *, env_file: Path | None = None) -> P
 
     if env_file is not None:
         keys = shareable_env(Path(env_file).read_text(encoding="utf-8"))
-        if keys:
+        if keys and not (target / ".env").exists():
             (target / ".env").write_text(keys, encoding="utf-8")
+
+    if cv is not None and Path(cv).exists() and not (target / "pool.yaml").exists():
+        shutil.copy2(cv, target / "pool.yaml")
+
+    if seed_from is not None:
+        _seed_data(Path(seed_from), target / "data")
     return target
+
+
+def _seed_data(source: Path, destination: Path) -> list[Path]:
+    """Copy the state files, once, into a `data/` that has none of its own."""
+    if not source.is_dir() or (destination / "jobfinder.db").exists():
+        return []
+
+    destination.mkdir(parents=True, exist_ok=True)
+    copied = []
+    for path in sorted(source.iterdir()):
+        if path.is_dir() or path.name.endswith(("-wal", "-shm")):
+            # A WAL sidecar without its database is meaningless, and SQLite
+            # rebuilds both from a cleanly closed file.
+            continue
+        shutil.copy2(path, destination / path.name)
+        copied.append(destination / path.name)
+    return copied
 
 
 # -- updating an install -------------------------------------------------------

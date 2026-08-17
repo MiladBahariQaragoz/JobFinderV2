@@ -281,3 +281,85 @@ class TestStagingAnInstall:
         target = stage_install(exe, tmp_path / "handover")
 
         assert not (target / ".env").exists()
+
+
+class TestSeedingHerInstall:
+    """Handing over the work already done, not an empty app.
+
+    860 jobs, 46 of them explained at the cost of real free-tier calls, 357
+    places to ring with a German script each, and the two she has already
+    handled. None of it can be recreated by pressing Search — the postings that
+    have since expired are gone, and the explanations would cost the quota
+    again — so it travels with the exe.
+    """
+
+    def built(self, tmp_path):
+        exe = tmp_path / "JobFinder.exe"
+        exe.write_bytes(b"the build")
+        return exe
+
+    def a_used_data_dir(self, tmp_path):
+        data = tmp_path / "data"
+        (data / "http-cache").mkdir(parents=True)
+        (data / "http-cache" / "abc.json").write_text("{}", encoding="utf-8")
+        (data / "backups" / "2026-08-17T10-00-00Z").mkdir(parents=True)
+        (data / "jobfinder.db").write_bytes(b"860 jobs")
+        (data / "jobs-init.csv").write_text("job_id\n", encoding="utf-8-sig")
+        (data / "contacts.csv").write_text("contact_id\n", encoding="utf-8-sig")
+        (data / "llm-cache.db").write_bytes(b"54 answers already paid for")
+        return data
+
+    def test_the_seed_brings_the_database_and_the_csvs(self, tmp_path):
+        target = stage_install(
+            self.built(tmp_path), tmp_path / "handover", seed_from=self.a_used_data_dir(tmp_path)
+        )
+
+        assert (target / "data" / "jobfinder.db").read_bytes() == b"860 jobs"
+        assert (target / "data" / "jobs-init.csv").exists()
+        assert (target / "data" / "contacts.csv").exists()
+        assert (target / "data" / "llm-cache.db").exists()
+
+    def test_the_seed_leaves_the_caches_and_the_old_backups_behind(self, tmp_path):
+        """63 MB of pages any run can fetch again, and backups of a machine that
+        is not hers."""
+        target = stage_install(
+            self.built(tmp_path), tmp_path / "handover", seed_from=self.a_used_data_dir(tmp_path)
+        )
+
+        assert not (target / "data" / "http-cache").exists()
+        assert not (target / "data" / "backups").exists()
+
+    def test_a_store_already_there_is_never_replaced(self, tmp_path):
+        """Seeding twice, or seeding over an install she has been using, must
+        not throw away the jobs she has marked since."""
+        target = tmp_path / "handover"
+        (target / "data").mkdir(parents=True)
+        (target / "data" / "jobfinder.db").write_bytes(b"her own work since")
+
+        stage_install(self.built(tmp_path), target, seed_from=self.a_used_data_dir(tmp_path))
+
+        assert (target / "data" / "jobfinder.db").read_bytes() == b"her own work since"
+
+    def test_her_cv_travels_when_it_is_handed_over(self, tmp_path):
+        cv = tmp_path / "pool.yaml"
+        cv.write_text("basics:\n  name: Her\n", encoding="utf-8")
+
+        target = stage_install(self.built(tmp_path), tmp_path / "handover", cv=cv)
+
+        assert (target / "pool.yaml").read_text(encoding="utf-8") == "basics:\n  name: Her\n"
+
+    def test_a_cv_already_there_is_not_overwritten(self, tmp_path):
+        cv = tmp_path / "pool.yaml"
+        cv.write_text("basics:\n  name: Old\n", encoding="utf-8")
+        target = tmp_path / "handover"
+        target.mkdir()
+        (target / "pool.yaml").write_text("basics:\n  name: Newer\n", encoding="utf-8")
+
+        stage_install(self.built(tmp_path), target, cv=cv)
+
+        assert "Newer" in (target / "pool.yaml").read_text(encoding="utf-8")
+
+    def test_seeding_nothing_is_not_an_error(self, tmp_path):
+        target = stage_install(self.built(tmp_path), tmp_path / "handover", seed_from=None)
+
+        assert (target / "JobFinder.exe").exists()

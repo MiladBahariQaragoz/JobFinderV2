@@ -71,7 +71,9 @@
     <form hx-post="/run/start" hx-target="#progress-panel" hx-swap="outerHTML"
           method="post" action="/run/start">
       <input type="hidden" name="resume" value="on">
-      <input type="hidden" name="cities" value="{{ default_cities }}">
+      {% for city in city_options if city.chosen %}
+      <input type="hidden" name="cities" value="{{ city.name }}">
+      {% endfor %}
       <input type="hidden" name="types" value="{{ default_types }}">
       <button type="submit" class="primary">Resume</button>
     </form>

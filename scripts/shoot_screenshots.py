@@ -92,11 +92,19 @@ def demo_root(tmp: Path, *, set_up: bool) -> Path:
                     ),
                 ),
             )
+            if job_id == "BA:1005":
+                continue  # left unexplained, so the Explain page has something to do
+            # The store decides an answer is stale when its content hash does not
+            # match the job's, so the demo has to use the job's own hash — with
+            # a made-up one every job reads as "not explained yet".
+            stored_hash = connection.execute(
+                "SELECT content_hash FROM jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()[0]
             save_enrichment(
                 connection,
                 job_id,
                 "v1",
-                "demo",
+                stored_hash,
                 {
                     "category": "retail",
                     "seniority": "entry",
@@ -192,8 +200,9 @@ SHOTS = [
     ("set-up", "/search", "02-search.png"),
     ("set-up", "/", "03-jobs.png"),
     ("set-up", "/jobs/BA:1001", "04-one-job.png"),
-    ("set-up", "/contacts", "05-call-list.png"),
-    ("set-up", "/settings", "06-settings.png"),
+    ("set-up", "/enrich", "05-explain.png"),
+    ("set-up", "/contacts", "06-call-list.png"),
+    ("set-up", "/settings", "07-settings.png"),
 ]
 
 

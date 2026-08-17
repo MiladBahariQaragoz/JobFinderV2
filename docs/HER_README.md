@@ -77,6 +77,8 @@ three are remembered, including after JobFinder is closed.
 
 ### Explain — the English versions
 
+![The explain page](images/05-explain.png)
+
 Adverts arrive in German. Explaining them is a separate press, because each one
 costs one free request to the language model provider, and the free tiers are
 small. The page says how many are waiting and how many it will do, before it does
@@ -84,9 +86,13 @@ anything. Fifty at a time is a good rhythm.
 
 Pressing it again continues where it stopped. Nothing is ever explained twice.
 
+This page is deliberately not part of searching: a search you stopped halfway
+leaves jobs with no English yet, and this is where you finish them, whenever you
+like, without searching again.
+
 ### Call — places that never advertise
 
-![The call list](images/05-call-list.png)
+![The call list](images/06-call-list.png)
 
 Most small bakeries, cafés, hotels and restaurants never post a job anywhere.
 They hire the person who walks in and asks. This page is a list of them near your
@@ -99,7 +105,7 @@ queue.
 
 ### Settings — your CV, your keys, your files
 
-![The settings page](images/06-settings.png)
+![The settings page](images/07-settings.png)
 
 - **Your CV.** Download the template, fill it in, upload it back. It is what the
   fit score is measured against. Only your skills and education are ever sent to

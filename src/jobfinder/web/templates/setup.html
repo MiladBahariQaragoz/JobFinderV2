@@ -18,10 +18,19 @@
 <form class="setup-form" method="post" action="/setup">
   <h2>Where do you want to work?</h2>
   <p class="meta">
-    Towns, separated by commas. Jobs are searched within about 25 km of each one.
+    Tick the towns you would take work in. Each one is searched within about
+    25 km, so a town brings the villages around it with it. You can change this
+    later, and pick different ones for any single search.
   </p>
-  <label for="cities">Towns</label>
-  <input type="text" id="cities" name="cities" value="{{ default_cities }}">
+  <fieldset class="town-picker">
+    <legend class="sr-only">Towns</legend>
+    {% for city in city_options %}
+    <label class="checkbox">
+      <input type="checkbox" name="cities" value="{{ city.name }}"{% if city.chosen %} checked{% endif %}>
+      {{ city.name }}
+    </label>
+    {% endfor %}
+  </fieldset>
 
   <h2>What kind of work?</h2>
   <p class="meta">

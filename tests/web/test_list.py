@@ -116,14 +116,14 @@ class TestSearchLivesOnItsOwnPage:
 
     def test_the_list_page_does_not_carry_the_search_form(self, client):
         body = client.get("/").text
-        assert "Explain jobs in English while searching" not in body
+        assert "Also explain them in English while searching" not in body
         assert 'action="/run/start"' not in body
 
     def test_the_search_page_carries_it(self, client):
         response = client.get("/search")
         assert response.status_code == 200
         body = response.text
-        assert "Explain jobs in English while searching" in body
+        assert "Also explain them in English while searching" in body
         assert 'action="/run/start"' in body
 
     def test_both_pages_are_reachable_from_every_page(self, client):

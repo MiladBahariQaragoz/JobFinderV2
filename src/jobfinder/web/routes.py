@@ -46,6 +46,22 @@ def render(request: Request, template: str, context: dict, status_code: int = 20
     return templates.TemplateResponse(request, template, context, status_code=status_code)
 
 
+def city_options(settings) -> list[dict]:
+    """Every town the app knows, with hers ticked.
+
+    A text box asks her to spell `Neuburg an der Donau` exactly and answers a
+    typo with a refusal; the list of towns is thirteen long and known at import
+    time, so it is a list of checkboxes. The ones from her setup are ticked, and
+    the rest are there for the day she wants to look further afield — unticked,
+    because a search of thirteen towns is a very long search.
+    """
+    from jobfinder.cities import CITY_NAMES
+
+    chosen = set(settings.cities)
+    ordered = list(settings.cities) + [name for name in CITY_NAMES if name not in chosen]
+    return [{"name": name, "chosen": name in chosen} for name in ordered]
+
+
 def _list_context(request: Request) -> dict:
     """Everything the list page and its rows partial share."""
     settings = request.app.state.settings
@@ -273,7 +289,7 @@ def _progress_context(request: Request) -> dict:
         # A run that ended with every source failed says so, rather than
         # leaving her to read "0 found" as an answer about her filters.
         "trouble": None if running else run_trouble(run, sources),
-        "default_cities": ", ".join(settings.cities),
+        "city_options": city_options(settings),
         "default_types": ", ".join(settings.employment_types),
     }
 
@@ -292,7 +308,7 @@ async def run_start(request: Request):
         manager.start(
             resume=bool(form.get("resume")),
             enrich=bool(form.get("enrich")),
-            cities=str(form.get("cities") or "") or None,
+            cities=", ".join(form.getlist("cities")) or None,
             types=str(form.get("types") or "") or None,
             keywords=str(form.get("keywords") or "") or None,
         )
@@ -545,7 +561,7 @@ def _contacts_context(request: Request) -> dict:
         "worked_through": counts["total"] > 0 and not queue and not show_all,
         "finding": manager.is_finding_contacts() if manager is not None else False,
         "contacts_failure": manager.contacts_failure() if manager is not None else None,
-        "default_cities": ", ".join(settings.cities),
+        "city_options": city_options(settings),
     }
 
 
@@ -654,7 +670,7 @@ async def run_contacts_now(request: Request):
     except ValueError:
         radius = None
     try:
-        manager.start_contacts(cities=str(form.get("cities") or "") or None, radius_km=radius)
+        manager.start_contacts(cities=", ".join(form.getlist("cities")) or None, radius_km=radius)
     except StartRefused as exc:
         context = _contacts_context(request)
         context["refusal"] = exc
@@ -716,7 +732,7 @@ def _setup_context(request: Request) -> dict:
         # Only the ones still without a key are worth offering her.
         "providers": [p for p in every_provider if p["env_var"] in missing_now],
         "ready": ready,
-        "default_cities": ", ".join(settings.cities),
+        "city_options": city_options(settings),
         "default_types": ", ".join(settings.employment_types),
         "project_root": settings.project_root,
     }
@@ -738,14 +754,17 @@ async def finish_setup(request: Request):
             settings,
             env_var=str(form.get("env_var", "")),
             api_key=str(form.get("api_key", "")),
-            cities=str(form.get("cities", "")),
+            cities=", ".join(form.getlist("cities")),
             types=str(form.get("types", "")),
         )
     except SetupError as exc:
         context = _setup_context(request)
         context["error"] = str(exc)
         # What she typed comes back, except the key — that one she pastes again.
-        context["default_cities"] = str(form.get("cities", ""))
+        context["city_options"] = [
+            {"name": option["name"], "chosen": option["name"] in set(form.getlist("cities"))}
+            for option in city_options(settings)
+        ]
         context["default_types"] = str(form.get("types", ""))
         return render(request, "setup.html", context)
 

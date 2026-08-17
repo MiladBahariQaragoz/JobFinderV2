@@ -134,5 +134,7 @@ def test_the_search_form_offers_the_configured_cities(tmp_path):
     with TestClient(create_app(settings)) as configured:
         body = configured.get("/search").text
 
-    assert "Augsburg" in body
-    assert "Ingolstadt" not in body
+    # Every town is offered; hers are the ones already ticked.
+    ticked = re.findall(r'<input[^>]*name="cities"[^>]*checked[^>]*>', body)
+    assert len(ticked) == 1
+    assert 'value="Augsburg"' in ticked[0]

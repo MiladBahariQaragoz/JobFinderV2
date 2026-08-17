@@ -1,9 +1,15 @@
-<form class="filters progress-panel"
+<form class="filters progress-panel search-form"
       hx-post="/run/start" hx-target="#progress-panel" hx-swap="outerHTML"
       method="post" action="/run/start">
-  <label>Cities
-    <input type="text" name="cities" value="{{ default_cities }}">
-  </label>
+  <fieldset class="town-picker">
+    <legend>Towns</legend>
+    {% for city in city_options %}
+    <label class="checkbox">
+      <input type="checkbox" name="cities" value="{{ city.name }}"{% if city.chosen %} checked{% endif %}>
+      {{ city.name }}
+    </label>
+    {% endfor %}
+  </fieldset>
   <label>Job types
     <input type="text" name="types" value="{{ default_types }}">
   </label>
@@ -12,13 +18,15 @@
            placeholder="e.g. Küche, Verkauf">
   </label>
   <label class="checkbox">
-    <input type="checkbox" name="enrich" checked>
-    Explain jobs in English while searching
+    <input type="checkbox" name="enrich">
+    Also explain them in English while searching (one free request per job)
   </label>
   <button type="submit" class="primary">Search</button>
 </form>
 <p class="meta">
   A search takes minutes and says so here the whole time — every page it
   fetches is saved the moment it lands, so Cancel or a closed laptop loses
-  nothing.
+  nothing. Searching does not explain anything by itself:
+  <a href="/enrich">the Explain page</a> does that, on its own, whenever you
+  want it — including for jobs a stopped search left behind.
 </p>
