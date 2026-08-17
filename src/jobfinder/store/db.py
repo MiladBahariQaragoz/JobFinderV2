@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 # How long a writer waits for another writer before giving up (§8 rule 2).
 # Enrichment is meant to run while a search is still storing jobs, and WAL
@@ -93,8 +93,8 @@ CREATE TABLE IF NOT EXISTS status (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- General-work places from Overpass, Phase 9. Created now so the schema is
--- complete from day one.
+-- General-work places from Overpass, Phase 9. Created in v1 so the schema was
+-- complete from day one; filled in for the first time in v8.
 CREATE TABLE IF NOT EXISTS contacts (
     contact_id          INTEGER PRIMARY KEY,
     name                TEXT NOT NULL,
@@ -105,12 +105,25 @@ CREATE TABLE IF NOT EXISTS contacts (
     email               TEXT,
     website             TEXT,
     back_of_house_score REAL,
+    -- v8: the sentence behind the score, where the place is, and the two German
+    -- texts once a model has written them. Listed here for a fresh database and
+    -- in ADDED_COLUMNS for one that already exists.
+    score_reason        TEXT,
+    lat                 REAL,
+    lon                 REAL,
+    script              TEXT,
+    email_draft         TEXT,
     osm_id              TEXT,
     first_seen_at       TEXT NOT NULL DEFAULT (datetime('now')),
     last_contacted_at   TEXT,
     outcome             TEXT,
     notes               TEXT
 );
+
+-- v8 (Phase 9): `osm_id` is the real identity of a place — `contact_id` is a
+-- surrogate. Without this index a second run inserts every place again, and a
+-- list she has already worked through becomes untrustworthy.
+CREATE UNIQUE INDEX IF NOT EXISTS contacts_osm_id ON contacts(osm_id);
 
 -- One row per search/enrich/contacts run (§9 run journal).
 CREATE TABLE IF NOT EXISTS runs (
@@ -188,6 +201,19 @@ ADDED_COLUMNS = {
         # v6 (Phase 8): answers landed in an enrichment run, journalled per
         # answer so the web app's progress panel can read it mid-run.
         "enriched_count": "INTEGER NOT NULL DEFAULT 0",
+        # v8 (Phase 9): places found by a contacts run, for the same reason.
+        "contacts_count": "INTEGER NOT NULL DEFAULT 0",
+    },
+    "contacts": {
+        # v8 (Phase 9): why a place is where it is in the list, in one English
+        # sentence — she should be able to ask, and get more than a number.
+        "score_reason": "TEXT",
+        # v8: where it is, so the page can say how far she would be travelling.
+        "lat": "REAL",
+        "lon": "REAL",
+        # v8: the German phone script and the email draft, once written.
+        "script": "TEXT",
+        "email_draft": "TEXT",
     },
 }
 
