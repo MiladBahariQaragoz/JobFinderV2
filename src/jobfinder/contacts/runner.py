@@ -44,6 +44,7 @@ class ContactsRun:
     new: int = 0
     reachable: int = 0
     emails_recovered: int = 0
+    scripts_written: int = 0
     per_city: dict[str, int] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
     interrupted: bool = False
@@ -57,6 +58,7 @@ def run_contacts(
     radius_km: int = DEFAULT_RADIUS_KM,
     languages: tuple[str, ...] = (),
     imprint_lookup=None,
+    script_writer=None,
     stop_event: threading.Event | None = None,
     on_city=None,
 ) -> ContactsRun:
@@ -65,8 +67,15 @@ def run_contacts(
     `imprint_lookup` is optional and off by default: it fetches one page per
     website-only place, which is a request to someone's server, so it happens
     because she asked for it rather than as a side effect.
+
+    `script_writer` takes the kinds of place that turned up and returns
+    `{kind: (script, email_body)}` — one text per kind, not per place, so the
+    German costs a handful of calls rather than one per row. It runs at the end,
+    once the kinds are known, and a failure there costs the German and never the
+    phone numbers.
     """
     result = ContactsRun()
+    kinds_seen: dict[str, None] = {}
     connection = connect(settings.db_path)
     try:
         migrate(connection)
@@ -99,6 +108,7 @@ def run_contacts(
                 )
                 result.found += 1
                 result.per_city[name] += 1
+                kinds_seen.setdefault(place.kind, None)
                 if outcome == "new":
                     result.new += 1
             result.errors.extend(getattr(source, "failures", []) or [])
@@ -107,11 +117,41 @@ def run_contacts(
             if on_city is not None:
                 on_city(name, result)
 
+        if script_writer is not None and kinds_seen:
+            _write_scripts(connection, script_writer, tuple(kinds_seen), result)
+            export_contacts(connection, settings.contacts_csv)
+
         result.reachable = contact_counts(connection)["reachable"]
         _finish_run(connection, run_id, result)
     finally:
         connection.close()
     return result
+
+
+def _write_scripts(connection, script_writer, kinds: tuple[str, ...], result: ContactsRun) -> None:
+    """Ask for one German text per kind, then give each place its kind's text.
+
+    A failure here is recorded and nothing else: she can ring a bakery without a
+    script, but a run that threw away 300 phone numbers because a provider was
+    busy would be indefensible.
+    """
+    try:
+        texts = script_writer(kinds)
+    except Exception as exc:
+        result.errors.append(f"the scripts could not be written: {exc}")
+        return
+
+    for kind, pair in (texts or {}).items():
+        script, email_body = pair
+        connection.execute(
+            "UPDATE contacts SET script = ?,"
+            # The email is per place: the same body with this place's name in it.
+            " email_draft = REPLACE(?, '{place}', name)"
+            " WHERE kind = ?",
+            (script, email_body, kind),
+        )
+    connection.commit()
+    result.scripts_written = len(texts or {})
 
 
 def _with_recovered_email(place, imprint_lookup, result: ContactsRun):

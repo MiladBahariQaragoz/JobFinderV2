@@ -328,6 +328,102 @@ class TestTheImprintStep:
         assert result.found == 2  # the bakery still landed
 
 
+class TestTheScripts:
+    """Found by looking at the real page: 357 places and every one of them said
+    "No script yet", because the runner never asked for any. The German is the
+    part of this phase she cannot do without."""
+
+    def test_scripts_are_written_for_the_kinds_that_turned_up(self, settings):
+        written: list[str] = []
+
+        def fake_writer(kinds):
+            written.extend(kinds)
+            return {
+                kind: (f"script for {kind}", f"email for {kind} at {{place}}") for kind in kinds
+            }
+
+        source = FakeSource({"Neuburg an der Donau": [bakery(), bar()]})
+
+        run_contacts(settings, source, cities=("Neuburg an der Donau",), script_writer=fake_writer)
+
+        assert sorted(written) == ["bakery", "bar"]
+
+    def test_a_place_gets_the_script_for_its_kind(self, settings):
+        def fake_writer(kinds):
+            return {kind: (f"say this at a {kind}", "write this to {place}") for kind in kinds}
+
+        source = FakeSource({"Neuburg an der Donau": [bakery()]})
+
+        run_contacts(settings, source, cities=("Neuburg an der Donau",), script_writer=fake_writer)
+
+        connection = connect(settings.db_path)
+        try:
+            stored = contact_by_osm_id(connection, "node/1")
+        finally:
+            connection.close()
+        assert stored["script"] == "say this at a bakery"
+        assert "Bäckerei" in stored["email_draft"]  # the place's name, substituted
+
+    def test_one_script_is_asked_for_per_kind_however_many_places(self, settings):
+        calls: list[tuple] = []
+
+        def fake_writer(kinds):
+            calls.append(tuple(sorted(kinds)))
+            return {kind: (f"script {kind}", "to {place}") for kind in kinds}
+
+        source = FakeSource(
+            {
+                "Neuburg an der Donau": [bakery(1, "Bäckerei Eins"), bakery(2, "Bäckerei Zwei")],
+            }
+        )
+
+        run_contacts(settings, source, cities=("Neuburg an der Donau",), script_writer=fake_writer)
+
+        assert calls == [("bakery",)]
+
+    def test_no_writer_means_no_scripts_and_no_error(self, settings):
+        source = FakeSource({"Neuburg an der Donau": [bakery()]})
+
+        result = run_contacts(settings, source, cities=("Neuburg an der Donau",))
+
+        assert result.found == 1
+        connection = connect(settings.db_path)
+        try:
+            assert contact_by_osm_id(connection, "node/1")["script"] is None
+        finally:
+            connection.close()
+
+    def test_a_writer_that_fails_leaves_the_list_intact(self, settings):
+        """A spent quota must cost the German, never the phone numbers."""
+
+        def exploding(kinds):
+            raise RuntimeError("no providers left")
+
+        source = FakeSource({"Neuburg an der Donau": [bakery()]})
+
+        result = run_contacts(
+            settings, source, cities=("Neuburg an der Donau",), script_writer=exploding
+        )
+
+        assert result.found == 1
+        assert any("script" in error.lower() for error in result.errors)
+
+    def test_a_kind_the_writer_could_not_do_leaves_the_others_written(self, settings):
+        def partial(kinds):
+            return {"bakery": ("script bakery", "to {place}")}  # the bar is missing
+
+        source = FakeSource({"Neuburg an der Donau": [bakery(), bar()]})
+
+        run_contacts(settings, source, cities=("Neuburg an der Donau",), script_writer=partial)
+
+        connection = connect(settings.db_path)
+        try:
+            assert contact_by_osm_id(connection, "node/1")["script"] == "script bakery"
+            assert contact_by_osm_id(connection, "node/2")["script"] is None
+        finally:
+            connection.close()
+
+
 class TestWhatItReports:
     def test_the_summary_counts_reachable_places(self, settings):
         source = FakeSource({"Neuburg an der Donau": [bakery(), website_only()]})

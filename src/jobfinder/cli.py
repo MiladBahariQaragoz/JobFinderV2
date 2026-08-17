@@ -634,6 +634,7 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
         radius_km=radius,
         languages=languages,
         imprint_lookup=(lambda place: imprint_email(client, place)) if args.imprint else None,
+        script_writer=_script_writer(settings) if args.scripts else None,
         on_city=lambda name, run: print(f"  {name} — {run.per_city[name]} places"),
     )
 
@@ -647,6 +648,10 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
         print(f"  {result.emails_recovered} email addresses recovered from imprint pages")
     elif not args.imprint:
         print("  Places with only a website were left alone — pass --imprint to look them up.")
+    if result.scripts_written:
+        print(f"  German phone scripts written for {result.scripts_written} kinds of place")
+    elif not args.scripts:
+        print("  No German scripts — pass --scripts to write one per kind of place.")
     for error in result.errors:
         print(f"  ! {error}")
 
@@ -663,6 +668,61 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
             print(f"  {int(row['back_of_house_score']):3}  {row['name']} — {row['kind']} — {route}")
     print(f"\ncontacts.csv: {settings.contacts_csv}")
     return 0
+
+
+def _script_writer(settings: Settings):
+    """One German script and email per kind of place, through the LLM pool.
+
+    Her first name is all that is sent — the same line the CV digest holds. A
+    provider that refuses raises, and the runner records it without losing the
+    phone numbers it already stored.
+    """
+
+    def write(kinds: tuple[str, ...]) -> dict[str, tuple[str, str]]:
+        from jobfinder.contacts.scripts import render_script, write_texts_for_kinds
+        from jobfinder.llm.pool import build_pool
+        from jobfinder.llm.schema import FieldRule, make_validator
+
+        first_name = _her_first_name(settings)
+        # A validator only ever sees the answer, so it checks shape here; the
+        # rules that need the prompt live in `scripts.py` after the answer lands.
+        validator = make_validator(
+            {
+                "script_lines": FieldRule(kind="list"),
+                "email_subject": FieldRule(kind="str"),
+                "email_body": FieldRule(kind="str"),
+            }
+        )
+        pool = build_pool(settings, validator)
+        texts = write_texts_for_kinds(
+            settings, pool, kinds=kinds, first_name=first_name, stop_on_exhausted=True
+        )
+
+        # The script is rendered per place by the page; what is stored per kind is
+        # the script with its placeholders still in it, ready for substitution.
+        class _Template:
+            def __init__(self, kind):
+                self.name = "{place}"
+                self.city = "{city}"
+                self.kind = kind
+
+        return {
+            kind: (render_script(text, _Template(kind)), text.email_body)
+            for kind, text in texts.items()
+        }
+
+    return write
+
+
+def _her_first_name(settings: Settings) -> str:
+    """Her first name, or a neutral stand-in when there is no CV yet."""
+    try:
+        from jobfinder.profile import load_profile
+
+        name = str(load_profile(settings.pool_path).basics.get("name", "")).strip()
+    except Exception:
+        return "a student"
+    return name.split()[0] if name else "a student"
 
 
 def _her_languages(settings: Settings) -> tuple[str, ...]:
@@ -788,6 +848,11 @@ def main(
         "--imprint",
         action="store_true",
         help="for places with only a website, fetch their imprint page once to find an email",
+    )
+    contacts.add_argument(
+        "--scripts",
+        action="store_true",
+        help="write a German phone script and email draft per kind of place (one call each)",
     )
     contacts.add_argument("--top", type=int, default=10, help="how many of the list to print")
 
