@@ -17,6 +17,7 @@ from jobfinder.store.db import connect, migrate
 from jobfinder.store.enrichment import (
     already_enriched_count,
     jobs_needing_enrichment,
+    pending_enrichment_count,
     save_enrichment,
     stored_enrichments,
 )
@@ -252,3 +253,37 @@ class TestCounts:
         db.commit()
 
         assert [row.job_id for row in stored_enrichments(db, "v1")] == ["BA:2"]
+
+
+class TestPendingCount:
+    """What an Enrich button has to say before it spends anything.
+
+    The web app polls this once a second while a pass runs, so it must be a
+    count in SQL — fetching 839 rows to call `len()` on them is the shape this
+    replaces.
+    """
+
+    def test_pending_enrichment_count_counts_only_jobs_with_an_ad_text(self, db):
+        store_job(db)
+        store_job(db, job_id="BA:2", title="Aushilfe zwei", description="")
+
+        assert pending_enrichment_count(db, "v1") == 1
+
+    def test_pending_enrichment_count_ignores_jobs_already_answered_at_this_version(self, db):
+        content_hash = store_job(db)
+        store_job(db, job_id="BA:2", title="Aushilfe zwei")
+        save_enrichment(db, "BA:1", "v1", content_hash, ANSWER)
+
+        assert pending_enrichment_count(db, "v1") == 1
+        assert pending_enrichment_count(db, "v2") == 2
+
+    def test_pending_enrichment_count_is_zero_on_an_empty_store(self, db):
+        assert pending_enrichment_count(db, "v1") == 0
+
+    def test_pending_enrichment_count_agrees_with_the_queue_it_summarises(self, db):
+        content_hash = store_job(db)
+        store_job(db, job_id="BA:2", title="Aushilfe zwei")
+        store_job(db, job_id="BA:3", title="Aushilfe drei", description="")
+        save_enrichment(db, "BA:1", "v1", content_hash, ANSWER)
+
+        assert pending_enrichment_count(db, "v1") == len(jobs_needing_enrichment(db, "v1"))
