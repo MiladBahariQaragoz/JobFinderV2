@@ -150,10 +150,12 @@ Excel, and where they are is part of the answer.
 
 ## T5 — Cities and types belong to `Settings`
 
-- [ ] `test_the_default_cities_are_the_three_she_searches`
-- [ ] `test_config_yaml_can_override_the_cities`
-- [ ] `test_config_yaml_can_override_the_employment_types`
-- [ ] `test_the_search_form_offers_the_configured_cities`
+- [x] `test_the_default_cities_are_the_three_she_searches` +
+      `test_the_default_types_are_the_three_she_can_take`
+- [x] `test_config_yaml_can_override_the_cities`
+- [x] `test_config_yaml_can_override_the_employment_types`
+- [x] `test_the_search_form_offers_the_configured_cities`
+- [x] `test_a_search_defaults_to_the_configured_cities`
 
 The wizard needs somewhere to write her answers, and `config.yaml` is the file
 `Settings.load` already reads (decision 2).

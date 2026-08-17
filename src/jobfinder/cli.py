@@ -181,23 +181,27 @@ def _cmd_suggest_roles(settings: Settings, args, *, _pool_factory=None) -> int:
     return 0
 
 
-DEFAULT_CITIES = ("Neuburg an der Donau", "Ingolstadt", "München")
-DEFAULT_TYPES = ("werkstudent", "minijob", "parttime")
+# The defaults, and only the defaults: what she actually searches comes from
+# `Settings` (and so from `config.yaml`, which the first-run wizard writes).
+# These names stay because the argparse help text quotes them before any
+# settings object exists.
+DEFAULT_CITIES = Settings.__dataclass_fields__["cities"].default
+DEFAULT_TYPES = Settings.__dataclass_fields__["employment_types"].default
 
 
 def _comma_list(raw: str | None) -> list[str]:
     return [part.strip() for part in (raw or "").split(",") if part.strip()]
 
 
-def _build_search_spec(args):
+def _build_search_spec(args, settings: Settings):
     from dataclasses import replace
 
     from jobfinder.search_spec import SearchSpec
 
     spec = SearchSpec.build(
         mode="general",
-        employment_types=_comma_list(args.types) or list(DEFAULT_TYPES),
-        city_names=_comma_list(args.cities) or list(DEFAULT_CITIES),
+        employment_types=_comma_list(args.types) or list(settings.employment_types),
+        city_names=_comma_list(args.cities) or list(settings.cities),
         keywords=_comma_list(args.keywords),
     )
     if args.radius is not None:
@@ -499,7 +503,7 @@ def _cmd_search(
     from jobfinder.store.db import connect, migrate
 
     try:
-        spec = _build_search_spec(args)
+        spec = _build_search_spec(args, settings)
     except (SearchSpecError, ValueError) as exc:  # resolve_city speaks ValueError
         print(exc)
         return 1
@@ -621,7 +625,7 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
     from jobfinder.store.contacts import list_contacts
     from jobfinder.store.db import connect, migrate
 
-    cities = tuple(_comma_list(args.cities) or DEFAULT_CITIES)
+    cities = tuple(_comma_list(args.cities) or settings.cities)
     radius = args.radius or DEFAULT_RADIUS_KM
     back_up_data(settings)
 

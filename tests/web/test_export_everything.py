@@ -116,3 +116,23 @@ def test_a_job_stored_after_the_last_run_reaches_the_csv(client, seeded):
     client.post("/settings/export")
 
     assert any(row["job_id"] == "BA:99" for row in read_rows(seeded.jobs_init_csv))
+
+
+def test_the_search_form_offers_the_configured_cities(tmp_path):
+    """What the wizard writes is what the form suggests — otherwise picking
+    cities during setup changes nothing she can see."""
+    from fastapi.testclient import TestClient
+
+    from jobfinder.config import Settings
+    from jobfinder.web.app import create_app
+
+    (tmp_path / "config.yaml").write_text(
+        "cities: [Augsburg]\nemployment_types: [minijob]\n", encoding="utf-8"
+    )
+    settings = Settings.load(project_root=tmp_path)
+
+    with TestClient(create_app(settings)) as configured:
+        body = configured.get("/search").text
+
+    assert "Augsburg" in body
+    assert "Ingolstadt" not in body

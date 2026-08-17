@@ -217,9 +217,7 @@ class RunManager:
                 link="/contacts",
             )
 
-        from jobfinder.cli import DEFAULT_CITIES
-
-        names = tuple(_comma_list(cities) or DEFAULT_CITIES)
+        names = tuple(_comma_list(cities) or self._settings.cities)
         self._back_up()
         with self._lock:
             self._contacts_failure = None
@@ -301,14 +299,13 @@ class RunManager:
     def _build_spec(
         self, cities: str | None, types: str | None, keywords: str | None
     ) -> SearchSpec:
-        from jobfinder.cli import DEFAULT_CITIES, DEFAULT_TYPES
         from jobfinder.search_spec import SearchSpec, SearchSpecError
 
         try:
             return SearchSpec.build(
                 mode="general",
-                employment_types=_comma_list(types) or list(DEFAULT_TYPES),
-                city_names=_comma_list(cities) or list(DEFAULT_CITIES),
+                employment_types=_comma_list(types) or list(self._settings.employment_types),
+                city_names=_comma_list(cities) or list(self._settings.cities),
                 keywords=_comma_list(keywords),
             )
         except (SearchSpecError, ValueError) as exc:

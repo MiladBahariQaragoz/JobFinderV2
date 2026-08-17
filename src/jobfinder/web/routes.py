@@ -14,7 +14,6 @@ from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from jobfinder.cli import DEFAULT_CITIES, DEFAULT_TYPES
 from jobfinder.sources.registry import SOURCE_LABELS
 from jobfinder.store.db import connect, migrate
 from jobfinder.store.runs import (
@@ -271,8 +270,8 @@ def _progress_context(request: Request) -> dict:
         "elapsed": elapsed,
         "rate": rate,
         "failure": manager.failure() if manager is not None else None,
-        "default_cities": ", ".join(DEFAULT_CITIES),
-        "default_types": ", ".join(DEFAULT_TYPES),
+        "default_cities": ", ".join(settings.cities),
+        "default_types": ", ".join(settings.employment_types),
     }
 
 
@@ -543,7 +542,7 @@ def _contacts_context(request: Request) -> dict:
         "worked_through": counts["total"] > 0 and not queue and not show_all,
         "finding": manager.is_finding_contacts() if manager is not None else False,
         "contacts_failure": manager.contacts_failure() if manager is not None else None,
-        "default_cities": ", ".join(DEFAULT_CITIES),
+        "default_cities": ", ".join(settings.cities),
     }
 
 
