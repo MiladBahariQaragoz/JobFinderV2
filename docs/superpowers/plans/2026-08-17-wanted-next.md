@@ -299,6 +299,33 @@ sentence cell opts back in with `.wrap`, and `.meta` inside a settings row is a
 block. The row's action is now an explicit `Search for this` link rather than a
 title that happened to be clickable.
 
+**The worst defect of this whole file: her CV reached a public repository.**
+The first version of the upload wrote its backup to `pool.yaml.bak` in the
+project root. `.gitignore` listed `pool.yaml` and not the backup, so a routine
+`git add -A` for a CSS fix committed 258 lines of her real CV — name, email,
+location, entire work history — and pushed it to a repository that is **public**.
+It was live for a few minutes.
+
+What was done: the file was untracked, `.gitignore` grew `pool.yaml.bak` and
+`pool.yaml.*`, the commit was amended to drop the blob, and the branch was
+force-pushed (`ecbe2ec` → `870f7f2`). No ref on the remote reaches that blob any
+more. GitHub can still serve an unreferenced blob by its SHA until it collects
+it, so her email should be treated as having been briefly public.
+
+What was changed so it cannot recur: the backup now goes to
+`settings.pool_backup_path` — `data/pool.yaml.bak`. `data/` is gitignored
+wholesale, so anything derived from her CV is safe the moment it is written
+rather than safe once someone remembers to name it. `save_profile_text` requires
+`backup_path` as a keyword instead of deriving one, because the obvious
+derivation is exactly the mistake that was made. Held by
+`test_the_backup_goes_into_data_and_never_beside_the_source`, which asserts that
+nothing matching `pool.yaml.*` is left in the project root after an upload.
+
+The rule was already written down — MASTER_PLAN says `pool.yaml` is gitignored
+and never leaves the machine. Writing a *second* file with the same contents
+under a name the rule did not mention is how a rule that everyone agrees with
+gets broken anyway.
+
 **Decision 4 in this file was written wrong and the code does better.** It says
 the upload "lands in a temp file"; it does not. `parse_profile` validates the
 text before anything touches the disk, so there is no temporary file to leak or
