@@ -9,6 +9,13 @@ the progress is in the database, not in this process's memory.
 Enrichment-from-the-browser is gated here rather than in the route: a
 missing key or an unreadable CV refuses the *explanations*, never the
 search, and the refusal is a sentence with a link (§10).
+
+**A search and an enrichment pass are two independent runs, on two threads.**
+§9's reason is that they wait on different things — job-site hosts and LLM
+providers — so neither may be refused or cancelled because of the other. One
+manager owns both handles rather than two managers owning one each, because
+`search --enrich` still needs the search's own companion, which is a third
+case: enrichment attached to a search, cancelled with it.
 """
 
 from __future__ import annotations
@@ -60,16 +67,29 @@ class RunManager:
         self._companion = None
         self._failure: str | None = None
         self._lock = threading.Lock()
+        # The standalone enrichment pass: its own thread, its own companion,
+        # its own failure sentence. Nothing here is shared with the search.
+        self._enrich_thread: threading.Thread | None = None
+        self._enrich_companion = None
+        self._enrich_failure: str | None = None
 
     # -- the panel's questions -------------------------------------------------
 
     def is_running(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 
+    def is_enriching(self) -> bool:
+        return self._enrich_thread is not None and self._enrich_thread.is_alive()
+
     def failure(self) -> str | None:
         """Why the last run died early, in her words — or None."""
         with self._lock:
             return self._failure
+
+    def enrich_failure(self) -> str | None:
+        """Why the last enrichment pass died early, in her words — or None."""
+        with self._lock:
+            return self._enrich_failure
 
     # -- her buttons -----------------------------------------------------------
 
@@ -92,7 +112,9 @@ class RunManager:
         companion = None
         if enrich:
             factory = self._companion_factory or production_companion_factory(self._settings)
-            companion = factory()  # may refuse: no key, no readable CV
+            # No limit: a companion beside a search has to keep up with what
+            # arrives, and the search's own budget already bounds the run.
+            companion = factory(limit=None)  # may refuse: no key, no readable CV
 
         with self._lock:
             self._failure = None
@@ -103,15 +125,48 @@ class RunManager:
         )
         self._thread.start()
 
+    def start_enrich(self, *, limit: int | None = None) -> None:
+        """Explain jobs already in the store — no search involved (§9).
+
+        The store is the queue, so this needs no handover from a search and
+        can run beside one. `limit` caps the LLM calls the pass will make,
+        which is what lets the button promise a cost before spending it.
+        """
+        if self.is_enriching():
+            raise StartRefused(
+                "Jobs are already being explained — watch it below, or cancel it first.",
+                link="/enrich",
+            )
+
+        factory = self._companion_factory or production_companion_factory(self._settings)
+        companion = factory(limit=limit)  # may refuse: no key, no readable CV
+
+        with self._lock:
+            self._enrich_failure = None
+        self._enrich_companion = companion
+        self._enrich_thread = threading.Thread(
+            target=self._enrich_work, args=(companion,), daemon=True, name="enrich-run"
+        )
+        self._enrich_thread.start()
+
     def cancel(self) -> None:
         """Stop between pages. Everything already stored is kept (§9)."""
         self._cancel.set()
         if self._companion is not None:
             self._companion.cancel()
 
+    def cancel_enrich(self) -> None:
+        """Stop the standalone pass between batches, keeping every answer (§9)."""
+        if self._enrich_companion is not None:
+            self._enrich_companion.cancel()
+
     def wait(self, timeout: float | None = None) -> None:
         if self._thread is not None:
             self._thread.join(timeout)
+
+    def wait_enrich(self, timeout: float | None = None) -> None:
+        if self._enrich_thread is not None:
+            self._enrich_thread.join(timeout)
 
     # -- the machinery ----------------------------------------------------------
 
@@ -169,6 +224,18 @@ class RunManager:
                 except Exception:
                     pass  # the companion journals its own outcome
 
+    def _enrich_work(self, companion) -> None:
+        """The standalone pass: start, drain, close its own journal row."""
+        try:
+            companion.start()
+            companion.finish()
+        except Exception as exc:  # the panel must have a sentence, not a traceback
+            with self._lock:
+                self._enrich_failure = (
+                    f"Explaining jobs stopped unexpectedly ({type(exc).__name__}). "
+                    "Every answer it saved is safe — press Explain again to continue."
+                )
+
 
 def production_adapter_factory(settings: Settings):
     """The real sources, built per leg exactly as the CLI builds them."""
@@ -190,9 +257,14 @@ def production_adapter_factory(settings: Settings):
 
 
 def production_companion_factory(settings: Settings):
-    """The enrichment worker for `explain while searching` — or a refusal."""
+    """The enrichment worker — for `explain while searching`, or on its own.
 
-    def factory():
+    `limit` is None for the search's companion, which is meant to keep up with
+    whatever arrives, and a number for a pass she started from the browser,
+    where the promised cost has to be one the pass keeps to.
+    """
+
+    def factory(*, limit: int | None = None):
         from jobfinder.enrich.companion import EnrichmentCompanion
         from jobfinder.llm.pool import LLMConfigError, build_pool
         from jobfinder.llm.schema import enrichment_answer_validator
@@ -223,6 +295,7 @@ def production_companion_factory(settings: Settings):
             cv_digest=build_cv_digest(resume),
             csv_path=settings.jobs_enriched_csv,
             workers=settings.llm_workers,
+            limit=limit,
         )
 
     return factory
