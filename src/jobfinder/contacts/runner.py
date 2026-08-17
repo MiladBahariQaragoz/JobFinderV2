@@ -43,6 +43,8 @@ class ContactsRun:
     found: int = 0
     new: int = 0
     reachable: int = 0
+    # How many places the whole list holds now, not just what this run saw.
+    total_stored: int = 0
     emails_recovered: int = 0
     scripts_written: int = 0
     per_city: dict[str, int] = field(default_factory=dict)
@@ -121,7 +123,9 @@ def run_contacts(
             _write_scripts(connection, script_writer, tuple(kinds_seen), result)
             export_contacts(connection, settings.contacts_csv)
 
-        result.reachable = contact_counts(connection)["reachable"]
+        counts = contact_counts(connection)
+        result.reachable = counts["reachable"]
+        result.total_stored = counts["total"]
         _finish_run(connection, run_id, result)
     finally:
         connection.close()

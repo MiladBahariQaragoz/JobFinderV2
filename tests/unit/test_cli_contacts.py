@@ -80,6 +80,22 @@ class TestTheCommand:
         assert "2" in out
         assert "reach" in out.lower()
 
+    def test_this_run_and_the_whole_list_are_not_mixed_in_one_sentence(self, project, capsys):
+        """Seen for real: "53 places, 255 you can reach today" — 53 was this
+        run's count and 255 was the whole store's, so the sentence claimed she
+        could reach five times more places than the run had found. The same
+        mistake the page header made."""
+        first = FakeSource({"Neuburg an der Donau": [bakery(1, "Erste"), bakery(2, "Zweite")]})
+        run(project, capsys, first)
+
+        # A second run over one city only: it finds 1, the list still holds 3.
+        second = FakeSource({"Neuburg an der Donau": [bakery(3, "Dritte")]})
+        _code, out = run(project, capsys, second)
+
+        assert "Found 1 place" in out
+        assert "Your list now holds" in out
+        assert "3" in out.split("Your list now holds")[1]
+
     def test_it_says_what_it_found_per_city(self, project, capsys):
         source = FakeSource(
             {"Neuburg an der Donau": [bakery()], "Ingolstadt": [bakery(osm_id=9, name="Ingo")]}

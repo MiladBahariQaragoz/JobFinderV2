@@ -638,12 +638,16 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
         on_city=lambda name, run: print(f"  {name} — {run.per_city[name]} places"),
     )
 
-    print(
-        f"\nCall-list: {result.found} places, {result.reachable} you can reach today"
-        f" ({result.new} new)."
-    )
+    # Two sentences, because they count two different things: what this run saw,
+    # and what the list holds now. One sentence mixing them read "53 places, 255
+    # you can reach today", which claims she can reach places the run never saw.
+    plural = "" if result.found == 1 else "s"
+    print(f"\nFound {result.found} place{plural} this run ({result.new} new).")
     for name in cities:
         print(f"  {name} — {result.per_city.get(name, 0)} places")
+    print(
+        f"Your list now holds {result.total_stored} places, {result.reachable} you can reach today."
+    )
     if result.emails_recovered:
         print(f"  {result.emails_recovered} email addresses recovered from imprint pages")
     elif not args.imprint:
