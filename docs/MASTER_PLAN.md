@@ -79,11 +79,16 @@ reach (Phase 9's call-list) or handover (Phase 10's `.exe`).
 
 **Next up: Phase 10, the handover** — she can use the app today only by way of a
 terminal and a virtualenv, which is not delivery. Phase 9 is the wider net and
-can follow it. One thing Phase 8 leaves for whoever picks this up: only 20 of
-her 859 stored jobs carry an English answer, because enrichment has never been
-run at scale against her free-tier quota. The app renders an unenriched job
-honestly ("not read yet", no fit score), so this costs correctness nothing — but
-the product only becomes itself once most of that store is explained.
+can follow it.
+
+The gap Phase 8 left — 20 of her 859 stored jobs explained, with no way to change
+that outside a terminal — now has a button (see
+[Wanted next](#wanted-next--asked-for-after-using-the-app)). It is still a gap:
+**837 jobs are waiting**, one free-tier call each, and the honest way through
+them is a few bounded passes rather than one heroic run. The app renders an
+unexplained job truthfully ("not read yet", no fit score), so this costs
+correctness nothing — but the product only becomes itself once most of that store
+is explained, and now that is her decision to make rather than a developer's.
 
 ---
 
@@ -203,7 +208,7 @@ prove it necessary.
 
 | Table | Holds | Notes |
 |---|---|---|
-| `jobs` | one row per posting, raw facts from the source | never overwritten by the LLM |
+| `jobs` | one row per posting, raw facts from the source | never overwritten by the LLM; `published_at` keeps whatever the source said and `published_on` (v7) is the same date made comparable |
 | `job_descriptions` | full text, kept out of `jobs` so exports stay small | German original |
 | `enrichment` | LLM-derived fields, keyed by `job_id` + `prompt_version` | re-enrichment appends, never destroys |
 | `status` | her decisions: `new`, `interested`, `applied`, `rejected`, `deleted` + notes + dates | the only table she writes to |
@@ -221,6 +226,11 @@ has_description, content_hash, first_seen_at, last_seen_at, status`
 `also_seen_on` (added in Phase 5) lists the other sites the same ad was seen
 on, comma-joined — cross-source dedupe keeps the first row and records every
 alternate sighting there instead of storing the job twice.
+
+The CSV carries `published_at` and not the derived `published_on`: the column
+list above is what she opens in a spreadsheet, and a second date column beside
+the first would only invite the question of which one is real. The derived value
+exists so the app can compare dates, and lives in the database only.
 
 Two rules the key has to obey, both learned from live data:
 
@@ -1276,8 +1286,31 @@ Checked at the end of every phase, not saved for the end of the project.
 ## Wanted next — asked for after using the app
 
 Three gaps she named while clicking through the finished Phase 8, on
-2026-08-16. They are ideas, not a phase plan: each says why it matters, what
-already exists to build it on, and what to measure first. None is started.
+2026-08-16. **All three shipped on 2026-08-17** — the plan, the measurements and
+the four defects that only appeared on real data are in
+[the task plan](superpowers/plans/2026-08-17-wanted-next.md).
+
+- **Explain, from the browser.** `/enrich` explains stored jobs in English on its
+  own thread, so it runs beside a search rather than instead of one, and Cancel
+  keeps every answer already saved. It says what it will spend before spending
+  it — `837 of your jobs have no English answer yet`, one free-tier call each,
+  bounded to 50 by default. Verified live: a 10-job pass took 2 m 24 s, and a
+  cancelled 20-job pass kept 16 answers with the CSV and the database agreeing
+  job for job.
+- **Her CV, from the browser.** Settings offers the template as a download,
+  takes the filled file back, and validates it before anything on disk changes —
+  a bad paste costs her the upload, never the CV she had. It summarises what it
+  found (languages, skill groups, years) without putting her address, phone or
+  email on screen, and role suggestions can be asked for from the same page,
+  each German title linking into the search form as a keyword.
+- **A posting-date filter.** Any time / last 3 days / last week / last month.
+  Schema **v7** adds `published_on`, one comparable `YYYY-MM-DD` derived by one
+  function, and backfills every row already stored — `published_at` keeps
+  whatever the source said. On her store the filter and SQL agree exactly: 859 /
+  68 / 137 / 385.
+
+What follows is what was written before any of it was built, kept because each
+section records what was measured first and why the shape was chosen.
 
 ### An Enrich button, to run and resume enrichment from the browser
 

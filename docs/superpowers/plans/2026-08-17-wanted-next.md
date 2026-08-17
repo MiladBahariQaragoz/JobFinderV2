@@ -2,7 +2,7 @@
 title: "Wanted next — the Enrich button, her CV, and a posting-date filter"
 date: 2026-08-17
 type: feature-plan
-status: in progress
+status: complete — A, B and C shipped and verified on her real store 2026-08-17
 master-plan: docs/MASTER_PLAN.md#wanted-next--asked-for-after-using-the-app
 ---
 
@@ -411,10 +411,36 @@ function, and the test file names each of them.
 
 ## Definition of done for this file
 
-- [ ] Every behaviour above had a failing test first, and the failure was watched
-- [ ] `pytest` green, no network, no warnings
-- [ ] `ruff check` and `ruff format --check` clean
-- [ ] Each of the three sections demonstrated on her real 859-job store, with
-      the measured numbers written back into this file
-- [ ] MASTER_PLAN's "Wanted next" section updated to say what shipped
-- [ ] Atomic commits on `feat/wanted-next`, pushed as they land
+- [x] Every behaviour above had a failing test first, and the failure was watched
+- [x] `pytest` green, no network, no warnings — **754 passed**, 27 deselected
+- [x] `ruff check` and `ruff format --check` clean
+- [x] Each of the three sections demonstrated on her real store, with the
+      measured numbers written back into this file
+- [x] MASTER_PLAN's "Wanted next" section updated to say what shipped
+- [x] Atomic commits on `feat/wanted-next`, pushed as they land
+
+## What using it turned up that reading the tests did not
+
+Three of the four defects in this file were invisible to the suite, and every one
+of them came from running the thing against her real data:
+
+1. **Cancel looked ignored for 90 seconds.** The pass stops between batches;
+   the panel did not say so.
+2. **An uploaded CV came back corrupted.** `write_text` on Windows turned her
+   258 CRLF line endings into `\r\r\n`, and would have doubled them again on the
+   next upload.
+3. **Her CV reached a public repository.** The backup was written beside the
+   source, under a name `.gitignore` did not cover.
+4. Plus two layout faults nobody could see in an assertion: a status word
+   wrapped down the page edge, and a reason sentence running into a title.
+
+The pattern is worth keeping: none of these was a logic error, and all four were
+obvious within seconds of looking at the real thing. The suite is what stops them
+coming back — it is not what found them.
+
+## The count MASTER_PLAN quotes, corrected
+
+MASTER_PLAN says 20 of 859 jobs are explained and treats 839 as the size of the
+job. The store's own queue says **837**: two of her postings have no ad text, and
+a pass can never explain those. Both numbers are honest arithmetic; only one is
+a promise the button can keep, and that is the one it prints.
