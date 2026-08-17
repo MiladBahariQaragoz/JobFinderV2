@@ -12,6 +12,11 @@
     <h1>Something went wrong</h1>
     <p>{{ failure }}</p>
   </div>
+  {% elif trouble %}
+  <div class="error-state progress-panel">
+    <h1>That search found nothing, and it was not your filters</h1>
+    <p>{{ trouble }}</p>
+  </div>
   {% elif live %}
   <div class="progress-panel">
     <div class="list-head">

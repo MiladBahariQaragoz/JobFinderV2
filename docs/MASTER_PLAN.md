@@ -1270,9 +1270,9 @@ machine has not been delivered.
 - [x] `test_first_run_wizard_appears_when_no_config_exists`
 - [x] `test_wizard_writes_env_and_config_and_never_logs_the_key`
 - [x] `test_wizard_is_skipped_on_second_start`
-- [ ] `test_missing_keys_error_page_names_the_signup_links`
-- [ ] `test_no_internet_produces_a_readable_page_not_a_traceback`
-- [ ] `test_search_button_starts_a_run_and_streams_progress`
+- [x] `test_missing_api_key_renders_a_sentence_and_a_link_not_a_traceback`
+- [x] `test_no_internet_produces_a_readable_page_not_a_traceback`
+- [x] `test_the_search_button_starts_a_run_the_progress_panel_narrates` (Phase 8)
 - [x] `test_backup_rotation_keeps_five_and_deletes_the_sixth`
 - [x] `test_data_dir_resolves_next_to_the_exe_when_frozen` (PyInstaller `sys.frozen`)
 - [ ] `test_built_exe_starts_and_answers_healthcheck` (build smoke, marked `live`)

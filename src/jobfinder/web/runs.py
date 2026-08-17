@@ -45,6 +45,67 @@ def _comma_list(raw: str | None) -> list[str]:
     return [part.strip() for part in (raw or "").split(",") if part.strip()]
 
 
+# What a laptop with no connection raises, before any source gets to interpret
+# it: `getaddrinfo failed`, a refused connection, a timeout. It is by far the
+# likeliest failure she will meet, and the least useful thing to show her is the
+# exception's own words.
+_OFFLINE_SIGNS = ("getaddrinfo", "name or service not known", "temporary failure in name")
+
+
+def _looks_offline(exc: Exception) -> bool:
+    if isinstance(exc, TimeoutError | ConnectionError):
+        return True
+    return isinstance(exc, OSError) and _reads_offline(str(exc))
+
+
+def _reads_offline(text: str) -> bool:
+    lowered = text.lower()
+    return any(sign in lowered for sign in _OFFLINE_SIGNS)
+
+
+def run_trouble(run, sources) -> str | None:
+    """One sentence when a run ended having stored nothing, or None.
+
+    §5 calls this an honest empty state: a search that found nothing because
+    every source failed looks exactly like a search that found nothing because
+    her filters were narrow, and only one of those is her fault. The recorded
+    errors are read for the offline signature and then thrown away — she is
+    never shown `getaddrinfo`.
+    """
+    import json
+
+    if run is None or not sources:
+        return None
+    if any(row["state"] not in ("failed", "skipped") for row in sources):
+        return None
+
+    try:
+        errors = json.loads(run["errors"] or "[]")
+    except (ValueError, TypeError):
+        errors = []
+    if any(_reads_offline(str(error)) for error in errors):
+        return (
+            "This laptop does not seem to be on the internet — no source could be "
+            "reached. Reconnect and press Search again; nothing was lost."
+        )
+    return (
+        f"Every source failed this run ({len(sources)} of {len(sources)}), so nothing "
+        "was stored. Try again in a few minutes — a site that refuses one run "
+        "usually answers the next."
+    )
+
+
+def _sentence_for(exc: Exception, unexpected: str, offline_tail: str) -> str:
+    """One sentence for the panel: the offline one when that is what happened.
+
+    The exception's own text never reaches her — `[Errno 11001] getaddrinfo
+    failed` is a true statement about a laptop that is simply not online.
+    """
+    if _looks_offline(exc):
+        return "This laptop does not seem to be on the internet. " + offline_tail
+    return unexpected.format(name=type(exc).__name__)
+
+
 def _her_languages(settings: Settings) -> tuple[str, ...]:
     """The languages on her CV, for the call-list's cuisine nudge. Empty when
     there is no CV — a missing CV must never stop the list being built."""
@@ -253,9 +314,11 @@ class RunManager:
             )
         except Exception as exc:  # the page must have a sentence, not a traceback
             with self._lock:
-                self._contacts_failure = (
-                    f"Building the call-list stopped unexpectedly ({type(exc).__name__}). "
-                    "Every place it found is safe — try again."
+                self._contacts_failure = _sentence_for(
+                    exc,
+                    "Building the call-list stopped unexpectedly ({name}). "
+                    "Every place it found is safe — try again.",
+                    "Every place it found is safe — reconnect and build the list again.",
                 )
 
     def _contacts_source(self):
@@ -338,9 +401,11 @@ class RunManager:
                 connection.close()
         except Exception as exc:  # the panel must have a sentence, not a traceback
             with self._lock:
-                self._failure = (
-                    f"The search stopped unexpectedly ({type(exc).__name__}). "
-                    "Everything it stored is safe — try again, or run it from a terminal."
+                self._failure = _sentence_for(
+                    exc,
+                    "The search stopped unexpectedly ({name}). "
+                    "Everything it stored is safe — try again, or run it from a terminal.",
+                    "Everything it found before that is safe — reconnect and press Search again.",
                 )
         finally:
             if companion is not None:
@@ -356,9 +421,11 @@ class RunManager:
             companion.finish()
         except Exception as exc:  # the panel must have a sentence, not a traceback
             with self._lock:
-                self._enrich_failure = (
-                    f"Explaining jobs stopped unexpectedly ({type(exc).__name__}). "
-                    "Every answer it saved is safe — press Explain again to continue."
+                self._enrich_failure = _sentence_for(
+                    exc,
+                    "Explaining jobs stopped unexpectedly ({name}). "
+                    "Every answer it saved is safe — press Explain again to continue.",
+                    "Every answer it saved is safe — reconnect and press Explain again.",
                 )
 
 

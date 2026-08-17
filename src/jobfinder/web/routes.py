@@ -36,7 +36,7 @@ from jobfinder.web.queries import (
     list_jobs,
     parse_filters,
 )
-from jobfinder.web.runs import StartRefused, elapsed_seconds
+from jobfinder.web.runs import StartRefused, elapsed_seconds, run_trouble
 
 router = APIRouter()
 
@@ -270,6 +270,9 @@ def _progress_context(request: Request) -> dict:
         "elapsed": elapsed,
         "rate": rate,
         "failure": manager.failure() if manager is not None else None,
+        # A run that ended with every source failed says so, rather than
+        # leaving her to read "0 found" as an answer about her filters.
+        "trouble": None if running else run_trouble(run, sources),
         "default_cities": ", ".join(settings.cities),
         "default_types": ", ".join(settings.employment_types),
     }

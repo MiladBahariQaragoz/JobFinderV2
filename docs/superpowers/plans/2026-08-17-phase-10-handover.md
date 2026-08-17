@@ -182,10 +182,13 @@ itself, and there are eleven of them.
 
 ## T7 — The errors she might actually hit
 
-- [ ] `test_missing_keys_error_page_names_the_signup_links`
-- [ ] `test_no_internet_produces_a_readable_page_not_a_traceback`
-- [ ] `test_an_unexpected_failure_renders_the_error_page_not_a_stack_trace`
-- [ ] `test_the_error_page_says_what_to_do_next`
+- [x] `test_no_internet_produces_a_readable_page_not_a_traceback`
+- [x] `test_an_unexpected_failure_renders_the_error_page_not_a_stack_trace`
+- [x] `test_the_error_page_says_what_to_do_next`
+- [x] `test_a_page_that_does_not_exist_is_a_sentence_too`
+- [x] `test_missing_api_key_renders_a_sentence_and_a_link_not_a_traceback` —
+      Phase 8's, and it is the "missing keys names the signup links" box in
+      MASTER_PLAN: the Settings page lists every provider with its link
 
 The refusals that already exist (no key, no CV) are Phase 8's. What is missing
 is the last line of defence: an exception nobody predicted must still reach her
