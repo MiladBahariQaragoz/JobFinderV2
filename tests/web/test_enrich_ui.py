@@ -23,6 +23,7 @@ from tests.web.conftest import PROMPT_VERSION, enrichment_answer, store_job
 from jobfinder.config import Settings
 from jobfinder.enrich.companion import EnrichmentCompanion
 from jobfinder.store.db import connect, migrate
+from jobfinder.store.enrichment import save_enrichment
 from jobfinder.web.app import create_app
 from jobfinder.web.runs import RunManager, StartRefused
 
@@ -325,3 +326,262 @@ class TestManagerRefusals:
         assert failure is not None
         assert "Traceback" not in failure
         assert "RuntimeError" in failure  # named, so a bug report is possible
+
+
+class TestTheEnrichPage:
+    """It has to say what it will spend before she presses it — the free-tier
+    rule in the cross-cutting concerns table, applied to the one button that
+    can spend 839 calls in a row."""
+
+    def test_the_page_names_how_many_jobs_have_no_answer_yet(self, enriching):
+        _settings, _manager, client = enriching
+
+        body = client.get("/enrich").text
+
+        assert ">4<" in body  # the count, in the mono span
+        assert "no English answer" in body
+
+    def test_the_page_says_one_call_per_job_before_she_presses_it(self, enriching):
+        _settings, _manager, client = enriching
+
+        body = client.get("/enrich").text
+
+        assert "one free-tier call" in body
+
+    def test_the_page_offers_a_bound_defaulting_to_fifty(self, enriching):
+        """Not "all of them": the honest default for a free tier is the one
+        that leaves her quota alive."""
+        _settings, _manager, client = enriching
+
+        body = client.get("/enrich").text
+
+        assert 'name="limit"' in body
+        assert 'value="50"' in body
+
+    def test_a_fully_explained_store_offers_no_button_and_says_so(self, tmp_path):
+        settings = Settings(project_root=tmp_path)
+        connection = connect(settings.db_path)
+        try:
+            migrate(connection)
+            store_job(connection, job_id="BA:1")
+            # The answer has to carry the hash of the ad it was read from, or
+            # the skip rule counts the job as needing explaining again — which
+            # is right, and is why the fixture cannot fake the hash here.
+            content_hash = connection.execute(
+                "SELECT content_hash FROM jobs WHERE job_id = 'BA:1'"
+            ).fetchone()[0]
+            save_enrichment(connection, "BA:1", PROMPT_VERSION, content_hash, enrichment_answer())
+        finally:
+            connection.close()
+        manager = RunManager(settings, adapter_factory=lambda: [])
+
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            body = client.get("/enrich").text
+
+        assert "Every job" in body
+        assert "<button" not in body.split("<main>")[1].split("</main>")[0]
+
+    def test_an_empty_store_says_to_search_first(self, tmp_path):
+        settings = Settings(project_root=tmp_path)
+        manager = RunManager(settings, adapter_factory=lambda: [])
+
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            body = client.get("/enrich").text
+
+        assert "No jobs yet" in body
+        assert 'href="/search"' in body
+
+    def test_the_nav_links_to_the_page(self, enriching):
+        _settings, _manager, client = enriching
+
+        assert 'href="/enrich"' in client.get("/").text
+
+
+class TestStartingItFromTheBrowser:
+    def test_post_run_enrich_starts_a_pass_and_returns_the_panel(self, enriching):
+        settings, manager, client = enriching
+
+        response = client.post("/run/enrich", data={"limit": "50"}, follow_redirects=True)
+        assert response.status_code == 200
+        manager.wait_enrich(timeout=15)
+
+        assert enriched_count(settings) == 4
+
+    def test_post_run_enrich_honours_the_bound_she_typed(self, enriching):
+        settings, manager, client = enriching
+
+        client.post("/run/enrich", data={"limit": "2"})
+        manager.wait_enrich(timeout=15)
+
+        assert enriched_count(settings) == 2
+
+    def test_an_unreadable_bound_falls_back_to_the_default_rather_than_500ing(self, enriching):
+        settings, manager, client = enriching
+
+        response = client.post("/run/enrich", data={"limit": "not a number"})
+        assert response.status_code == 200
+        manager.wait_enrich(timeout=15)
+
+        assert enriched_count(settings) == 4  # the whole small store, under the default 50
+
+    def test_a_second_start_while_explaining_is_refused_politely(self, tmp_path):
+        settings = unenriched_store(Settings(project_root=tmp_path), count=6)
+        gate = threading.Event()
+        manager = RunManager(
+            settings,
+            adapter_factory=lambda: [],
+            companion_factory=fake_companion_factory(settings, gate=gate),
+        )
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            manager.start_enrich()
+            assert wait_until(manager.is_enriching)
+
+            response = client.post("/run/enrich", data={"limit": "50"})
+
+            assert response.status_code == 200
+            assert "already being explained" in response.text
+            assert "Traceback" not in response.text
+        gate.set()
+        manager.wait_enrich(timeout=15)
+
+    def test_starting_without_a_key_renders_the_refusal_not_a_500(self, tmp_path, monkeypatch):
+        import llmpool
+
+        settings = unenriched_store(Settings(project_root=tmp_path))
+        for _name, env_var, _url in llmpool.missing_keys(llmpool.load_catalog(), env={}):
+            monkeypatch.delenv(env_var, raising=False)
+        manager = RunManager(settings, adapter_factory=lambda: [])
+
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            response = client.post("/run/enrich", data={"limit": "50"})
+
+        assert response.status_code == 200
+        assert 'href="/settings"' in response.text
+        assert "Traceback" not in response.text
+
+    def test_a_plain_form_post_redirects_back_to_the_page(self, enriching):
+        _settings, manager, client = enriching
+
+        response = client.post("/run/enrich", data={"limit": "50"}, follow_redirects=False)
+
+        assert response.status_code == 303
+        assert response.headers["location"] == "/enrich"
+        manager.wait_enrich(timeout=15)
+
+
+class TestWatchingAndCancelling:
+    def test_a_live_pass_shows_its_count_and_a_cancel_button(self, tmp_path):
+        settings = unenriched_store(Settings(project_root=tmp_path), count=6)
+        gate = threading.Event()
+        manager = RunManager(
+            settings,
+            adapter_factory=lambda: [],
+            companion_factory=fake_companion_factory(settings, gate=gate),
+        )
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            manager.start_enrich()
+            assert wait_until(manager.is_enriching)
+
+            body = client.get("/enrich/progress").text
+            assert "Explaining" in body
+            assert "Cancel" in body
+        gate.set()
+        manager.wait_enrich(timeout=15)
+
+    def test_the_panel_survives_a_reload_mid_pass(self, tmp_path):
+        """§10: the count comes from the journal, so F5 shows the same truth
+        rather than starting the story again."""
+        settings = unenriched_store(Settings(project_root=tmp_path), count=6)
+        gate = threading.Event()
+        manager = RunManager(
+            settings,
+            adapter_factory=lambda: [],
+            companion_factory=fake_companion_factory(settings, gate=gate),
+        )
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            manager.start_enrich()
+            assert wait_until(manager.is_enriching)
+
+            first = client.get("/enrich/progress").text
+            reloaded = client.get("/enrich/progress").text
+            page = client.get("/enrich").text
+
+            for body in (first, reloaded, page):
+                assert "Explaining" in body
+        gate.set()
+        manager.wait_enrich(timeout=15)
+
+    def test_cancel_stops_it_and_returns_the_panel(self, tmp_path):
+        settings = unenriched_store(Settings(project_root=tmp_path), count=6)
+        gate = threading.Event()
+        manager = RunManager(
+            settings,
+            adapter_factory=lambda: [],
+            companion_factory=fake_companion_factory(settings, gate=gate),
+        )
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            manager.start_enrich()
+            assert wait_until(manager.is_enriching)
+
+            response = client.post("/run/enrich/cancel", follow_redirects=True)
+            assert response.status_code == 200
+            gate.set()
+            manager.wait_enrich(timeout=15)
+
+            assert enrich_run(settings)["state"] == "interrupted"
+            body = client.get("/enrich").text
+
+        assert "stopped" in body
+        # Pressing it again *is* the Resume button — §9's skip rule means a
+        # second pass continues rather than repeats, and the page says so.
+        assert "picks up where it left off" in body
+        assert "explained twice" in body
+
+    def test_a_finished_pass_reports_what_it_explained(self, enriching):
+        _settings, manager, client = enriching
+        client.post("/run/enrich", data={"limit": "50"})
+        manager.wait_enrich(timeout=15)
+
+        body = client.get("/enrich").text
+
+        assert ">4<" in body
+        assert "explained" in body
+
+    def test_a_failed_pass_shows_its_sentence_on_the_page(self, tmp_path):
+        settings = unenriched_store(Settings(project_root=tmp_path))
+
+        def exploding_factory(*, limit: int | None = None):
+            class Exploding:
+                def start(self):
+                    raise RuntimeError("the provider hung up")
+
+                def cancel(self):
+                    pass
+
+                def finish(self, timeout=None):
+                    pass
+
+            return Exploding()
+
+        manager = RunManager(
+            settings, adapter_factory=lambda: [], companion_factory=exploding_factory
+        )
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            manager.start_enrich()
+            manager.wait_enrich(timeout=10)
+
+            body = client.get("/enrich").text
+
+        assert "RuntimeError" in body
+        assert "Traceback" not in body
+
+    def test_the_search_panel_is_not_swapped_away_by_the_enrich_panel(self, enriching):
+        """Both can be watched at once: two panels, two poll targets, two ids."""
+        _settings, _manager, client = enriching
+
+        search_panel = client.get("/progress").text
+        enrich_panel = client.get("/enrich/progress").text
+
+        assert 'id="progress-panel"' in search_panel
+        assert 'id="enrich-panel"' in enrich_panel
+        assert 'id="progress-panel"' not in enrich_panel

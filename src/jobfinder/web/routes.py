@@ -303,6 +303,97 @@ def run_cancel(request: Request):
     return RedirectResponse("/", status_code=303)
 
 
+# -- explaining jobs in English, on demand --------------------------------------
+
+# What one press spends by default. Not "everything left": a full pass over her
+# store is hundreds of real free-tier calls, and the cross-cutting free-tier
+# rule means the default has to be a number she can afford to press by mistake.
+DEFAULT_ENRICH_LIMIT = 50
+
+
+def _enrich_context(request: Request) -> dict:
+    """What the Explain page and its panel share, all read from the store.
+
+    The pending count is the promise the button makes, so it comes from the
+    same query the pass itself drains — never from a cached number.
+    """
+    from jobfinder.llm.prompting import load_prompt
+    from jobfinder.store.enrichment import already_enriched_count, pending_enrichment_count
+
+    settings = request.app.state.settings
+    manager = request.app.state.run_manager
+    prompt_version = load_prompt("enrich").version
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        pending = pending_enrichment_count(connection, prompt_version)
+        explained = already_enriched_count(connection, prompt_version)
+        has_any_jobs = connection.execute("SELECT 1 FROM jobs LIMIT 1").fetchone() is not None
+        run = latest_run(connection, kind="enrich")
+    finally:
+        connection.close()
+
+    return {
+        "pending": pending,
+        "explained": explained,
+        "has_any_jobs": has_any_jobs,
+        "enrich_run": run,
+        "enrich_state": display_state(run) if run is not None else None,
+        "enriching": manager.is_enriching() if manager is not None else False,
+        "enrich_failure": manager.enrich_failure() if manager is not None else None,
+        "enrich_elapsed": elapsed_seconds(run["started_at"]) if run is not None else None,
+        "default_limit": DEFAULT_ENRICH_LIMIT,
+    }
+
+
+@router.get("/enrich", response_class=HTMLResponse)
+def enrich_page(request: Request):
+    """Explaining costs one free-tier call per job, so it gets its own page —
+    the same reason searching did: two buttons, two very different bills."""
+    return render(request, "enrich.html", _enrich_context(request))
+
+
+@router.get("/enrich/progress", response_class=HTMLResponse)
+def enrich_progress(request: Request):
+    return render(request, "_enrich_progress.html", _enrich_context(request))
+
+
+def _bounded_limit(raw: str) -> int:
+    """Her typed bound, or the default — a stale or fat-fingered value is not
+    a reason to refuse, and never a reason to spend more than she asked."""
+    try:
+        limit = int(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_ENRICH_LIMIT
+    return limit if limit > 0 else DEFAULT_ENRICH_LIMIT
+
+
+@router.post("/run/enrich", response_class=HTMLResponse)
+async def run_enrich(request: Request):
+    form = await request.form()
+    manager = request.app.state.run_manager
+    try:
+        manager.start_enrich(limit=_bounded_limit(str(form.get("limit") or "")))
+    except StartRefused as exc:
+        context = _enrich_context(request)
+        context["refusal"] = exc
+        return render(request, "_enrich_progress.html", context)
+    if request.headers.get("HX-Request"):
+        return render(request, "_enrich_progress.html", _enrich_context(request))
+    return RedirectResponse("/enrich", status_code=303)
+
+
+@router.post("/run/enrich/cancel", response_class=HTMLResponse)
+def run_enrich_cancel(request: Request):
+    manager = request.app.state.run_manager
+    if manager is not None:
+        manager.cancel_enrich()
+    if request.headers.get("HX-Request"):
+        return render(request, "_enrich_progress.html", _enrich_context(request))
+    return RedirectResponse("/enrich", status_code=303)
+
+
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request):
     """One page of "is it set up": which provider keys exist, which do not,
