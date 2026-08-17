@@ -595,6 +595,87 @@ def _uvicorn_serve(app, *, host: str, port: int, on_ready) -> None:
     server.run()
 
 
+def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
+    """Build the call-list: places that hire without ever posting (Phase 9).
+
+    What it prints is the interface — how many places, how many she can reach
+    today, what each city gave, and the top of the list with the numbers on it,
+    so she can put the phone down beside the terminal and start.
+    """
+    from jobfinder.contacts.imprint import imprint_email
+    from jobfinder.contacts.runner import DEFAULT_RADIUS_KM, run_contacts
+    from jobfinder.sources.http import PoliteClient
+    from jobfinder.store.contacts import list_contacts
+    from jobfinder.store.db import connect, migrate
+
+    cities = tuple(_comma_list(args.cities) or DEFAULT_CITIES)
+    radius = args.radius or DEFAULT_RADIUS_KM
+
+    # Overpass is a donated public server and it showed us why (see
+    # sources/overpass.py): a long gap between requests is the etiquette here.
+    client = PoliteClient(
+        cache_dir=settings.data_dir / "http-cache",
+        budget=settings.request_budget,
+        min_delay=6.0,
+    )
+    if _contacts_source is not None:
+        source = _contacts_source(settings, client)
+    else:
+        from jobfinder.sources.overpass import OverpassSource
+
+        source = OverpassSource(client)
+
+    languages = _her_languages(settings)
+    print(f"Looking for places to call in {', '.join(cities)} (within {radius} km)…")
+    result = run_contacts(
+        settings,
+        source,
+        cities=cities,
+        radius_km=radius,
+        languages=languages,
+        imprint_lookup=(lambda place: imprint_email(client, place)) if args.imprint else None,
+        on_city=lambda name, run: print(f"  {name} — {run.per_city[name]} places"),
+    )
+
+    print(
+        f"\nCall-list: {result.found} places, {result.reachable} you can reach today"
+        f" ({result.new} new)."
+    )
+    for name in cities:
+        print(f"  {name} — {result.per_city.get(name, 0)} places")
+    if result.emails_recovered:
+        print(f"  {result.emails_recovered} email addresses recovered from imprint pages")
+    elif not args.imprint:
+        print("  Places with only a website were left alone — pass --imprint to look them up.")
+    for error in result.errors:
+        print(f"  ! {error}")
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        top = list_contacts(connection, pending_only=True, reachable_only=True)[: args.top]
+    finally:
+        connection.close()
+    if top:
+        print(f"\nStart here ({len(top)} of them):")
+        for row in top:
+            route = row["phone"] or row["email"]
+            print(f"  {int(row['back_of_house_score']):3}  {row['name']} — {row['kind']} — {route}")
+    print(f"\ncontacts.csv: {settings.contacts_csv}")
+    return 0
+
+
+def _her_languages(settings: Settings) -> tuple[str, ...]:
+    """The languages on her CV, for the cuisine nudge — empty if there is no CV."""
+    try:
+        from jobfinder.profile import load_profile
+
+        resume = load_profile(settings.pool_path)
+    except Exception:
+        return ()
+    return tuple(language.name.strip().lower() for language in resume.languages)
+
+
 def _cmd_serve(settings: Settings, args, *, _serve=None, _browser=None) -> int:
     """Start the app and open her browser at it (§10: one double-click)."""
     import webbrowser
@@ -623,6 +704,7 @@ def main(
     _sources=None,
     _serve=None,
     _browser=None,
+    _contacts_source=None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="jobfinder", description="Local job-search assistant")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -692,6 +774,23 @@ def main(
     )
     search.add_argument("--path", type=Path, default=None, help="path to pool.yaml (with --enrich)")
 
+    contacts = sub.add_parser("contacts", help="build the call-list of places to ring")
+    contacts.add_argument("--root", type=Path, default=None, help="project root")
+    contacts.add_argument(
+        "--cities",
+        default=None,
+        help=f"comma-separated cities (default: {', '.join(DEFAULT_CITIES)})",
+    )
+    contacts.add_argument(
+        "--radius", type=int, default=None, help="search radius in km per city (default: 6)"
+    )
+    contacts.add_argument(
+        "--imprint",
+        action="store_true",
+        help="for places with only a website, fetch their imprint page once to find an email",
+    )
+    contacts.add_argument("--top", type=int, default=10, help="how many of the list to print")
+
     serve = sub.add_parser("serve", help="open the app in your browser")
     serve.add_argument("--root", type=Path, default=None, help="project root (default: cwd)")
     serve.add_argument("--port", type=int, default=8000, help="port to listen on (default: 8000)")
@@ -734,6 +833,10 @@ def main(
             _client_factory=_client_factory,
             _pool_factory=_pool_factory,
         )
+
+    if args.command == "contacts":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_contacts(settings, args, _contacts_source=_contacts_source)
 
     if args.command == "serve":
         settings = Settings.load(args.root or Path.cwd())

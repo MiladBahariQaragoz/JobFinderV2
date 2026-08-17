@@ -88,6 +88,10 @@ class Settings:
         return self.data_dir / "jobs-enriched.csv"
 
     @property
+    def contacts_csv(self) -> Path:
+        return self.data_dir / "contacts.csv"
+
+    @property
     def pool_path(self) -> Path:
         return self.project_root / "pool.yaml"
 
