@@ -42,7 +42,15 @@ jobfinder enrich [--limit N]        # explain them in English -> data/jobs-enric
 jobfinder search --enrich           # both at once, enrichment as a second worker
 jobfinder contacts [--scripts]      # the call-list of places that never post -> data/contacts.csv
 jobfinder serve [--port N]          # the browser app on 127.0.0.1 (default port 8000)
+python scripts/build_exe.py         # JobFinder.exe -> dist/  (needs the dev extras)
+python scripts/shoot_screenshots.py # re-take the images in docs/HER_README.md
+pytest -m live tests/live/test_built_exe.py   # the built exe starts and answers
 ```
+
+`jobfinder serve` and `JobFinder.exe` are the same code path — both call
+`launch.start`, which picks a free port, creates `data/` and prints the address.
+A frozen build keeps `data/`, `config.yaml` and `.env` beside the exe, never
+inside the folder PyInstaller unpacks itself into.
 
 `--limit` on `enrich` is the flag to reach for while developing: a full pass
 over the store is hundreds of real free-tier calls.

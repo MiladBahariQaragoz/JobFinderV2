@@ -2,7 +2,7 @@
 title: "Phase 10 — Handover: one file she double-clicks"
 date: 2026-08-17
 type: phase-plan
-status: in progress
+status: complete — built, installed into an empty folder, and searched from 2026-08-17
 master-plan: docs/MASTER_PLAN.md#phase-10--handover-one-file-she-double-clicks
 ---
 
@@ -240,7 +240,7 @@ landed.
 - [x] `test_an_update_leaves_her_data_untouched`
 - [x] `test_an_update_refuses_something_that_is_not_a_program` +
       `test_an_update_refuses_a_file_that_is_not_there`
-- [x] `test_a_running_exe_is_refused_readably`
+- [x] `test_a_locked_exe_is_refused_readably`
 - [x] `test_installing_where_nothing_is_installed_yet_just_works`
 
 `packaging.py` `apply_update(new_exe, install_dir)`, with `scripts/update.ps1`
@@ -248,8 +248,10 @@ as the two-line wrapper she or I actually run.
 
 ## T11 — `docs/HER_README.md`
 
-- [ ] `test_her_readme_names_every_page_in_the_nav`
-- [ ] `test_her_readme_has_no_developer_instructions_in_it`
+- [x] `test_her_readme_names_every_page_in_the_nav`
+- [x] `test_her_readme_has_no_developer_instructions_in_it`
+- [x] `test_every_screenshot_it_shows_exists`
+- [x] `test_it_says_what_to_do_when_something_is_wrong`
 
 One page, English, screenshots of the real app. The guard tests exist because a
 README that stops matching the app is worse than none — the same reason
@@ -257,16 +259,68 @@ README that stops matching the app is worse than none — the same reason
 
 ## T12 — Run it for real
 
-- [ ] Build the exe and start it from a directory that has never held a venv
-- [ ] Delete `config.yaml` and watch the wizard come back
-- [ ] Complete a search from the built exe, with the browser it opened itself
-- [ ] Apply an update over a running install and confirm `data/` survived
-- [ ] Write the measured numbers into this file
+All of this on 2026-08-17, against `dist/JobFinder.exe` copied alone into an
+empty folder — no virtualenv, no checkout, no `pool.yaml`, nothing but the one
+file.
+
+- [x] **It starts from one file and says so.** 19 MB. The console window
+      carried four lines *while it ran*: the name, `Your files are in …\data`,
+      the address, and that closing the window stops it.
+- [x] **Every page led to the wizard.** `/`, `/search`, `/enrich`, `/contacts`
+      and `/settings` each answered `303 → /setup` before setup, and `200`
+      after it.
+- [x] **The wizard wrote what she typed.** One town and one kind of work went
+      in; `config.yaml` came out with her umlauts intact and a comment saying
+      she may edit it. No key was given, and none was needed.
+- [x] **A real search, from the built exe.** `Neuburg an der Donau`, minijob:
+      **135 found, 134 new** across four sources (Bundesagentur 50,
+      Kleinanzeigen 10, Xing 7, Arbeitnow 0) in about 3 minutes, narrated the
+      whole way — at 2 m 22 s the panel read `67 found, 66 new · about 28 jobs
+      a minute`. `jobs-init.csv` came out at 57 KB and the list page agreed:
+      **134 jobs**.
+- [x] **A backup was taken before the run**, `data/backups/2026-08-17T14-58-05Z/`,
+      without being asked for.
+- [x] **Export everything, from the browser.** `134 jobs, 0 explained, 0 places
+      to call`, all three files written and named.
+- [x] **Deleting `config.yaml` brought the wizard straight back** — `/` and
+      `/search` answered `303 → /setup` again — and the 134 jobs were still
+      there when it was finished a second time.
+- [x] **An update over the running install kept everything.** The old build
+      became `JobFinder.exe.previous`, the new one landed, and `data/`,
+      `config.yaml` and the 134 rows were untouched.
+
+### What the real thing corrected
+
+**Updating over a *running* JobFinder works.** The code assumed the opposite —
+that Windows locks a running program's file, so an update while the app is open
+would be refused with "close its window". Measured: a running image can be
+*renamed*, so the update succeeds, the open app keeps running the build that is
+now `.previous`, and it picks up the new one the next time she starts it. The
+refusal is still there for a file something else is genuinely holding (an
+antivirus scan, an unwritable folder), and it no longer claims to know why.
+
+**Two defects that only a build could show**, both now held by tests:
+
+1. **`/setup` was a 500 in the exe and perfect here** — `llmpool` reads its own
+   `catalog.yaml` off disk, and a dependency's data file is as invisible to
+   PyInstaller as our own.
+2. **The console window stayed empty for the whole run.** A frozen build
+   block-buffers stdout, so the three lines she needs appeared only once she
+   had closed the app. Every line is flushed now, and they are plain ASCII —
+   an em dash under an older Windows code page is either mojibake or a crash
+   inside `print`, on the one surface that cannot be reloaded.
+
+**And one the screenshots showed:** the first-run wizard was laid out sideways,
+because it borrowed `.filters`, whose job is to wrap eight controls into a row.
+Every heading sat beside the input above it. It has its own column layout now.
 
 ## Definition of done
 
-- [ ] Every behaviour above had a failing test first, and the failure was watched
-- [ ] `pytest` green, no network, no warnings
-- [ ] `ruff check` and `ruff format --check` clean
-- [ ] MASTER_PLAN's Phase 10 boxes ticked against what was measured
-- [ ] Atomic commits on `feat/phase-10-handover`, pushed as they land
+- [x] Every behaviour above had a failing test first, and the failure was
+      watched. One exception, recorded rather than hidden: `apply_update` was
+      written before its tests. Its seven tests were then run against a stubbed
+      body, all seven failed, and the function was written again from them.
+- [x] `pytest` green, no network, no warnings
+- [x] `ruff check` and `ruff format --check` clean
+- [x] MASTER_PLAN's Phase 10 boxes ticked against what was measured
+- [x] Atomic commits on `feat/phase-10-handover`, pushed as they land

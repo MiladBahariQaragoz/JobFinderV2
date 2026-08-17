@@ -108,10 +108,15 @@ def apply_update(new_exe: Path, install_dir: Path) -> Path:
         try:
             target.rename(previous)
         except OSError as exc:
-            # Windows keeps a lock on a running program's file, which is what
-            # updating without closing the app looks like from here.
+            # Measured, not assumed: updating over a *running* JobFinder works
+            # on Windows — a running image can be renamed, the old build becomes
+            # `.previous`, and the open app goes on running it until she closes
+            # it. So this branch is not "the app is open"; it is a genuinely
+            # locked file — an antivirus scan mid-copy, or a folder she cannot
+            # write to.
             raise UpdateRefused(
-                "JobFinder seems to be running — close its window, then run the update again."
+                "JobFinder's program file could not be replaced. Close its window if it "
+                "is open, wait a moment, and run the update again."
             ) from exc
 
     shutil.copy2(new_exe, target)

@@ -171,9 +171,10 @@ class TestApplyUpdate:
         assert target.read_bytes() == b"the first build"
         assert not (install / "JobFinder.exe.previous").exists()
 
-    def test_a_running_exe_is_refused_readably(self, tmp_path, monkeypatch):
-        """Windows locks a running program's file. She will hit this the first
-        time she updates without closing the app."""
+    def test_a_locked_exe_is_refused_readably(self, tmp_path, monkeypatch):
+        """Not the running-app case — that one works, measured against a live
+        install on 2026-08-17. This is a file something else is holding: an
+        antivirus scan mid-copy, or a folder she cannot write to."""
         install = self.installed(tmp_path)
         new = tmp_path / "JobFinder.exe"
         new.write_bytes(b"the new build")
@@ -186,7 +187,7 @@ class TestApplyUpdate:
         with pytest.raises(UpdateRefused) as refused:
             apply_update(new, install)
 
-        assert "close its window" in str(refused.value)
+        assert "could not be replaced" in str(refused.value)
 
 
 def test_the_bundle_includes_the_llmpool_catalog():

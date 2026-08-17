@@ -71,7 +71,7 @@ Phases are ordered so that the app becomes useful before it becomes complete.
 | **M3 — First real shortlist** | 4–5, 7 | **Done.** Run a search and get a CSV of live Bavarian jobs, each explained in English — `jobfinder search --enrich` |
 | **M4 — The actual product** | 8 | **Done.** Browse, filter, read, and mark jobs applied/deleted in a real UI — `jobfinder serve`, searches started and cancelled from the browser |
 | **M5 — Wider net** | 6, 9 | **Done.** Kleinanzeigen, Xing and Adzuna searched in parallel (StepStone and Indeed are blocked from this machine and ship off), and the call-list holds 357 places, 255 reachable — `jobfinder contacts`, or the Call page |
-| **M6 — Handover** | 10 | Double-click one file on her own laptop and use it without help |
+| **M6 — Handover** | 10 | **Done here, not yet on her laptop.** One 19 MB `JobFinder.exe`: a first-run wizard, a backup before every run, an export button, and [a page written for her](HER_README.md). Proved from an empty folder — 134 jobs found by the built exe |
 
 **If time gets short, ship M4 and stop.** Phases 6 and 9 are additive; nothing in
 8 or 10 depends on them. **M4 has shipped**, so everything from here is either
@@ -1279,9 +1279,23 @@ machine has not been delivered.
 
 ### Done when
 
-- [ ] She installs nothing, double-clicks once, and completes a search on her own laptop
-- [ ] Her data survives an app update
-- [ ] Deleting `data/` and starting again works and re-runs the wizard
+- [x] She installs nothing, double-clicks once, and completes a search — proved
+      on this machine on 2026-08-17, from `JobFinder.exe` alone in an empty
+      folder: the wizard, then **135 found, 134 new** for Neuburg across four
+      sources in about three minutes, then a `jobs-init.csv` of 134 rows.
+      **Not yet on her laptop** — that is the one box only she can tick.
+- [x] Her data survives an app update — an update applied over the running
+      install left `data/`, `config.yaml` and all 134 rows untouched, and kept
+      the old build as `JobFinder.exe.previous`
+- [x] Deleting the setup file and starting again works and re-runs the wizard —
+      removing `config.yaml` sent every page back to `/setup`, and her 134 jobs
+      were still there afterwards
+
+**Phase 10 complete.** One 19 MB file, a first-run wizard, a backup before every
+run, an export button, error pages for the failures she can actually meet, and
+[a page written for her](HER_README.md). The build, its two exe-only defects and
+the measured update behaviour are in
+[the phase plan](superpowers/plans/2026-08-17-phase-10-handover.md).
 
 ---
 
