@@ -341,6 +341,7 @@ def _enrich_context(request: Request) -> dict:
         "enrich_run": run,
         "enrich_state": display_state(run) if run is not None else None,
         "enriching": manager.is_enriching() if manager is not None else False,
+        "enrich_stopping": manager.enrich_is_stopping() if manager is not None else False,
         "enrich_failure": manager.enrich_failure() if manager is not None else None,
         "enrich_elapsed": elapsed_seconds(run["started_at"]) if run is not None else None,
         "default_limit": DEFAULT_ENRICH_LIMIT,

@@ -72,6 +72,7 @@ class RunManager:
         self._enrich_thread: threading.Thread | None = None
         self._enrich_companion = None
         self._enrich_failure: str | None = None
+        self._enrich_stopping = False
 
     # -- the panel's questions -------------------------------------------------
 
@@ -80,6 +81,16 @@ class RunManager:
 
     def is_enriching(self) -> bool:
         return self._enrich_thread is not None and self._enrich_thread.is_alive()
+
+    def enrich_is_stopping(self) -> bool:
+        """Cancel has been pressed and the jobs already sent are still landing.
+
+        Measured on her real store: a pass stops *between batches*, so Cancel
+        took 90 seconds to take effect while the panel went on saying
+        "Explaining jobs in English". §10's rule against a screen that hides
+        work applies just as much to hiding that stopping is under way.
+        """
+        return self._enrich_stopping and self.is_enriching()
 
     def failure(self) -> str | None:
         """Why the last run died early, in her words — or None."""
@@ -143,6 +154,7 @@ class RunManager:
 
         with self._lock:
             self._enrich_failure = None
+        self._enrich_stopping = False
         self._enrich_companion = companion
         self._enrich_thread = threading.Thread(
             target=self._enrich_work, args=(companion,), daemon=True, name="enrich-run"
@@ -158,6 +170,7 @@ class RunManager:
     def cancel_enrich(self) -> None:
         """Stop the standalone pass between batches, keeping every answer (§9)."""
         if self._enrich_companion is not None:
+            self._enrich_stopping = True
             self._enrich_companion.cancel()
 
     def wait(self, timeout: float | None = None) -> None:

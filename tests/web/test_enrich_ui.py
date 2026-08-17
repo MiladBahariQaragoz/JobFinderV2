@@ -68,18 +68,23 @@ def enrich_run(settings: Settings):
         connection.close()
 
 
-def fake_companion_factory(settings: Settings, answers: int = 20, gate=None):
+def fake_companion_factory(settings: Settings, answers: int = 20, gate=None, entered=None):
     """The real companion over a FakePool — the manager's seam, nothing else.
 
-    `gate` holds the pool open on its first answer, which is what "she pressed
-    Cancel while it was working" looks like from the inside.
+    `gate` holds the pool open inside a batch, which is what "she pressed Cancel
+    while it was working" looks like from the inside. `entered` is set the moment
+    the batch is really in flight: the companion checks its cancel flag *between*
+    batches, so a test that cancels before the first batch starts is testing the
+    wrong thing.
     """
 
     class GatedPool(FakePool):
-        def run_batch(self, *args, **kwargs):
+        def complete_json(self, prompt: str) -> dict:
+            if entered is not None:
+                entered.set()
             if gate is not None:
                 gate.wait(timeout=10)
-            return super().run_batch(*args, **kwargs)
+            return super().complete_json(prompt)
 
     pool_class = GatedPool if gate is not None else FakePool
 
@@ -574,6 +579,32 @@ class TestWatchingAndCancelling:
 
         assert "RuntimeError" in body
         assert "Traceback" not in body
+
+    def test_cancel_is_acknowledged_while_the_sent_jobs_are_still_landing(self, tmp_path):
+        """Found by using it: Cancel stops the pass *between batches*, so on her
+        real store it took 90 seconds to take effect — during which the panel
+        still said "Explaining jobs in English" and nothing acknowledged the
+        press. §10 forbids a screen that hides work; it equally forbids one that
+        hides the fact that stopping is under way."""
+        settings = unenriched_store(Settings(project_root=tmp_path), count=6)
+        gate, entered = threading.Event(), threading.Event()
+        manager = RunManager(
+            settings,
+            adapter_factory=lambda: [],
+            companion_factory=fake_companion_factory(settings, gate=gate, entered=entered),
+        )
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            manager.start_enrich()
+            assert entered.wait(timeout=10)  # a batch really is in flight
+
+            client.post("/run/enrich/cancel")
+            body = client.get("/enrich/progress").text
+
+            assert "Stopping" in body
+            assert "already sent" in body
+            assert "Cancel" not in body  # pressing it twice does nothing to press
+        gate.set()
+        manager.wait_enrich(timeout=15)
 
     def test_the_search_panel_is_not_swapped_away_by_the_enrich_panel(self, enriching):
         """Both can be watched at once: two panels, two poll targets, two ids."""

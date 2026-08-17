@@ -21,17 +21,29 @@
   <div class="progress-panel">
     <div class="list-head">
       <h1>
+        {% if enrich_stopping %}
+        Stopping —
+        <span class="num">{{ enrich_run.enriched_count or 0 }}</span> jobs explained so far
+        {% else %}
         Explaining jobs in English —
         <span class="num">{{ enrich_run.enriched_count or 0 }}</span> done
         {% if pending %}, <span class="num">{{ pending }}</span> still waiting{% endif %}
+        {% endif %}
       </h1>
+      {% if not enrich_stopping %}
       <form hx-post="/run/enrich/cancel" hx-target="#enrich-panel" hx-swap="outerHTML"
             method="post" action="/run/enrich/cancel">
         <button type="submit" class="danger">Cancel</button>
       </form>
+      {% endif %}
     </div>
     <div class="bar indeterminate" role="progressbar" aria-label="explaining jobs"><span></span></div>
-    {% if enrich_elapsed is not none %}
+    {% if enrich_stopping %}
+    <p class="meta">
+      The jobs already sent are still coming back — they finish, then it stops.
+      Every answer that arrives is kept.
+    </p>
+    {% elif enrich_elapsed is not none %}
     <p class="meta">
       Running for
       <span class="num">{{ enrich_elapsed // 60 }}</span> m
