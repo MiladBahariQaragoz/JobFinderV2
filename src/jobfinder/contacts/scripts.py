@@ -157,8 +157,10 @@ def render_script(texts: ContactTexts, place) -> str:
     odd — but this list is meant to be printed and held, and a page of five
     German lines with no idea who they are for is no use beside a phone.
     """
-    where = f"{place.name} — {place.city}"
-    rendered: list[str] = [where, "-" * len(where), ""]
+    # No ASCII underline: the name is substituted per place *after* this runs, so
+    # a rule sized here would be the length of "{place} — {city}" and never match
+    # the title above it.
+    rendered: list[str] = [f"{place.name} — {place.city}", ""]
     for line in texts.script_lines:
         rendered.append(_fill(line.de, place))
         rendered.append(f"    {_fill(line.en, place)}")

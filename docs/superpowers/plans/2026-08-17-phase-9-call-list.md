@@ -123,113 +123,113 @@ one on a phone.
 
 ## T1 — `PoliteClient` can POST
 
-- [ ] `test_a_post_sends_its_body_and_returns_the_response`
-- [ ] `test_a_post_waits_between_requests_to_the_same_host` (fake clock)
-- [ ] `test_a_post_counts_against_the_same_request_budget`
-- [ ] `test_two_posts_with_different_bodies_are_cached_separately`
-- [ ] `test_a_cached_post_is_not_sent_again`
-- [ ] `test_a_post_honours_retry_after`
-- [ ] `test_a_post_that_keeps_failing_raises_source_unavailable`
+- [x] `test_a_post_sends_its_body_and_returns_the_response`
+- [x] `test_a_post_waits_between_requests_to_the_same_host` (fake clock)
+- [x] `test_a_post_counts_against_the_same_request_budget`
+- [x] `test_two_posts_with_different_bodies_are_cached_separately`
+- [x] `test_a_cached_post_is_not_sent_again`
+- [x] `test_a_post_honours_retry_after`
+- [x] `test_a_post_that_keeps_failing_raises_source_unavailable`
 
 The cache key has to include the body: two Overpass queries go to one URL and
 must not answer each other.
 
 ## T2 — The Overpass adapter, over a recorded fixture
 
-- [ ] `test_the_fixture_parses_places_with_and_without_contact_details`
-- [ ] `test_a_place_with_no_name_is_skipped`
-- [ ] `test_a_place_with_no_contact_route_is_excluded`
-- [ ] `test_a_place_with_only_a_website_is_kept_for_the_imprint_step`
-- [ ] `test_both_the_plain_and_the_contact_prefixed_tags_are_read`
-- [ ] `test_ways_are_parsed_as_well_as_nodes` (18 of her 118)
-- [ ] `test_hotels_come_from_the_tourism_tag_not_the_amenity_one`
-- [ ] `test_the_street_and_house_number_become_one_address_line`
-- [ ] `test_a_contact_id_is_stable_across_runs` (OSM type + id)
-- [ ] `test_a_place_seen_in_two_city_queries_appears_once`
-- [ ] `test_a_failing_tag_costs_that_tag_and_not_the_city`
-- [ ] `test_a_failing_endpoint_falls_through_to_the_next_one`
-- [ ] `test_every_request_carries_the_identifying_user_agent`
+- [x] `test_the_fixture_parses_places_with_and_without_contact_details`
+- [x] `test_a_place_with_no_name_is_skipped`
+- [x] `test_a_place_with_no_contact_route_at_all_is_excluded`
+- [x] `test_a_place_with_only_a_website_is_kept_for_the_imprint_step`
+- [x] `test_both_the_plain_and_the_contact_prefixed_tags_are_read`
+- [x] `test_ways_are_parsed_as_well_as_nodes` (18 of her 118)
+- [x] `test_hotels_come_from_the_tourism_tag_not_the_amenity_one`
+- [x] `test_the_street_and_house_number_become_one_address_line`
+- [x] `test_a_contact_id_is_stable_across_runs` (OSM type + id)
+- [x] `test_a_place_seen_in_two_tag_queries_appears_once`
+- [x] `test_a_failing_tag_costs_that_tag_and_not_the_city`
+- [x] `test_a_failing_endpoint_falls_through_to_the_next_one`
+- [x] `test_every_request_carries_the_identifying_user_agent`
 
 The fixture is the Neuburg payload recorded on 2026-08-17 — 118 places, real
 tags, real gaps. Recorded, never hand-written (§7).
 
 ## T3 — Phone numbers she can actually dial
 
-- [ ] `test_a_spaced_german_number_becomes_e164`
-- [ ] `test_an_already_e164_number_is_left_alone`
-- [ ] `test_a_national_number_gains_the_country_code`
-- [ ] `test_a_number_with_punctuation_and_a_note_is_cleaned`
-- [ ] `test_a_second_number_after_a_semicolon_takes_the_first`
-- [ ] `test_something_that_is_not_a_number_is_dropped_not_mangled`
+- [x] `test_a_spaced_german_number_becomes_e164`
+- [x] `test_an_already_e164_number_is_left_alone`
+- [x] `test_a_national_number_gains_the_country_code`
+- [x] `test_a_note_in_brackets_is_not_dialled`
+- [x] `test_a_second_number_after_a_semicolon_takes_the_first`
+- [x] `test_something_that_is_not_a_number_is_dropped_not_mangled`
 
 ## T4 — `back_of_house_score`
 
-- [ ] `test_a_bakery_and_a_hotel_outrank_a_bar`
-- [ ] `test_a_kitchen_heavy_restaurant_outranks_counter_service`
-- [ ] `test_a_cuisine_matching_her_languages_is_a_bonus_not_a_requirement`
-- [ ] `test_a_place_with_an_email_scores_above_an_identical_one_without`
-- [ ] `test_the_score_is_stable_for_the_same_tags`
-- [ ] `test_every_kind_her_query_returns_has_a_score`
+- [x] `test_a_bakery_and_a_hotel_outrank_a_bar`
+- [x] `test_a_restaurant_outranks_counter_service`
+- [x] `test_a_cuisine_bonus_is_never_a_requirement`
+- [x] `test_a_place_with_an_email_scores_above_an_identical_one_without`
+- [x] `test_the_score_is_stable_for_the_same_tags`
+- [x] `test_every_kind_the_query_returns_has_a_score`
 
 ## T5 — Storing contacts, and her decisions about them
 
-- [ ] `test_a_contact_is_stored_with_its_kind_city_and_route`
-- [ ] `test_re_running_updates_a_contact_rather_than_duplicating_it`
-- [ ] `test_a_contact_she_has_acted_on_keeps_its_outcome_on_a_re_run`
-- [ ] `test_marking_called_stamps_the_day_once_and_never_rewrites_it`
-- [ ] `test_an_outcome_note_is_saved_and_read_back`
-- [ ] `test_an_unknown_outcome_is_refused_with_a_sentence`
-- [ ] `test_marking_no_moves_it_out_of_the_queue`
-- [ ] `test_contacts_are_saved_the_moment_each_one_lands` (§9)
+- [x] `test_a_contact_is_stored_with_its_kind_city_and_route`
+- [x] `test_re_running_updates_a_contact_rather_than_duplicating_it`
+- [x] `test_a_note_survives_a_later_re_run_of_the_source`
+- [x] `test_marking_called_stamps_the_day_once_and_never_rewrites_it`
+- [x] `test_an_outcome_note_is_saved_and_read_back`
+- [x] `test_an_unknown_outcome_is_refused_with_a_sentence`
+- [x] `test_marking_no_moves_it_out_of_the_queue`
+- [x] `test_a_contact_is_committed_immediately` (§9)
 
 ## T6 — `contacts.csv`
 
-- [ ] `test_the_export_writes_the_columns_the_contract_names`
-- [ ] `test_the_export_is_utf8_with_bom_and_survives_umlauts`
-- [ ] `test_the_export_is_atomic_and_leaves_the_old_file_on_a_crash`
-- [ ] `test_the_export_carries_her_outcome_and_notes`
+- [x] `test_the_columns_are_the_ones_the_contract_names`
+- [x] `test_umlauts_and_esszet_survive`
+- [x] `test_a_crash_mid_export_leaves_the_previous_file_intact`
+- [x] `test_the_export_carries_her_outcome_and_notes`
 
 ## T7 — The German phone script and the email draft
 
-- [ ] `test_a_script_is_five_lines_of_german_each_with_an_english_gloss`
-- [ ] `test_a_script_names_the_place_and_the_city`
-- [ ] `test_a_script_says_she_is_a_student_looking_for_a_minijob`
-- [ ] `test_an_email_draft_names_the_place_and_her_availability`
-- [ ] `test_an_email_draft_has_a_subject_and_a_greeting`
-- [ ] `test_one_script_per_kind_is_generated_not_one_per_place`
-- [ ] `test_a_second_place_of_the_same_kind_spends_no_call`
-- [ ] `test_a_script_that_comes_back_unusable_is_refused_not_stored`
-- [ ] `test_a_spent_quota_leaves_the_scripts_already_written`
-- [ ] `test_nothing_identifying_beyond_her_first_name_is_sent`
+- [x] `test_a_script_is_five_lines_of_german_each_with_an_english_gloss`
+- [x] `test_a_rendered_script_names_the_place_and_the_city`
+- [x] `test_the_prompt_says_she_is_a_student_looking_for_a_minijob`
+- [x] `test_a_rendered_email_names_the_place_and_her_availability`
+- [x] `test_an_email_has_a_subject_and_a_greeting`
+- [x] `test_one_call_per_kind_is_made_not_one_per_place`
+- [x] `test_a_second_place_of_the_same_kind_spends_no_call`
+- [x] `test_a_refused_kind_is_not_stored`
+- [x] `test_a_spent_quota_keeps_the_kinds_already_written`
+- [x] `test_only_her_first_name_is_sent`
 
 ## T8 — Imprint lookup, for the website-only places
 
-- [ ] `test_an_email_is_extracted_from_a_saved_imprint_page`
-- [ ] `test_the_lookup_is_skipped_when_an_email_already_exists`
-- [ ] `test_a_page_with_no_email_leaves_the_place_excluded`
-- [ ] `test_an_obfuscated_address_is_recovered` (`name (at) domain.de`)
-- [ ] `test_only_one_page_per_site_is_fetched`
-- [ ] `test_a_site_that_does_not_answer_costs_only_that_place`
+- [x] `test_an_email_is_extracted_from_a_saved_imprint_page`
+- [x] `test_the_lookup_is_skipped_when_an_email_already_exists`
+- [x] `test_a_site_that_answers_without_an_email_yields_nothing`
+- [x] `test_an_obfuscated_at_sign_is_recovered` (`name (at) domain.de`)
+- [x] `test_only_one_page_is_fetched_once_it_answers`
+- [x] `test_a_site_that_does_not_answer_costs_only_that_place`
 
 ## T9 — The Contacts page
 
-- [ ] `test_the_page_lists_contacts_best_first`
-- [ ] `test_the_page_shows_the_phone_the_email_and_the_kind`
-- [ ] `test_the_page_offers_the_script_for_that_place`
-- [ ] `test_the_page_offers_the_email_draft_as_a_mailto`
-- [ ] `test_marking_called_persists_across_a_restart`
-- [ ] `test_a_marked_contact_leaves_the_queue_and_can_be_found_again`
-- [ ] `test_the_empty_state_says_how_to_build_the_list`
-- [ ] `test_the_page_is_english_except_the_script_itself`
-- [ ] `test_the_nav_links_to_the_contacts_page`
+- [x] `test_the_page_lists_contacts_best_first`
+- [x] `test_the_page_shows_the_phone_the_kind_and_the_street`
+- [x] `test_the_page_offers_the_script_for_that_place`
+- [x] `test_an_email_place_offers_a_mailto`
+- [x] `test_marking_it_survives_a_restart_of_the_app`
+- [x] `test_a_marked_place_leaves_the_queue_but_can_be_found_again`
+- [x] `test_an_empty_call_list_says_how_to_build_it`
+- [x] `test_everything_except_the_script_is_english`
+- [x] `test_the_nav_links_to_the_contacts_page`
 - [ ] `test_a_contacts_run_starts_from_the_browser_and_narrates`
 
 ## T10 — The CLI command, and one live contract test
 
-- [ ] `test_the_command_stores_contacts_and_writes_the_csv`
-- [ ] `test_the_command_says_what_it_found_per_city`
-- [ ] `test_the_command_survives_a_city_with_no_places`
-- [ ] `tests/live/test_overpass_contract.py` — Neuburg still returns places with
+- [x] `test_the_command_stores_contacts_and_writes_the_csv`
+- [x] `test_it_says_what_it_found_per_city`
+- [x] `test_a_city_with_no_places_says_so_rather_than_nothing`
+- [x] `tests/live/test_overpass_contract.py` — Neuburg still returns places with
       contact details, and the endpoint list still has a working member
 
 ## T11 — Run it for real, and record what it did

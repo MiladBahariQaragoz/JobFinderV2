@@ -147,10 +147,13 @@ def _write_scripts(connection, script_writer, kinds: tuple[str, ...], result: Co
 
     for kind, pair in (texts or {}).items():
         script, email_body = pair
+        # One text per kind, substituted per place. Storing the template itself
+        # put "Ich bin Studentin in {city}" on screen — and she reads these lines
+        # aloud, so a surviving placeholder is her saying a brace to a stranger.
         connection.execute(
-            "UPDATE contacts SET script = ?,"
-            # The email is per place: the same body with this place's name in it.
-            " email_draft = REPLACE(?, '{place}', name)"
+            "UPDATE contacts SET"
+            " script = REPLACE(REPLACE(?, '{place}', name), '{city}', COALESCE(city, '')),"
+            " email_draft = REPLACE(REPLACE(?, '{place}', name), '{city}', COALESCE(city, ''))"
             " WHERE kind = ?",
             (script, email_body, kind),
         )

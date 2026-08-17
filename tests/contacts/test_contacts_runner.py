@@ -348,6 +348,56 @@ class TestTheScripts:
 
         assert sorted(written) == ["bakery", "bar"]
 
+    def test_no_placeholder_survives_into_what_she_reads(self, settings):
+        """Found on the real page: the stored script read "{place} — {city}" and
+        "Ich bin Studentin in {city}". She reads these lines aloud to a stranger,
+        so a placeholder that reaches the screen is the worst kind of bug here —
+        it is not a wrong number, it is her saying a brace out loud."""
+
+        def fake_writer(kinds):
+            return {
+                kind: (
+                    "{place} — {city}\n\nIch bin Studentin in {city}.",
+                    "Guten Tag,\n\nein Minijob bei {place} in {city}.",
+                )
+                for kind in kinds
+            }
+
+        source = FakeSource({"Neuburg an der Donau": [bakery()]})
+
+        run_contacts(settings, source, cities=("Neuburg an der Donau",), script_writer=fake_writer)
+
+        connection = connect(settings.db_path)
+        try:
+            stored = contact_by_osm_id(connection, "node/1")
+        finally:
+            connection.close()
+        for field in (stored["script"], stored["email_draft"]):
+            assert "{place}" not in field
+            assert "{city}" not in field
+        assert "Bäckerei" in stored["script"]
+        assert "Neuburg an der Donau" in stored["script"]
+        assert "Neuburg an der Donau" in stored["email_draft"]
+
+    def test_two_places_of_one_kind_get_their_own_names_in_their_own_texts(self, settings):
+        def fake_writer(kinds):
+            return {kind: ("Bei {place}.", "An {place}.") for kind in kinds}
+
+        source = FakeSource(
+            {"Neuburg an der Donau": [bakery(1, "Bäckerei Eins"), bakery(2, "Bäckerei Zwei")]}
+        )
+
+        run_contacts(settings, source, cities=("Neuburg an der Donau",), script_writer=fake_writer)
+
+        connection = connect(settings.db_path)
+        try:
+            first = contact_by_osm_id(connection, "node/1")
+            second = contact_by_osm_id(connection, "node/2")
+        finally:
+            connection.close()
+        assert first["script"] == "Bei Bäckerei Eins."
+        assert second["script"] == "Bei Bäckerei Zwei."
+
     def test_a_place_gets_the_script_for_its_kind(self, settings):
         def fake_writer(kinds):
             return {kind: (f"say this at a {kind}", "write this to {place}") for kind in kinds}

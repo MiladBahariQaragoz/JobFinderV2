@@ -530,6 +530,7 @@ def _contacts_context(request: Request) -> dict:
         params = [("show", "all")] if show_all else []
         return "/contacts?" + urlencode([*params, ("page", number)])
 
+    manager = request.app.state.run_manager
     return {
         "contacts": shown,
         "waiting": waiting if page == pages else [],
@@ -540,6 +541,9 @@ def _contacts_context(request: Request) -> dict:
         "prev_url": link(page - 1) if page > 1 else None,
         "next_url": link(page + 1) if page < pages else None,
         "worked_through": counts["total"] > 0 and not queue and not show_all,
+        "finding": manager.is_finding_contacts() if manager is not None else False,
+        "contacts_failure": manager.contacts_failure() if manager is not None else None,
+        "default_cities": ", ".join(DEFAULT_CITIES),
     }
 
 
@@ -617,6 +621,33 @@ def _contacts_response(request: Request):
     if request.headers.get("HX-Request"):
         return render(request, "_contact_rows.html", _contacts_context(request))
     return RedirectResponse("/contacts", status_code=303)
+
+
+@router.post("/run/contacts", response_class=HTMLResponse)
+async def run_contacts_now(request: Request):
+    """Build the call-list without a terminal — the same gap the Explain button
+    closed for enrichment."""
+    form = await request.form()
+    manager = request.app.state.run_manager
+    try:
+        radius = int(str(form.get("radius") or "")) if form.get("radius") else None
+    except ValueError:
+        radius = None
+    try:
+        manager.start_contacts(cities=str(form.get("cities") or "") or None, radius_km=radius)
+    except StartRefused as exc:
+        context = _contacts_context(request)
+        context["refusal"] = exc
+        return render(request, "_contact_rows.html", context)
+    return _contacts_response(request)
+
+
+@router.post("/run/contacts/cancel", response_class=HTMLResponse)
+def cancel_contacts_run(request: Request):
+    manager = request.app.state.run_manager
+    if manager is not None:
+        manager.cancel_contacts()
+    return _contacts_response(request)
 
 
 @router.get("/settings", response_class=HTMLResponse)

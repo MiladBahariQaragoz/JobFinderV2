@@ -45,6 +45,18 @@ def _comma_list(raw: str | None) -> list[str]:
     return [part.strip() for part in (raw or "").split(",") if part.strip()]
 
 
+def _her_languages(settings: Settings) -> tuple[str, ...]:
+    """The languages on her CV, for the call-list's cuisine nudge. Empty when
+    there is no CV — a missing CV must never stop the list being built."""
+    try:
+        from jobfinder.profile import load_profile
+
+        resume = load_profile(settings.pool_path)
+    except Exception:
+        return ()
+    return tuple(language.name.strip().lower() for language in resume.languages)
+
+
 class RunManager:
     """One search at a time, in a daemon thread, journalled by the runner."""
 
@@ -55,8 +67,12 @@ class RunManager:
         adapter_factory: Callable | None = None,
         companion_factory: Callable | None = None,
         runner: Callable | None = None,
+        contacts_runner: Callable | None = None,
+        contacts_source_factory: Callable | None = None,
     ):
         self._settings = settings
+        self._contacts_runner = contacts_runner
+        self._contacts_source_factory = contacts_source_factory
         # `adapter_factory()` builds one leg's adapters, exactly as the CLI's
         # does — tests hand in a fake source, production builds the registry.
         self._adapter_factory = adapter_factory or production_adapter_factory(settings)
@@ -73,6 +89,12 @@ class RunManager:
         self._enrich_companion = None
         self._enrich_failure: str | None = None
         self._enrich_stopping = False
+        # The call-list run: a third independent slot, for the same reason as the
+        # second. Overpass and the job boards are different hosts and different
+        # waits, so building the call-list must not be refused by a search.
+        self._contacts_thread: threading.Thread | None = None
+        self._contacts_cancel = threading.Event()
+        self._contacts_failure: str | None = None
 
     # -- the panel's questions -------------------------------------------------
 
@@ -101,6 +123,14 @@ class RunManager:
         """Why the last enrichment pass died early, in her words — or None."""
         with self._lock:
             return self._enrich_failure
+
+    def is_finding_contacts(self) -> bool:
+        return self._contacts_thread is not None and self._contacts_thread.is_alive()
+
+    def contacts_failure(self) -> str | None:
+        """Why the last call-list run died early, in her words — or None."""
+        with self._lock:
+            return self._contacts_failure
 
     # -- her buttons -----------------------------------------------------------
 
@@ -160,6 +190,77 @@ class RunManager:
             target=self._enrich_work, args=(companion,), daemon=True, name="enrich-run"
         )
         self._enrich_thread.start()
+
+    def start_contacts(self, *, cities: str | None = None, radius_km: int | None = None) -> None:
+        """Build the call-list from the browser (Phase 9).
+
+        Overpass answers slowly and unevenly — a city can take minutes — so this
+        is a thread and a journal row like every other run, not a request she
+        waits on.
+        """
+        if self.is_finding_contacts():
+            raise StartRefused(
+                "The call-list is already being built — watch it below, or cancel it first.",
+                link="/contacts",
+            )
+
+        from jobfinder.cli import DEFAULT_CITIES
+
+        names = tuple(_comma_list(cities) or DEFAULT_CITIES)
+        with self._lock:
+            self._contacts_failure = None
+        self._contacts_cancel = threading.Event()
+        self._contacts_thread = threading.Thread(
+            target=self._contacts_work,
+            args=(names, radius_km),
+            daemon=True,
+            name="contacts-run",
+        )
+        self._contacts_thread.start()
+
+    def cancel_contacts(self) -> None:
+        """Stop between cities. Every place already found is kept (§9)."""
+        self._contacts_cancel.set()
+
+    def wait_contacts(self, timeout: float | None = None) -> None:
+        if self._contacts_thread is not None:
+            self._contacts_thread.join(timeout)
+
+    def _contacts_work(self, cities: tuple[str, ...], radius_km: int | None) -> None:
+        try:
+            from jobfinder.contacts.runner import DEFAULT_RADIUS_KM, run_contacts
+
+            runner = self._contacts_runner or run_contacts
+            runner(
+                settings=self._settings,
+                source=self._contacts_source(),
+                cities=cities,
+                radius_km=radius_km or DEFAULT_RADIUS_KM,
+                languages=_her_languages(self._settings),
+                stop_event=self._contacts_cancel,
+            )
+        except Exception as exc:  # the page must have a sentence, not a traceback
+            with self._lock:
+                self._contacts_failure = (
+                    f"Building the call-list stopped unexpectedly ({type(exc).__name__}). "
+                    "Every place it found is safe — try again."
+                )
+
+    def _contacts_source(self):
+        if self._contacts_source_factory is not None:
+            return self._contacts_source_factory()
+        from jobfinder.sources.http import PoliteClient
+        from jobfinder.sources.overpass import OverpassSource
+
+        # Overpass is a donated public server: a long gap between requests is the
+        # etiquette, and it is what stops a 429 becoming the normal answer.
+        return OverpassSource(
+            PoliteClient(
+                cache_dir=self._settings.data_dir / "http-cache",
+                budget=self._settings.request_budget,
+                min_delay=6.0,
+            )
+        )
 
     def cancel(self) -> None:
         """Stop between pages. Everything already stored is kept (§9)."""

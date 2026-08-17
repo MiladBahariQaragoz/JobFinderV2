@@ -321,6 +321,140 @@ class TestMarkingWhatHappened:
             assert label in body
 
 
+class TestBuildingItFromTheBrowser:
+    """The same reason the Explain button exists: a feature that needs a terminal
+    is a feature she does not have. A contacts run takes minutes — measured, one
+    city took several — so it narrates from the journal like every other run."""
+
+    def _managed(self, settings, runner=None, source=None):
+        from jobfinder.web.runs import RunManager
+
+        manager = RunManager(
+            settings,
+            adapter_factory=lambda: [],
+            contacts_runner=runner,
+            contacts_source_factory=(lambda: source) if source is not None else None,
+        )
+        return manager
+
+    def test_a_contacts_run_starts_from_the_browser_and_narrates(self, settings):
+        """The page shows what the *list* holds, not what a run row claims — so
+        this proves the run happened by the places it left behind."""
+        import threading
+
+        asked: dict = {}
+        started = threading.Event()
+
+        def fake_runner(**kwargs):
+            asked.update(kwargs)
+            started.set()
+            from jobfinder.contacts.runner import ContactsRun
+
+            connection = connect(settings.db_path)
+            try:
+                migrate(connection)
+                upsert_contact(connection, place(name="Bäckerei Gefunden"), score=85, reason="")
+            finally:
+                connection.close()
+            return ContactsRun(found=1, reachable=1, total_stored=1)
+
+        manager = self._managed(settings, runner=fake_runner)
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            response = client.post("/run/contacts", data={"cities": "Neuburg an der Donau"})
+            assert response.status_code in (200, 303)
+            manager.wait_contacts(timeout=10)
+
+            body = client.get("/contacts").text
+
+        assert started.is_set()
+        assert asked["cities"] == ("Neuburg an der Donau",)  # the towns she typed
+        assert "Bäckerei Gefunden" in body
+
+    def test_the_towns_she_typed_are_the_ones_searched(self, settings):
+        asked: dict = {}
+
+        def fake_runner(**kwargs):
+            asked.update(kwargs)
+
+        manager = self._managed(settings, runner=fake_runner)
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            client.post("/run/contacts", data={"cities": "Ingolstadt, München"})
+            manager.wait_contacts(timeout=10)
+
+        assert asked["cities"] == ("Ingolstadt", "München")
+
+    def test_an_empty_towns_field_falls_back_to_her_usual_three(self, settings):
+        from jobfinder.cli import DEFAULT_CITIES
+
+        asked: dict = {}
+
+        manager = self._managed(settings, runner=lambda **kwargs: asked.update(kwargs))
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            client.post("/run/contacts", data={"cities": ""})
+            manager.wait_contacts(timeout=10)
+
+        assert asked["cities"] == DEFAULT_CITIES
+
+    def test_a_second_start_while_one_runs_is_refused_politely(self, settings):
+        import threading
+
+        gate = threading.Event()
+
+        manager = self._managed(settings, runner=lambda **kwargs: gate.wait(timeout=10))
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            client.post("/run/contacts", data={"cities": "Neuburg an der Donau"})
+
+            response = client.post("/run/contacts", data={"cities": "Ingolstadt"})
+
+            assert response.status_code == 200
+            assert "already" in response.text
+        gate.set()
+        manager.wait_contacts(timeout=10)
+
+    def test_the_page_offers_the_button_and_the_cities(self, settings):
+        manager = self._managed(settings)
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            body = client.get("/contacts").text
+
+        assert 'action="/run/contacts"' in body
+        assert 'name="cities"' in body
+
+    def test_a_failing_run_leaves_a_sentence_not_a_traceback(self, settings):
+        def exploding(**kwargs):
+            raise RuntimeError("overpass is having a day")
+
+        manager = self._managed(settings, runner=exploding)
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            client.post("/run/contacts", data={"cities": "Neuburg an der Donau"})
+            manager.wait_contacts(timeout=10)
+
+            body = client.get("/contacts").text
+
+        assert "RuntimeError" in body
+        assert "Traceback" not in body
+
+    def test_cancel_stops_a_contacts_run(self, settings):
+        import threading
+
+        cancelled = threading.Event()
+
+        def watching(**kwargs):
+            stop_event = kwargs.get("stop_event")
+            for _ in range(200):
+                if stop_event is not None and stop_event.is_set():
+                    cancelled.set()
+                    return
+                threading.Event().wait(0.01)
+
+        manager = self._managed(settings, runner=watching)
+        with TestClient(create_app(settings, run_manager=manager)) as client:
+            client.post("/run/contacts", data={"cities": "Neuburg an der Donau"})
+            client.post("/run/contacts/cancel")
+            manager.wait_contacts(timeout=10)
+
+        assert cancelled.is_set()
+
+
 class TestTheEmptyState:
     def test_an_empty_call_list_says_how_to_build_it(self, settings):
         connection = connect(settings.db_path)
