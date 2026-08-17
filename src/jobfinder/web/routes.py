@@ -8,6 +8,7 @@ query, so it is always the truth in the database.
 
 from __future__ import annotations
 
+from pathlib import Path
 from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Request
@@ -395,10 +396,41 @@ def run_enrich_cancel(request: Request):
     return RedirectResponse("/enrich", status_code=303)
 
 
-@router.get("/settings", response_class=HTMLResponse)
-def settings_page(request: Request):
-    """One page of "is it set up": which provider keys exist, which do not,
-    and where to get the missing ones. Key values are never shown."""
+def _cv_context(request: Request) -> dict:
+    """What Settings says about her CV: present, missing, broken, or a template.
+
+    Only what confirms the right file landed — languages, skill groups, years.
+    Her address, phone and email stay in the file (§ Cross-cutting concerns);
+    the name is shown because it is the fastest way to see the upload worked,
+    and this page renders on her own laptop only.
+    """
+    from jobfinder.profile import ProfileError, is_unfilled_template, load_profile
+
+    settings = request.app.state.settings
+    if not settings.pool_path.exists():
+        return {"cv": None, "cv_error": None, "cv_is_template": False}
+
+    try:
+        resume = load_profile(settings.pool_path)
+    except ProfileError as exc:
+        return {"cv": None, "cv_error": str(exc), "cv_is_template": False}
+
+    groups = sorted(resume.skill_groups.items(), key=lambda pair: len(pair[1]), reverse=True)
+    return {
+        "cv": {
+            "name": resume.basics.get("name", ""),
+            "headline": resume.basics.get("headline", ""),
+            "languages": [f"{lang.name} ({lang.level})" for lang in resume.languages],
+            "skill_groups": [{"name": name, "count": len(items)} for name, items in groups[:3]],
+            "years": resume.years_of_experience(),
+            "jobs": len(resume.experience),
+        },
+        "cv_error": None,
+        "cv_is_template": is_unfilled_template(resume),
+    }
+
+
+def _settings_context(request: Request) -> dict:
     import llmpool
 
     app_settings = request.app.state.settings
@@ -416,8 +448,67 @@ def settings_page(request: Request):
         for name, env_var, url in llmpool.missing_keys(catalog, env={})
     ]
     providers.sort(key=lambda provider: (not provider["present"], provider["name"]))
-    return render(
-        request,
-        "settings.html",
-        {"providers": providers, "project_root": app_settings.project_root},
+    context = {"providers": providers, "project_root": app_settings.project_root}
+    context.update(_cv_context(request))
+    return context
+
+
+@router.get("/settings", response_class=HTMLResponse)
+def settings_page(request: Request):
+    """One page of "is it set up": which provider keys exist, which do not,
+    where to get the missing ones, and whether her CV is in place. Key values
+    are never shown."""
+    return render(request, "settings.html", _settings_context(request))
+
+
+@router.get("/settings/cv/template")
+def cv_template(request: Request):
+    """The blank CV template, as a download — she should never have to find a
+    file beside the source code to get started."""
+    from fastapi.responses import FileResponse
+
+    settings = request.app.state.settings
+    template = settings.project_root / "pool.template.yaml"
+    if not template.exists():
+        # Running from an installed package rather than the checkout.
+        template = Path(__file__).resolve().parents[3] / "pool.template.yaml"
+    return FileResponse(
+        template,
+        media_type="application/x-yaml",
+        filename="pool.template.yaml",
+        headers={"Content-Disposition": 'attachment; filename="pool.template.yaml"'},
     )
+
+
+@router.post("/settings/cv", response_class=HTMLResponse)
+async def upload_cv(request: Request):
+    """Take the filled template back. Validated first, written second — the CV
+    she already had survives a bad paste (Phase 1 owns the error sentences)."""
+    from jobfinder.profile import ProfileError, save_profile_text
+
+    settings = request.app.state.settings
+    form = await request.form()
+    upload = form.get("cv")
+    if hasattr(upload, "read"):
+        try:
+            raw = await upload.read()
+        finally:
+            # Starlette spools the upload to a temporary file; leaving it open
+            # leaks a handle per upload, which on Windows also keeps the temp
+            # file undeletable.
+            await upload.close()
+    else:
+        raw = b""
+
+    context = _settings_context(request)
+    try:
+        # Her CV is one file she typed; a stray BOM from a Windows editor is
+        # hers, not a reason to refuse the upload.
+        save_profile_text(raw.decode("utf-8-sig"), settings.pool_path)
+    except (ProfileError, UnicodeDecodeError) as exc:
+        context["upload_error"] = str(exc)
+        return render(request, "settings.html", context, status_code=200)
+
+    if request.headers.get("HX-Request"):
+        return render(request, "settings.html", _settings_context(request))
+    return RedirectResponse("/settings", status_code=303)
