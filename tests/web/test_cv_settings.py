@@ -186,6 +186,25 @@ class TestUploadingACv:
 
         assert app_settings.pool_backup_path.read_bytes() == original
 
+    def test_the_upload_is_never_logged(self, app_settings, client, caplog, capsys):
+        """The file holds her name, address, phone and email. A log line quoting
+        it — or an error page echoing it back — puts all four somewhere she never
+        chose to put them."""
+        with caplog.at_level("DEBUG"):
+            upload(client, VALID_CV)
+            refusal = upload(client, VALID_CV.replace("email: maryam@example.com", ""))
+
+        printed = capsys.readouterr()
+        haystacks = {
+            "logs": caplog.text,
+            "stdout": printed.out,
+            "stderr": printed.err,
+            "the refusal page": refusal.text,
+        }
+        for secret in ("+49 151 23456789", "Musterstraße 7", "maryam@example.com"):
+            for where, haystack in haystacks.items():
+                assert secret not in haystack, f"{secret!r} leaked into {where}"
+
     def test_a_valid_upload_survives_its_umlauts(self, app_settings, client):
         upload(client, VALID_CV)
 

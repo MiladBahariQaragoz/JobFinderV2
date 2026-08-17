@@ -120,8 +120,8 @@ every plain-date ad posted today.
 - [x] `test_start_enrich_is_allowed_while_a_search_is_running`
 - [x] `test_cancel_enrich_stops_the_pass_and_keeps_what_it_saved`
 - [x] `test_cancel_enrich_does_not_cancel_a_running_search`
-- [x] `test_enrich_refusal_names_the_missing_key_and_links_to_settings`
-- [x] `test_enrich_refusal_names_the_unreadable_cv_and_links_to_settings`
+- [x] `test_enrich_without_a_key_refuses_with_a_sentence_and_a_link`
+- [x] `test_enrich_without_a_readable_cv_refuses_and_links_to_settings`
 - [x] `test_an_enrichment_that_dies_leaves_a_sentence_not_a_traceback`
 
 `start_enrich(limit=...)` builds the companion through the existing factory
@@ -139,23 +139,23 @@ batch.
 ### A3 — `POST /run/enrich` and `POST /run/enrich/cancel`
 
 - [x] `test_post_run_enrich_starts_a_pass_and_returns_the_panel`
-- [x] `test_post_run_enrich_honours_the_limit_she_typed`
-- [x] `test_post_run_enrich_without_a_key_renders_the_refusal_not_a_500`
-- [x] `test_post_run_enrich_cancel_stops_it_and_returns_the_panel`
-- [x] `test_a_plain_form_post_redirects_back_to_the_enrich_page`
+- [x] `test_post_run_enrich_honours_the_bound_she_typed`
+- [x] `test_starting_without_a_key_renders_the_refusal_not_a_500`
+- [x] `test_cancel_stops_it_and_returns_the_panel`
+- [x] `test_a_plain_form_post_redirects_back_to_the_page`
 
 Same shape as `/run/start`: HTMX gets `_progress.html`, a plain post gets a 303.
 
 ### A4 — The Enrich page says what it will spend before spending it
 
-- [x] `test_the_enrich_form_names_how_many_jobs_have_no_answer_yet`
-- [x] `test_the_enrich_form_says_one_call_per_job_before_she_presses_it`
-- [x] `test_the_enrich_form_offers_a_limit_defaulting_to_fifty`
-- [x] `test_a_fully_enriched_store_offers_no_button_and_says_so`
-- [x] `test_a_live_enrichment_shows_its_count_and_a_cancel_button`
-- [x] `test_the_enrich_panel_survives_a_reload_mid_pass`
-- [x] `test_an_interrupted_enrichment_says_pressing_it_again_continues`
-- [x] `test_the_nav_links_to_the_enrich_page`
+- [x] `test_the_page_names_how_many_jobs_have_no_answer_yet`
+- [x] `test_the_page_says_one_call_per_job_before_she_presses_it`
+- [x] `test_the_page_offers_a_bound_defaulting_to_fifty`
+- [x] `test_a_fully_explained_store_offers_no_button_and_says_so`
+- [x] `test_a_live_pass_shows_its_count_and_a_cancel_button`
+- [x] `test_the_panel_survives_a_reload_mid_pass`
+- [x] `test_cancel_stops_it_and_returns_the_panel`
+- [x] `test_the_nav_links_to_the_page`
 
 The Enrich surface is its own page (`/enrich`), for the reason searching got
 one: the two buttons cost different things, and side by side she cannot see
@@ -216,8 +216,8 @@ trusting the model. It appears in the run's `errors` list, not as a failure.
 
 ### B1 — The template is downloadable
 
-- [x] `test_get_pool_template_serves_the_file_as_an_attachment`
-- [x] `test_the_template_download_is_utf8_and_keeps_its_umlauts`
+- [x] `test_the_template_is_served_as_a_file_she_can_save`
+- [x] `test_the_template_download_is_the_file_in_the_repo`
 
 `pool.template.yaml` ships in the repo root today. It is served from
 `/settings/cv/template` so she never has to find it on disk.
@@ -226,8 +226,8 @@ trusting the model. It appears in the run's `errors` list, not as a failure.
 
 - [x] `test_a_valid_upload_is_written_to_pool_yaml`
 - [x] `test_a_valid_upload_keeps_the_previous_file_as_a_backup`
-- [x] `test_an_invalid_upload_leaves_the_existing_pool_yaml_untouched`
-- [x] `test_an_invalid_upload_shows_the_profile_error_sentence`
+- [x] `test_an_invalid_upload_leaves_the_existing_file_untouched`
+- [x] `test_an_invalid_upload_shows_the_sentence_naming_the_field`
 - [x] `test_an_upload_that_is_not_yaml_at_all_is_refused_readably`
 - [x] `test_an_empty_upload_is_refused_readably`
 - [x] `test_the_upload_is_never_logged` (her name and address are in it)
@@ -236,7 +236,7 @@ trusting the model. It appears in the run's `errors` list, not as a failure.
 
 - [x] `test_settings_says_no_cv_yet_and_offers_the_template`
 - [x] `test_settings_summarises_the_cv_it_found`
-- [x] `test_settings_names_the_field_and_line_when_the_cv_will_not_parse`
+- [x] `test_settings_names_the_problem_when_the_cv_will_not_parse`
 - [x] `test_settings_never_renders_her_address_or_phone_number`
 
 The summary is the one `jobfinder profile validate` prints — name withheld:
@@ -246,9 +246,9 @@ might see.
 
 ### B4 — Role suggestions can be asked for from the browser
 
-- [x] `test_suggest_roles_button_appears_once_a_cv_is_present`
-- [x] `test_post_suggest_roles_stores_and_renders_the_titles`
-- [x] `test_suggest_roles_without_a_key_refuses_with_a_link_not_a_500`
+- [x] `test_the_button_appears_once_a_cv_is_present`
+- [x] `test_asking_stores_and_renders_the_titles`
+- [x] `test_asking_without_a_key_refuses_with_a_sentence_not_a_500`
 - [x] `test_stored_suggestions_are_shown_without_spending_a_call`
 - [x] `test_a_suggested_role_links_into_the_search_form_as_a_keyword`
 
@@ -338,39 +338,74 @@ the upload arrived as.
 
 ### C1 — One function turns every stored shape into a comparable date
 
-- [ ] `test_a_plain_date_is_already_comparable`
-- [ ] `test_a_zulu_timestamp_becomes_its_date`
-- [ ] `test_an_offset_timestamp_becomes_its_date` (the `+00:00` shape)
-- [ ] `test_a_local_offset_timestamp_is_converted_before_the_date_is_taken`
-- [ ] `test_junk_and_none_become_none_rather_than_raising`
-- [ ] `test_raw_posting_exposes_published_on_from_published_at`
+- [x] `test_a_plain_date_is_already_comparable`
+- [x] `test_a_zulu_timestamp_becomes_its_date`
+- [x] `test_an_offset_timestamp_becomes_its_date` (the `+00:00` shape)
+- [x] `test_a_local_offset_is_converted_before_the_date_is_taken`
+- [x] `test_junk_becomes_none_rather_than_raising`
+- [x] `test_a_posting_derives_the_comparable_date_from_its_raw_one`
 
 `dates.py` `published_on(raw)` → `YYYY-MM-DD | None`. Every adapter reaches it
 through `RawPosting.published_on`, so no adapter has to remember.
 
 ### C2 — Schema v7 stores it, and backfills the 859 rows already there
 
-- [ ] `test_upsert_stores_the_comparable_date_beside_the_raw_one`
-- [ ] `test_migrating_a_v6_database_backfills_published_on`
-- [ ] `test_migrating_twice_changes_nothing`
-- [ ] `test_a_row_with_an_unparseable_date_backfills_to_null_not_a_crash`
+- [x] `test_upsert_stores_the_comparable_date_beside_the_raw_one`
+- [x] `test_migrating_a_v6_database_backfills_every_row`
+- [x] `test_migrating_twice_changes_nothing`
+- [x] `test_a_row_whose_date_is_junk_backfills_to_null_not_a_crash`
 
 ### C3 — The filter
 
-- [ ] `test_posted_within_a_week_excludes_an_older_ad`
-- [ ] `test_posted_within_a_week_includes_a_plain_date_ad_from_today`
+- [x] `test_posted_within_three_days_excludes_an_older_ad`
+- [x] `test_an_iso_timestamp_from_today_is_included`
       (the bug a string comparison would have shipped)
-- [ ] `test_posted_within_any_is_no_filter_at_all`
-- [ ] `test_a_job_with_no_date_is_excluded_when_a_bound_is_set`
-- [ ] `test_an_unknown_bound_is_dropped_like_any_stale_link`
-- [ ] `test_the_bound_survives_paging`
-- [ ] `test_the_bound_is_named_in_the_active_filters_line`
-- [ ] `test_the_empty_state_offers_to_loosen_the_date_bound`
+- [x] `test_no_bound_is_no_filter_at_all`
+- [x] `test_a_job_with_no_date_is_excluded_when_a_bound_is_set`
+- [x] `test_a_stale_bound_in_a_link_still_renders_a_list`
+- [x] `test_the_bound_survives_paging`
+- [x] `test_the_bound_is_named_in_the_active_filters_line`
+- [x] `test_the_empty_state_offers_to_widen_the_date_bound`
 
 ### C4 — Run it for real
 
-- [ ] Filter her store by each bound and record the counts here, against
-      counts taken straight from SQL — the filter and the database must agree
+Migrated on a copy of her database first, then on the real one, on 2026-08-17.
+
+- [x] **The migration filled all 859 rows.** `user_version` 6 → 7,
+      `published_on` non-null on 859 of 859, every value matching
+      `YYYY-MM-DD`, and the 277 rows whose `published_at` is a timestamp still
+      carry it unchanged. Range 2022-12-15 → 2026-08-16, unchanged by the
+      derivation.
+- [x] **Every shape came through.** `BA '2026-07-01' → '2026-07-01'`,
+      `AZ '2026-06-20T12:20:44Z' → '2026-06-20'`,
+      `AN '2026-08-16T02:09:29+00:00' → '2026-08-16'`,
+      `KA '2026-08-16' → '2026-08-16'`, `XI '2026-07-02' → '2026-07-02'`.
+- [x] **The filter and the database agree on every bound**, page count against a
+      count taken straight from SQL:
+
+      | Posted within | The page says | SQL says |
+      |---|---|---|
+      | any time      | 859 | 859 |
+      | 3 days        |  68 |  68 |
+      | a week        | 137 | 137 |
+      | a month       | 385 | 385 |
+
+- [x] **The write path was proved by a real search, not only by the backfill.**
+      `jobfinder search --cities "Neuburg an der Donau" --types minijob` stored
+      one new job across five sources; `published_on` is still non-null on every
+      row of 860, and the newest rows show `AZ '2026-07-27T12:31:02Z' →
+      '2026-07-27'` beside plain BA dates.
+- [x] **The empty state names the bound and what it hides.** Asking for
+      `Atlantis` in the last week: "You asked for jobs in Atlantis, posted in the
+      last week — nothing in the store fits all of that", then "Ask for older
+      postings", then "An ad that does not say when it was posted is hidden while
+      a date filter is on."
+
+**No defect this time**, which is worth saying only because the first two
+sections each had one. What the measurement did change is the plan's premise:
+MASTER_PLAN says `published_at` comes in **two** shapes, and her store holds
+**three** — Arbeitnow's `+00:00` offset is a third. All three are handled by one
+function, and the test file names each of them.
 
 ---
 
