@@ -15,13 +15,21 @@ constraint the code below obeys rather than a preference:
 - **One request per tag.** The union of all nine tags answered `504`; the nine
   small queries answered in seconds. A per-tag request also means a refused tag
   costs one kind of place instead of the whole city.
-- **The canonical endpoint cannot be relied on.**
-  `overpass-api.de/api/interpreter` refused every attempt across four minutes
-  while its own announced backends served the same query instantly, with
-  `api/status` reporting free slots. Hence a list of endpoints, tried in turn.
+- **No single endpoint can be relied on, and which one works changes.** Measured
+  twice on 2026-08-17, four hours apart, with opposite results.
+  `overpass-api.de` refused every attempt for four minutes in the morning while
+  `gall.openstreetmap.de` answered in 0.8 s; by midday `gall` was refusing TCP
+  connections and `overpass-api.de` was answering. `api/status` reported free
+  slots both times, so this is not us being throttled — the backend pool
+  rotates, and its announced member changed from `gall` to `lambert` between the
+  two measurements. Hence a list, tried in turn, **and** a memory of which
+  member last answered.
 - **429 and 504 are normal.** Nine back-to-back queries produced six failures.
   The client's spacing and backoff carry that; this module only has to survive
   a tag that never arrives.
+- **A dead host costs ~21 s to discover** — a TCP timeout, not a status code. Nine
+  tags each walking the whole list would spend twelve minutes learning the same
+  fact nine times, so the working endpoint is remembered for the rest of the run.
 """
 
 from __future__ import annotations
@@ -32,14 +40,15 @@ from typing import Any
 from jobfinder.phones import normalize_phone
 from jobfinder.sources.http import SourceUnavailable
 
-# Tried in order, one per attempt. `overpass-api.de` is deliberately last: it is
-# the documented front door and the one that was down, and its own backends are
-# what answered.
+# Tried in order until one answers, then that one is kept for the rest of the
+# run. All five have served this machine; none of them reliably. `lambert` and
+# `gall` are backends the front door announced on the two days it was measured.
 ENDPOINTS = (
-    "https://gall.openstreetmap.de/api/interpreter",
-    "https://z.overpass-api.de/api/interpreter",
     "https://lz4.overpass-api.de/api/interpreter",
     "https://overpass-api.de/api/interpreter",
+    "https://lambert.openstreetmap.de/api/interpreter",
+    "https://gall.openstreetmap.de/api/interpreter",
+    "https://z.overpass-api.de/api/interpreter",
 )
 
 # The kinds of place worth calling, as (key, value) pairs — one query each.
@@ -178,6 +187,9 @@ class OverpassSource:
         # that. The client's own retries handle a host that is merely busy.
         self.attempts = attempts if attempts is not None else len(endpoints)
         self.failures: list[str] = []
+        # Which endpoint answered last. Discovering a dead host costs ~21 s, so
+        # a run pays that once rather than once per tag.
+        self._preferred = 0
 
     def places_near(self, lat: float, lon: float, *, city: str, radius_km: int = 6) -> list[Place]:
         """Every callable place within `radius_km` of a point, de-duplicated.
@@ -199,14 +211,15 @@ class OverpassSource:
         body = self._query(key, value, lat, lon, radius_km)
         last_error: str | None = None
         for attempt in range(self.attempts):
-            endpoint = self.endpoints[attempt % len(self.endpoints)]
+            index = (self._preferred + attempt) % len(self.endpoints)
             try:
-                payload = self._client.post_json(endpoint, body=body)
+                payload = self._client.post_json(self.endpoints[index], body=body)
                 elements = payload.get("elements")
                 if elements is None:
                     raise ValueError("no 'elements' in the answer")
+                self._preferred = index  # stay on whatever is alive today
                 return elements
-            except (SourceUnavailable, ValueError, KeyError, TypeError) as exc:
+            except (SourceUnavailable, ValueError, KeyError, TypeError, OSError) as exc:
                 last_error = str(exc)
         self.failures.append(f"{key}={value}: {last_error}")
         return None

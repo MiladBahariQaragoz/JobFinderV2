@@ -310,3 +310,77 @@ details.original .body {
 .settings-list .row .meta { display: block; margin-top: 0.15rem; }
 .ok { color: var(--accent); }
 .missing { color: var(--warn); }
+
+/* ---- the call-list (Phase 9) ---------------------------------------------
+   One card per place, because a row she has to act on needs the number, the
+   German to read and the three answers within reach of each other. A table
+   would put the buttons a scroll away from the name.                        */
+.contact-row {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.9rem;
+  background: var(--surface);
+}
+.contact-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+.contact-head h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+.contact-head .meta { margin: 0.1rem 0; }
+.contact-score { text-align: right; flex: 0 0 auto; }
+.contact-score .num { font-size: 1.5rem; font-weight: 600; }
+.contact-routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.8rem 0 0.6rem;
+}
+.contact-script summary { cursor: pointer; color: var(--text-dim); }
+/* The script is read aloud, so it keeps the line breaks it was written with —
+   the English gloss sits indented under each German line. */
+.contact-script pre {
+  white-space: pre-wrap;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  margin: 0.6rem 0 0;
+}
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+.contact-notes {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+  margin-top: 0.7rem;
+}
+.contact-notes label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  gap: 0.25rem;
+  flex: 1 1 auto;
+}
+.contact-notes input {
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+}
+.waiting { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.waiting h2 { font-size: 1rem; }

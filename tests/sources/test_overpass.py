@@ -39,6 +39,11 @@ def by_name(places, name):
     return next((place for place in places if place.name == name), None)
 
 
+def element(osm_type="node", osm_id=1, **tags):
+    """One Overpass element, in the shape the real payload uses."""
+    return {"type": osm_type, "id": osm_id, "tags": tags}
+
+
 class FakeClient:
     """Answers each POST from a script; records the bodies it was given."""
 
@@ -311,6 +316,24 @@ class TestQueryingTheSource:
         assert [place.name for place in found] == ["Café"]
         assert client.urls[0] != client.urls[1]  # a different endpoint the second time
         assert source.failures == []
+
+    def test_the_endpoint_that_last_answered_is_tried_first(self):
+        """Measured twice on 2026-08-17, four hours apart, with opposite results:
+        the two endpoints that answered in under a second in the morning were
+        refusing TCP connections by midday, while one that had been failing was
+        the fast one. A dead host costs ~21 s to discover, so once a run finds a
+        host that answers it stays on it — otherwise nine tags pay that toll
+        nine times over.
+        """
+        good = {"elements": [element(amenity="cafe", name="Café", phone="+4984312071")]}
+        client = FakeClient([SourceUnavailable("504"), good, good])
+        source = OverpassSource(client, tags=(("amenity", "cafe"), ("amenity", "bar")), attempts=2)
+
+        source.places_near(*NEUBURG, city="Neuburg an der Donau", radius_km=6)
+
+        # First tag: endpoint one refused, endpoint two answered. Second tag
+        # must start at endpoint two rather than paying for one again.
+        assert client.urls[1] == client.urls[2]
 
     def test_a_malformed_answer_is_a_failure_not_a_crash(self):
         client = FakeClient([{"no elements here": True}])

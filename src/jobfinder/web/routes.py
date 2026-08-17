@@ -487,6 +487,116 @@ def _settings_context(request: Request) -> dict:
     return context
 
 
+# -- the call-list (Phase 9) ----------------------------------------------------
+
+
+def _contacts_context(request: Request) -> dict:
+    """The call-list as the page needs it: best first, with her decisions."""
+    from jobfinder.store.contacts import contact_counts, list_contacts
+
+    settings = request.app.state.settings
+    show_all = request.query_params.get("show") == "all"
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        counts = contact_counts(connection)
+        # The queue she works through: reachable today, not yet answered for.
+        queue = list_contacts(connection, pending_only=not show_all, reachable_only=True)
+        # Places with a website and no route yet — kept, but not in the queue.
+        waiting = [
+            row
+            for row in list_contacts(connection)
+            if not row["phone"] and not row["email"] and row["website"]
+        ]
+    finally:
+        connection.close()
+
+    return {
+        "contacts": queue,
+        "waiting": waiting,
+        "counts": counts,
+        "show_all": show_all,
+        "worked_through": counts["total"] > 0 and not queue and not show_all,
+    }
+
+
+@router.get("/contacts", response_class=HTMLResponse)
+def contacts_page(request: Request):
+    """A list to work through with a phone in her hand — not a job board."""
+    return render(request, "contacts.html", _contacts_context(request))
+
+
+def _contact_or_404(request: Request, osm_id: str):
+    from jobfinder.store.contacts import contact_by_osm_id
+
+    settings = request.app.state.settings
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        return contact_by_osm_id(connection, osm_id)
+    finally:
+        connection.close()
+
+
+@router.post("/contacts/{osm_id:path}/outcome", response_class=HTMLResponse)
+async def set_outcome(osm_id: str, request: Request):
+    from jobfinder.store.contacts import set_contact_outcome
+
+    form = await request.form()
+    outcome = str(form.get("outcome", ""))
+    settings = request.app.state.settings
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        try:
+            set_contact_outcome(connection, osm_id, outcome)
+        except ValueError as exc:
+            status = 404 if "Unknown place" in str(exc) else 400
+            return render(
+                request,
+                "error.html",
+                {"heading": "That did not work", "sentence": str(exc), "back": "/contacts"},
+                status_code=status,
+            )
+    finally:
+        connection.close()
+    return _contacts_response(request)
+
+
+@router.post("/contacts/{osm_id:path}/notes", response_class=HTMLResponse)
+async def save_contact_notes(osm_id: str, request: Request):
+    from jobfinder.store.contacts import set_contact_notes
+
+    form = await request.form()
+    notes = str(form.get("notes", ""))
+    settings = request.app.state.settings
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        try:
+            set_contact_notes(connection, osm_id, notes)
+        except ValueError as exc:
+            return render(
+                request,
+                "error.html",
+                {"heading": "No place here", "sentence": str(exc), "back": "/contacts"},
+                status_code=404,
+            )
+    finally:
+        connection.close()
+    return _contacts_response(request)
+
+
+def _contacts_response(request: Request):
+    """HTMX gets the rows partial; a plain post goes back to the page."""
+    if request.headers.get("HX-Request"):
+        return render(request, "_contact_rows.html", _contacts_context(request))
+    return RedirectResponse("/contacts", status_code=303)
+
+
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request):
     """One page of "is it set up": which provider keys exist, which do not,
