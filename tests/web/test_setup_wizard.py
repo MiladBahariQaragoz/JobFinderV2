@@ -201,3 +201,55 @@ def test_the_wizard_keeps_a_key_that_was_already_in_the_env_file(fresh):
     env_text = (settings.project_root / ".env").read_text(encoding="utf-8")
     assert "OPENROUTER_API_KEY=older" in env_text
     assert f"GROQ_API_KEY={KEY}" in env_text
+
+
+class TestWhenTheKeysAreAlreadyThere:
+    """An install handed over with keys already in `.env` must not ask for one.
+
+    She is not the person who signed up for these providers, has no accounts to
+    log into, and cannot produce a key if asked. The wizard's job in that case
+    is to say the explanations are ready and get out of the way.
+    """
+
+    @pytest.fixture
+    def with_a_key(self, tmp_path, monkeypatch):
+        (tmp_path / "config.yaml").unlink(missing_ok=True)
+        monkeypatch.setenv("GROQ_API_KEY", KEY)
+        settings = Settings(project_root=tmp_path)
+        with TestClient(create_app(settings)) as client:
+            yield settings, client
+
+    def test_the_wizard_does_not_ask_for_a_key_when_one_is_already_there(self, with_a_key):
+        _settings, client = with_a_key
+
+        body = client.get("/setup").text
+
+        assert 'name="api_key"' not in body
+        assert "paste" not in body.lower()
+
+    def test_it_says_the_explanations_are_ready(self, with_a_key):
+        _settings, client = with_a_key
+
+        body = client.get("/setup").text
+
+        assert "ready" in body.lower()
+        assert "groq" in body.lower()  # which provider, by name
+
+    def test_it_never_shows_the_key_itself(self, with_a_key):
+        _settings, client = with_a_key
+
+        assert KEY not in client.get("/setup").text
+
+    def test_it_still_asks_for_the_towns(self, with_a_key):
+        _settings, client = with_a_key
+
+        assert 'name="cities"' in client.get("/setup").text
+
+    def test_finishing_it_keeps_the_key_that_was_already_there(self, with_a_key):
+        settings, client = with_a_key
+
+        client.post("/setup", data={"cities": "Ingolstadt", "types": "minijob"})
+
+        assert (settings.project_root / "config.yaml").exists()
+        # The form had no key field, so nothing may have been written over it.
+        assert not (settings.project_root / ".env").exists()

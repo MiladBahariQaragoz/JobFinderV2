@@ -77,6 +77,52 @@ def spec_datas() -> list[tuple[str, str]]:
     return [(str(source), destination) for source, destination in bundled_pairs()]
 
 
+# -- handing an install over ---------------------------------------------------
+
+# What may be copied out of a developer `.env` into hers. A `.env` on this
+# machine collects tokens for things that have nothing to do with JobFinder, and
+# handing those over would be a mistake nobody would notice: the file is copied
+# once and read forever.
+SHAREABLE_ENV_PREFIXES = ("ADZUNA_",)
+SHAREABLE_ENV_SUFFIXES = ("_API_KEY", "_API_TOKEN", "_ACCOUNT_ID")
+
+
+def shareable_env(text: str) -> str:
+    """The provider and source variables from a `.env`, and nothing else."""
+    kept: list[str] = []
+    for line in text.splitlines():
+        name, separator, _value = line.partition("=")
+        if not separator or line.lstrip().startswith("#"):
+            continue
+        name = name.strip()
+        if name.endswith(SHAREABLE_ENV_SUFFIXES) or name.startswith(SHAREABLE_ENV_PREFIXES):
+            kept.append(line)
+    return "\n".join(kept) + "\n" if kept else ""
+
+
+def stage_install(exe: Path, target: Path, *, env_file: Path | None = None) -> Path:
+    """Put a build, and optionally the keys it needs, into a folder to hand over.
+
+    The keys travel as a `.env` beside the exe — the file `Settings.load`
+    already reads — and never inside the binary. A key baked into 19 MB of
+    program cannot be seen, cannot be rotated, and goes wherever a copy of that
+    program goes.
+
+    Anything already in the folder is left alone: `data/`, `config.yaml` and her
+    CV belong to whoever has been using it.
+    """
+    exe = Path(exe)
+    target = Path(target)
+    target.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(exe, target / f"{APP_NAME}.exe")
+
+    if env_file is not None:
+        keys = shareable_env(Path(env_file).read_text(encoding="utf-8"))
+        if keys:
+            (target / ".env").write_text(keys, encoding="utf-8")
+    return target
+
+
 # -- updating an install -------------------------------------------------------
 
 

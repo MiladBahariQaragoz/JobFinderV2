@@ -695,17 +695,27 @@ def setup_page(request: Request):
 
 
 def _setup_context(request: Request) -> dict:
-    """The providers to choose from, and the answers already in `Settings`."""
+    """The providers to choose from, and the answers already in `Settings`.
+
+    An install can arrive with keys already in `.env` — handed over that way on
+    purpose, so that the person using it never has to sign up for anything. When
+    that is the case the wizard says which providers are ready and does not ask
+    for a key at all: she has no accounts to log into and could not produce one.
+    """
     import llmpool
 
     settings = request.app.state.settings
     catalog = llmpool.load_catalog()
-    providers = [
+    missing_now = {env_var for _name, env_var, _url in llmpool.missing_keys(catalog)}
+    every_provider = [
         {"name": name, "env_var": env_var, "signup": url}
         for name, env_var, url in llmpool.missing_keys(catalog, env={})
     ]
+    ready = [provider for provider in every_provider if provider["env_var"] not in missing_now]
     return {
-        "providers": providers,
+        # Only the ones still without a key are worth offering her.
+        "providers": [p for p in every_provider if p["env_var"] in missing_now],
+        "ready": ready,
         "default_cities": ", ".join(settings.cities),
         "default_types": ", ".join(settings.employment_types),
         "project_root": settings.project_root,
