@@ -44,6 +44,25 @@ def create_app(settings: Settings, *, run_manager=None, roles_pool_factory=None)
     app.state.roles_pool_factory = roles_pool_factory
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+    @app.middleware("http")
+    async def to_the_wizard_until_it_is_done(request, call_next):
+        """Before the first setup, every page leads to `/setup`.
+
+        A check inside each route would be eleven checks, and the eleventh is
+        the one somebody forgets — she would meet an empty job list with no way
+        to know that nothing had been set up yet. `/static` is exempt, or the
+        first page she ever sees arrives without its stylesheet.
+        """
+        from jobfinder.first_run import needs_setup
+
+        path = request.url.path
+        exempt = path == "/setup" or path.startswith("/static") or path == "/healthz"
+        if not exempt and needs_setup(app.state.settings):
+            from fastapi.responses import RedirectResponse
+
+            return RedirectResponse("/setup", status_code=303)
+        return await call_next(request)
+
     from jobfinder.web.routes import router
 
     app.include_router(router)

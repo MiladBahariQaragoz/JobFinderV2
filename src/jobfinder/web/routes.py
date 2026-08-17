@@ -667,6 +667,68 @@ def cancel_contacts_run(request: Request):
     return _contacts_response(request)
 
 
+@router.get("/setup", response_class=HTMLResponse)
+def setup_page(request: Request):
+    """The first thing she ever sees — and nothing at all on the second start."""
+    from jobfinder.first_run import needs_setup
+
+    settings = request.app.state.settings
+    if not needs_setup(settings):
+        return RedirectResponse("/", status_code=303)
+    return render(request, "setup.html", _setup_context(request))
+
+
+def _setup_context(request: Request) -> dict:
+    """The providers to choose from, and the answers already in `Settings`."""
+    import llmpool
+
+    settings = request.app.state.settings
+    catalog = llmpool.load_catalog()
+    providers = [
+        {"name": name, "env_var": env_var, "signup": url}
+        for name, env_var, url in llmpool.missing_keys(catalog, env={})
+    ]
+    return {
+        "providers": providers,
+        "default_cities": ", ".join(settings.cities),
+        "default_types": ", ".join(settings.employment_types),
+        "project_root": settings.project_root,
+    }
+
+
+@router.post("/setup", response_class=HTMLResponse)
+async def finish_setup(request: Request):
+    """Write her answers and get out of the way.
+
+    A refusal re-renders the page with the sentence on it and writes nothing:
+    a typo in one town must not leave half a configuration behind.
+    """
+    from jobfinder.first_run import SetupError, save_setup
+
+    settings = request.app.state.settings
+    form = await request.form()
+    try:
+        save_setup(
+            settings,
+            env_var=str(form.get("env_var", "")),
+            api_key=str(form.get("api_key", "")),
+            cities=str(form.get("cities", "")),
+            types=str(form.get("types", "")),
+        )
+    except SetupError as exc:
+        context = _setup_context(request)
+        context["error"] = str(exc)
+        # What she typed comes back, except the key — that one she pastes again.
+        context["default_cities"] = str(form.get("cities", ""))
+        context["default_types"] = str(form.get("types", ""))
+        return render(request, "setup.html", context)
+
+    # The app reads its settings once, at startup, so the answers she just gave
+    # have to reach the running process too.
+    request.app.state.settings = type(settings).load(settings.project_root)
+    return RedirectResponse("/search", status_code=303)
+
+
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request):
     """One page of "is it set up": which provider keys exist, which do not,

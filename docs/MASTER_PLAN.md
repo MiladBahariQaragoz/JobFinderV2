@@ -1266,15 +1266,15 @@ machine has not been delivered.
 
 ### Test-first checklist
 
-- [ ] `test_free_port_is_chosen_when_default_is_busy`
-- [ ] `test_first_run_wizard_appears_when_no_config_exists`
-- [ ] `test_wizard_writes_env_and_config_and_never_logs_the_key`
-- [ ] `test_wizard_is_skipped_on_second_start`
+- [x] `test_the_next_port_is_chosen_when_the_preferred_one_is_busy`
+- [x] `test_first_run_wizard_appears_when_no_config_exists`
+- [x] `test_wizard_writes_env_and_config_and_never_logs_the_key`
+- [x] `test_wizard_is_skipped_on_second_start`
 - [ ] `test_missing_keys_error_page_names_the_signup_links`
 - [ ] `test_no_internet_produces_a_readable_page_not_a_traceback`
 - [ ] `test_search_button_starts_a_run_and_streams_progress`
-- [ ] `test_backup_rotation_keeps_five_and_deletes_the_sixth`
-- [ ] `test_data_dir_resolves_next_to_the_exe_when_frozen` (PyInstaller `sys.frozen`)
+- [x] `test_backup_rotation_keeps_five_and_deletes_the_sixth`
+- [x] `test_data_dir_resolves_next_to_the_exe_when_frozen` (PyInstaller `sys.frozen`)
 - [ ] `test_built_exe_starts_and_answers_healthcheck` (build smoke, marked `live`)
 
 ### Done when

@@ -37,3 +37,6 @@ Thumbs.db
 
 # Crash dumps
 *.stackdump
+
+# Her answers from the first-run wizard (towns, kinds of work)
+config.yaml

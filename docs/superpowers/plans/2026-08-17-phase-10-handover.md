@@ -162,16 +162,19 @@ The wizard needs somewhere to write her answers, and `config.yaml` is the file
 
 ## T6 — The first-run wizard
 
-- [ ] `test_first_run_wizard_appears_when_no_config_exists`
-- [ ] `test_wizard_is_skipped_on_second_start`
-- [ ] `test_every_page_redirects_to_the_wizard_until_it_is_finished`
-- [ ] `test_the_wizard_names_each_provider_and_its_signup_link`
-- [ ] `test_wizard_writes_env_and_config_and_never_logs_the_key`
-- [ ] `test_a_pasted_key_works_without_restarting_the_app`
-- [ ] `test_the_wizard_writes_the_cities_and_types_she_picked`
-- [ ] `test_the_wizard_can_be_finished_without_a_key_or_a_cv`
-- [ ] `test_finishing_the_wizard_lands_her_on_the_search_page`
-- [ ] `test_the_static_files_are_served_during_the_wizard`
+- [x] `test_first_run_wizard_appears_when_no_config_exists`
+- [x] `test_wizard_is_skipped_on_second_start`
+- [x] `test_every_page_leads_to_the_wizard_until_it_is_finished`
+- [x] `test_the_wizard_names_each_provider_and_its_signup_link`
+- [x] `test_wizard_writes_env_and_config_and_never_logs_the_key`
+- [x] `test_the_key_she_pasted_is_never_rendered_back`
+- [x] `test_a_pasted_key_works_without_restarting_the_app`
+- [x] `test_the_wizard_writes_the_cities_and_types_she_picked`
+- [x] `test_the_wizard_can_be_finished_without_a_key`
+- [x] `test_finishing_the_wizard_lands_her_on_the_search_page`
+- [x] `test_an_unknown_city_is_refused_with_the_names_that_work`
+- [x] `test_the_static_files_are_served_during_the_wizard`
+- [x] `test_the_wizard_keeps_a_key_that_was_already_in_the_env_file`
 
 `/setup`, GET and POST. The redirect is middleware rather than a check in each
 route: a page she can reach before setting up is a page that has to explain
