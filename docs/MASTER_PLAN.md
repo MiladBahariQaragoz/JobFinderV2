@@ -70,7 +70,7 @@ Phases are ordered so that the app becomes useful before it becomes complete.
 | **M2 — Advice** | 2–3 | Fill in her CV and get job titles worth searching for, in German and English |
 | **M3 — First real shortlist** | 4–5, 7 | **Done.** Run a search and get a CSV of live Bavarian jobs, each explained in English — `jobfinder search --enrich` |
 | **M4 — The actual product** | 8 | **Done.** Browse, filter, read, and mark jobs applied/deleted in a real UI — `jobfinder serve`, searches started and cancelled from the browser |
-| **M5 — Wider net** | 6, 9 | Phase 6 done: Kleinanzeigen, Xing and Adzuna, searched in parallel. StepStone and Indeed are blocked from this machine and ship off. Phase 9 (the call-list) is still open |
+| **M5 — Wider net** | 6, 9 | **Done.** Kleinanzeigen, Xing and Adzuna searched in parallel (StepStone and Indeed are blocked from this machine and ship off), and the call-list holds 357 places, 255 reachable — `jobfinder contacts`, or the Call page |
 | **M6 — Handover** | 10 | Double-click one file on her own laptop and use it without help |
 
 **If time gets short, ship M4 and stop.** Phases 6 and 9 are additive; nothing in
@@ -282,7 +282,7 @@ assumptions, and the failures are recorded so nobody re-discovers them.
 | | ⚠️ | ~1 in 3 ads has an empty `stellenangebotsBeschreibung` and only an `externeURL` | Fallback: fetch the external URL and extract text (Phase 4). |
 | **Arbeitnow** | ✅ verified `200` | `GET www.arbeitnow.com/api/job-board-api`, no key, CORS open | Tech/English-friendly DACH roles, paginated. Good for her qualified-role search, weak on Bavaria-specific and non-tech work. |
 | **Adzuna** | ✅ verified `200`, key registered 2026-08-16 | `api.adzuna.com/v1/api/jobs/de/search/{page}` with free `app_id`/`app_key` | Measured, not assumed: **204** minijobs for Ingolstadt, **84 %** of rows absent from the Bundesagentur set. Its description is a **500-character teaser**, so `fetch_detail` follows `redirect_url` for the real ad — good for the first ~40 of a run, after which adzuna.de serves a sign-in wall and the rest keep teasers. Which board is behind a row is never visible. A source of leads, not of readable ads. Absent keys mean skipped, never an error. |
-| **OpenStreetMap Overpass** | ✅ verified `200` | `POST overpass-api.de/api/interpreter` | For general work. Neuburg an der Donau alone returned **60** restaurants/cafés/bakeries, **28 with a phone or email**. This is the cold-contact engine. |
+| **OpenStreetMap Overpass** | ✅ shipped (Phase 9) | `POST` one small query per tag, to the first of five endpoints that answers | The cold-contact engine. Measured 2026-08-17: Neuburg **118** places / **34** reachable at 6 km, Ingolstadt **304** / **219**. Hotels are `tourism=hotel`, not `amenity=hotel`. **It rate-limits by IP:** after a few hundred queries every endpoint refused this machine at once while the rest of the internet was fine, so the gap is 10 s and a tag is retried on two hosts, not five. Munich at 6 km never returned. |
 | **StepStone** | ⛔ blocked below HTTP (re-probed 2026-08-16) | Search results page → listing pages | Every request is reset at the transport level — TLS-fingerprint filtering, so a User-Agent change buys nothing. Adapter built and tested against the failure path, **off by default**, skip line says why. Only a real browser would change this, which Phase 6 rules out. |
 | **Indeed** | ⛔ `403` + WAF page (re-probed 2026-08-16) | Search results page → listing pages | Answers with a 27 KB block page. No sanctioned API exists — their publisher API is closed to new signups. Built, tested against the recorded 403, **off by default**. |
 | **Xing** | 🔨 scraper | Public job pages | `robots.txt` disallows `/search/` and `/publicsearch/`. Public listing pages only, never anything behind login. |
@@ -1180,24 +1180,58 @@ posting feed. Verified: Neuburg alone has 60 such places, 28 with contact detail
 
 ### Test-first checklist
 
-- [ ] `test_overpass_fixture_parses_places_with_and_without_contact_details`
-- [ ] `test_places_without_any_contact_route_are_excluded`
-- [ ] `test_contact_id_is_stable_across_runs` (OSM id based)
-- [ ] `test_bakery_and_hotel_kitchen_outrank_a_bar_in_back_of_house_score`
-- [ ] `test_phone_numbers_are_normalized_to_e164`
-- [ ] `test_duplicate_place_across_two_city_queries_appears_once`
-- [ ] `test_imprint_lookup_extracts_an_email_from_a_saved_page`
-- [ ] `test_imprint_lookup_is_skipped_when_an_email_already_exists`
-- [ ] `test_call_script_is_german_with_english_gloss_lines` (FakePool)
-- [ ] `test_email_draft_names_the_place_and_her_availability`
-- [ ] `test_contact_outcome_persists_and_filters_the_list`
-- [ ] `tests/live/test_overpass_contract.py` — Neuburg still returns places with contacts
+- [x] `test_the_fixture_parses_places_with_and_without_contact_details`
+- [x] `test_a_place_with_no_contact_route_at_all_is_excluded`
+- [x] `test_a_contact_id_is_stable_across_runs` (OSM type + id)
+- [x] `test_a_bakery_and_a_hotel_outrank_a_bar`
+- [x] `test_a_spaced_german_number_becomes_e164` + `test_two_spellings_of_one_number_agree`
+- [x] `test_a_place_seen_in_two_tag_queries_appears_once`
+- [x] `test_an_email_is_extracted_from_a_saved_imprint_page`
+- [x] `test_the_lookup_is_skipped_when_an_email_already_exists`
+- [x] `test_a_script_is_five_lines_of_german_each_with_an_english_gloss` (FakePool)
+- [x] `test_a_rendered_email_names_the_place_and_her_availability`
+- [x] `test_marking_it_survives_a_restart_of_the_app` +
+      `test_a_marked_place_leaves_the_queue_but_can_be_found_again`
+- [x] `tests/live/test_overpass_contract.py` — Neuburg still returns places with contacts
+      (it **skips** rather than fails when Overpass is rate-limiting this machine,
+      which it does; see the phase plan)
 
 ### Done when
 
-- [ ] ≥ 50 contactable places across Neuburg, Ingolstadt and Munich, ranked
-- [ ] She can print or open the list and start calling, script in hand
-- [ ] Marking one "Called — come by Tuesday" persists and moves it out of the queue
+- [x] ≥ 50 contactable places across Neuburg, Ingolstadt and Munich, ranked —
+      **357 places, 255 reachable**, five times the target, from Neuburg (53/36)
+      and Ingolstadt (304/219). Ranked bakeries and hotels first, bars last.
+      **Munich is not in that number**: 6 km over nine tags never came back, and
+      by then Overpass was refusing this machine altogether (below).
+- [x] She can print or open the list and start calling, script in hand —
+      `contacts.csv` holds all 357 rows and matches the store field for field,
+      and 352 of them carry a five-line German script with an English gloss under
+      each line
+- [x] Marking one "Called — come by Tuesday" persists and moves it out of the
+      queue — done for real on `Backhaus Hackner`: gone from the working list,
+      still there under *Show every place* with the note and the date, and in the
+      CSV
+
+**Phase 9 complete.** `jobfinder contacts` and the **Call** page in the browser
+both build the list; the Contacts page pages twenty at a time, offers `tel:` and
+`mailto:` links, and takes *Called / Emailed / Not for me* with a note. Details
+and the four defects that only appeared on real data are in
+[the phase plan](superpowers/plans/2026-08-17-phase-9-call-list.md).
+
+**Three corrections to what this section asked for**, all measured rather than
+argued:
+
+- **`amenity=hotel` returns nothing — hotels are `tourism=hotel`.** The tag list
+  above would have missed every hotel kitchen, which is one of the best fits in
+  the list for someone with little German. `amenity=pub` was worth adding too.
+- **The phone script is per *kind* of place, not per place.** Per-place would
+  have spent 352 free-tier calls to produce texts differing by a proper noun; per
+  kind is 8, and the name and town are substituted on the way into the store.
+- **Overpass rate-limits this machine after a few hundred queries** — every
+  endpoint refusing TCP at once while the rest of the internet answered in under
+  a second. The gap between requests is now 10 s, a tag is tried on two hosts
+  rather than five, and a refusal says "worth trying later" instead of
+  `URLError`.
 
 **Out of scope:** sending the emails automatically. She reviews and sends them herself,
 from her own address.
