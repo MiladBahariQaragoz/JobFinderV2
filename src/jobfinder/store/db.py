@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # How long a writer waits for another writer before giving up (§8 rule 2).
 # Enrichment is meant to run while a search is still storing jobs, and WAL
@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS jobs (
     is_werkstudent      INTEGER NOT NULL DEFAULT 0,
     homeoffice          INTEGER NOT NULL DEFAULT 0,
     published_at        TEXT,
+    -- v7: the same date, comparable. `published_at` keeps whatever the source
+    -- said (three shapes across five sources); this one is always YYYY-MM-DD,
+    -- because "posted within a week" cannot be asked of a mixed column.
+    published_on        TEXT,
     apply_url           TEXT,
     source_url          TEXT,
     also_seen_on        TEXT,
@@ -160,6 +164,9 @@ ADDED_COLUMNS = {
     "jobs": {
         # v3 (Phase 5): the other sites the same ad was seen on, comma-joined.
         "also_seen_on": "TEXT",
+        # v7: the comparable posting date. Her database already holds hundreds
+        # of rows, so it arrives by ALTER and is backfilled below.
+        "published_on": "TEXT",
     },
     "source_state": {
         # v4 (Phase 6): what the source said the last time it failed, so the
@@ -231,8 +238,31 @@ def migrate(connection: sqlite3.Connection) -> None:
     _add_missing_columns(connection)
     if was < 3:
         _rebuild_dedupe_keys(connection)
+    if was < 7:
+        _backfill_published_on(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
+
+
+def _backfill_published_on(connection: sqlite3.Connection) -> None:
+    """v7 derives a comparable date — the rows already stored need theirs.
+
+    Without this, a "posted within a week" filter would answer for jobs found
+    after the migration and silently exclude every job found before it. The
+    derivation is the one function `RawPosting` uses, so an old row and a new
+    row can never disagree about what day an ad was posted.
+    """
+    from jobfinder.dates import published_on
+
+    rows = connection.execute(
+        "SELECT job_id, published_at FROM jobs WHERE published_on IS NULL"
+    ).fetchall()
+    for job_id, published_at in rows:
+        derived = published_on(published_at)
+        if derived is not None:
+            connection.execute(
+                "UPDATE jobs SET published_on = ? WHERE job_id = ?", (derived, job_id)
+            )
 
 
 def _rebuild_dedupe_keys(connection: sqlite3.Connection) -> None:
