@@ -124,6 +124,34 @@
 {% endif %}
 {% endif %}
 
+<h2>Your files</h2>
+{% if export %}
+<p>
+  Written: <span class="num">{{ export.jobs }}</span> jobs,
+  <span class="num">{{ export.explained }}</span> explained,
+  <span class="num">{{ export.places }}</span> place{{ '' if export.places == 1 else 's' }}
+  to call.
+</p>
+<div class="settings-list">
+  {% for file in export.files %}
+  <div class="row"><span class="num wrap">{{ file }}</span></div>
+  {% endfor %}
+</div>
+<p class="meta">
+  They are in <span class="num wrap">{{ export.folder }}</span> and open in Excel
+  as they are.
+</p>
+{% else %}
+<p class="meta">
+  Everything the app knows is written to three spreadsheets after every run. Use
+  this to write them again right now — after a run you stopped, or before you
+  send one somewhere.
+</p>
+{% endif %}
+<form class="filters" method="post" action="/settings/export">
+  <button type="submit" class="primary">Export everything</button>
+</form>
+
 <h2>Language model keys</h2>
 <p class="meta">
   The list below says which free providers have a key — one is enough to

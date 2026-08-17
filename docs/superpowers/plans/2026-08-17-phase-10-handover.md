@@ -135,10 +135,13 @@ under 63 MB of re-fetchable cache.
 
 ## T4 — Export everything, one click
 
-- [ ] `test_export_everything_writes_all_three_csvs`
-- [ ] `test_export_everything_reports_what_it_wrote`
-- [ ] `test_exporting_an_empty_store_writes_headers_and_says_so`
-- [ ] `test_the_settings_page_offers_the_export`
+- [x] `test_export_everything_writes_all_three_csvs`
+- [x] `test_export_everything_reports_what_it_wrote`
+- [x] `test_exporting_an_empty_store_writes_headers_and_says_so`
+- [x] `test_the_settings_page_offers_the_export`
+- [x] `test_the_export_names_the_folder_she_can_open`
+- [x] `test_the_export_includes_the_call_list`
+- [x] `test_a_job_stored_after_the_last_run_reaches_the_csv`
 
 `POST /settings/export` calls the three exporters that already exist
 (`export_jobs`, `export_jobs_enriched`, `export_contacts`) and renders the row

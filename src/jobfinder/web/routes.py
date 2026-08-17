@@ -733,6 +733,43 @@ async def upload_cv(request: Request):
     return RedirectResponse("/settings", status_code=303)
 
 
+@router.post("/settings/export", response_class=HTMLResponse)
+def export_everything(request: Request):
+    """Write all three CSVs from the database, now, and say what landed where.
+
+    Each export already runs at the end of its own kind of run, so this exists
+    for the times between runs: a file a page behind an interrupted run, or a
+    spreadsheet she wants to send somewhere. Where the files are is half the
+    answer — a CSV she cannot find has not been exported.
+    """
+    from jobfinder.llm.prompting import load_prompt
+    from jobfinder.store.contacts_export import export_contacts
+    from jobfinder.store.db import connect, migrate
+    from jobfinder.store.export import export_jobs_enriched, export_jobs_init
+
+    settings = request.app.state.settings
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        jobs = export_jobs_init(connection, settings.jobs_init_csv)
+        explained = export_jobs_enriched(
+            connection, settings.jobs_enriched_csv, load_prompt("enrich").version
+        )
+        places = export_contacts(connection, settings.contacts_csv)
+    finally:
+        connection.close()
+
+    context = _settings_context(request)
+    context["export"] = {
+        "jobs": jobs,
+        "explained": explained,
+        "places": places,
+        "folder": settings.data_dir,
+        "files": [settings.jobs_init_csv, settings.jobs_enriched_csv, settings.contacts_csv],
+    }
+    return render(request, "settings.html", context)
+
+
 @router.post("/settings/roles", response_class=HTMLResponse)
 def suggest_roles_now(request: Request):
     """One LLM call: her CV in, job titles worth searching for out (Phase 3).
