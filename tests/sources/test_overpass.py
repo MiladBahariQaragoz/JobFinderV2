@@ -141,6 +141,29 @@ class TestParsingTheRealPayload:
         the best fits in the list for someone with little German."""
         assert any(place.kind == "hotel" for place in places)
 
+    def test_a_place_tagged_both_a_hotel_and_a_restaurant_is_labelled_by_its_amenity(self):
+        """Her real list has one: `Gasthof Neuwirt` is `amenity=restaurant` and
+        `tourism=hotel` at once. OSM's convention is that `amenity` is the primary
+        function, so that is the label — which scores it 65 rather than a hotel's
+        80. Conservative on purpose: a Gasthof with four rooms is a restaurant
+        that also lets rooms, not a hotel with a kitchen brigade.
+        """
+        parsed = parse_places(
+            [
+                element(
+                    amenity="restaurant",
+                    tourism="hotel",
+                    name="Gasthof Neuwirt",
+                    phone="+4984312078",
+                )
+            ],
+            city="Neuburg an der Donau",
+        )
+
+        assert parsed[0].kind == "restaurant"
+        # The hotel tag is not lost — it is in the raw tags, if a later rule wants it.
+        assert parsed[0].tags["tourism"] == "hotel"
+
     def test_the_street_and_house_number_become_one_address_line(self):
         parsed = parse_places(
             [

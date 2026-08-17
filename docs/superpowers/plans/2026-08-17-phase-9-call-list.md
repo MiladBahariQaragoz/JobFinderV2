@@ -2,7 +2,7 @@
 title: "Phase 9 — General work: a call-list, not a job board"
 date: 2026-08-17
 type: phase-plan
-status: in progress
+status: complete — shipped and verified on her real store 2026-08-17; Munich unverified (Overpass throttling)
 master-plan: docs/MASTER_PLAN.md#phase-9--general-work-a-call-list-not-a-job-board
 ---
 
@@ -222,7 +222,7 @@ tags, real gaps. Recorded, never hand-written (§7).
 - [x] `test_an_empty_call_list_says_how_to_build_it`
 - [x] `test_everything_except_the_script_is_english`
 - [x] `test_the_nav_links_to_the_contacts_page`
-- [ ] `test_a_contacts_run_starts_from_the_browser_and_narrates`
+- [x] `test_a_contacts_run_starts_from_the_browser_and_narrates`
 
 ## T10 — The CLI command, and one live contract test
 
@@ -234,18 +234,97 @@ tags, real gaps. Recorded, never hand-written (§7).
 
 ## T11 — Run it for real, and record what it did
 
-- [ ] Build the list for Neuburg, Ingolstadt and Munich; record the counts, the
-      wall time, and how many places were reachable
-- [ ] Confirm ≥ 50 contactable places across the three, ranked
-- [ ] Open the page, read one script, and mark one contact "Called"; confirm it
-      persists and leaves the queue
-- [ ] Confirm `contacts.csv` matches the store row for row
+All on 2026-08-17, against her real database.
+
+- [x] **Neuburg an der Donau: 53 places, 36 reachable**, 8 m 32 s, run row `done`,
+      no failures. (The recorded fixture had said 44/34 — the live run also got
+      `shop=supermarket`, which had failed during the probe.)
+- [x] **Ingolstadt: 304 places, 219 reachable**, 1 m 17 s, run row `done`.
+- [x] **≥ 50 contactable places, five times over.** The two towns together give
+      **357 places, 255 reachable** — the done-when asked for 50.
+- [x] **Ranked as intended.** The top of her list is bakeries and hotels
+      (Schlegl 93, Backhaus Hackner 93, Sporthotel Neuburg 88); the bottom is
+      fast food and a bar (McDonald's 40, Route66 Bar 20).
+- [x] **The German reads correctly.** 8 kinds, 8 calls, 352 places carrying a
+      script. A hotel's, in full: `Guten Tag, mein Name ist Saba.` /
+      `Ich bin Studentin in Neuburg an der Donau und suche einen Minijob.` /
+      `Ich kann im Service helfen.` / `Suchen Sie im Moment Aushilfen?` /
+      `Darf ich meine Unterlagen vorbeibringen?` — Sie throughout, five short
+      sayable lines, an English gloss under each, and the place's own name and
+      town substituted in.
+- [x] **Marking works and persists.** `Backhaus Hackner` marked *Called* with
+      "Called — come by Tuesday at 9" and `Sporthotel`-tier place marked
+      *Emailed*: both left the working queue, both still findable under **Show
+      every place** with their note and the day shown.
+- [x] **`contacts.csv` matches the store row for row** — 357 rows each, same
+      ids, no field disagreeing, her two decisions included.
+- [ ] **Munich could not be verified.** Two attempts, 90 minutes each, both left
+      a `running` run row and zero places. See the defect below: by then this
+      machine was being refused by Overpass entirely.
+
+### Four defects, all found by using it rather than by testing it
+
+1. **The page said "255 places you can reach · 357 still to try".** Both numbers
+    were true of different things and the sentence was true of nothing:
+    `pending` counted every place without an answer, including the ones with no
+    phone or email. Now it counts only places she can actually try.
+2. **357 cards on one page.** The call-list is worked through from the top a few
+    at a time, so it now pages twenty at a time like the job list.
+3. **Every row said "No script yet".** T7 built the German and nothing called
+    it: the runner never asked. Now `--scripts` writes one text per kind and
+    each place gets its kind's text — and when that first ran, **the stored
+    script still contained `{place}` and `{city}`**, so she would have read a
+    brace aloud to a stranger. Substitution now happens per place, on the way
+    into the store.
+4. **Her decisions never reached the CSV.** It was only rewritten by a run, so
+    357 rows of the file she would print said nothing about the place she had
+    just rung. It is now rewritten whenever she marks something.
+
+### The defect that cost the most: Overpass throttled this machine
+
+By the end of the session **every** Overpass endpoint refused TCP connections
+from this machine at once — `lz4`, `overpass-api.de`, `lambert`, `gall`, `z`, and
+even the lightweight `/api/status` — while `arbeitnow.com` served 1.4 MB in 0.7 s
+and `openstreetmap.org` answered in 0.3 s. That is not an outage; that is an IP
+being rate-limited after a few hundred queries, and it is why Munich has no
+numbers here.
+
+Three things changed because of it, and they are in the code rather than in a
+comment:
+
+- **The gap between requests went from 6 s to 10 s** (`REQUEST_GAP_SECONDS`), in
+  one place both callers read.
+- **A tag is now tried on two endpoints, not five.** Retrying one heavy query
+  across every host multiplies the load on a donated service — the fallback that
+  was meant to survive one dead host was itself part of the problem.
+- **A refusal says what it means:** "OpenStreetMap did not answer this machine.
+  It limits heavy use and lets up again by itself, so this is worth trying later
+  rather than now." `URLError` is not something she can act on.
+
+**What is left for whoever picks this up:** Munich, at a radius that a public
+Overpass will actually serve. 6 km around Marienplatz over nine tags is a large
+query and it never came back; Ingolstadt at the same radius took 77 seconds. The
+honest next step is to measure Munich at 2–3 km before assuming 6 works.
 
 ## Definition of done
 
-- [ ] Every behaviour above had a failing test first, and the failure was watched
-- [ ] `pytest` green, no network, no warnings
-- [ ] `ruff check` and `ruff format --check` clean
-- [ ] MASTER_PLAN's Phase 9 boxes ticked against what was measured, and its tag
+- [x] Every behaviour above had a failing test first, and the failure was watched
+- [x] `pytest` green, no network, no warnings — **969 passed**, 27 deselected
+- [x] `ruff check` and `ruff format --check` clean
+- [x] MASTER_PLAN's Phase 9 boxes ticked against what was measured, and its tag
       list corrected — `tourism=hotel`, not `amenity=hotel`
-- [ ] Atomic commits on `feat/phase-9-call-list`, pushed as they land
+- [x] Atomic commits on `feat/phase-9-call-list`, pushed as they land
+
+## What shipped beyond the plan, and what did not
+
+**Beyond it.** A contacts run can be started from the browser
+(`POST /run/contacts`), with its own thread, its own Cancel and its own progress
+line. The plan only promised the page; the CLI-only version would have been the
+same gap the Explain button had just closed.
+
+**Not in it.** Munich. And one thing the plan asked for that was deliberately
+narrowed: MASTER_PLAN wanted a phone script **per place**, and this ships one per
+*kind* of place with the name and town substituted. On her real list that is 8
+calls instead of 352, for texts that would have differed by a proper noun. It is
+recorded here rather than quietly done, because it is a change to what the master
+plan asked for.
