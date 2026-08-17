@@ -70,6 +70,27 @@ TAGS: tuple[tuple[str, str], ...] = (
 # and small enough that a wedged query fails rather than hangs.
 QUERY_TIMEOUT = 40
 
+# How many endpoints one tag may be tried on. Two, not five: retrying a heavy
+# query across every host multiplies the load on a donated service, and doing
+# that is how this machine got itself throttled on 2026-08-17 — after a few
+# hundred queries every Overpass host stopped accepting connections at once
+# while the rest of the internet answered instantly. One alternative host covers
+# the measured failure (a dead front door); more just spends someone else's CPU.
+DEFAULT_ATTEMPTS = 2
+
+# The gap between two Overpass requests. Six seconds was what this machine
+# used on 2026-08-17 and it still ended up throttled, so the polite figure is
+# higher: a call-list is built once in a while, and ten seconds a tag costs a
+# couple of minutes a city against a service nobody is paying for.
+REQUEST_GAP_SECONDS = 10.0
+
+# What a refusal means, in words she can act on. Overpass throttles by IP and
+# recovers on its own, so the answer is "later", not "something is broken".
+THROTTLED_MESSAGE = (
+    "OpenStreetMap did not answer this machine. It limits heavy use and lets up "
+    "again by itself, so this is worth trying later rather than now"
+)
+
 
 @dataclass(frozen=True)
 class Place:
@@ -185,7 +206,7 @@ class OverpassSource:
         # One attempt per endpoint by default: the measured failure mode is a
         # dead front door beside live backends, and only a different host fixes
         # that. The client's own retries handle a host that is merely busy.
-        self.attempts = attempts if attempts is not None else len(endpoints)
+        self.attempts = attempts if attempts is not None else DEFAULT_ATTEMPTS
         self.failures: list[str] = []
         # Which endpoint answered last. Discovering a dead host costs ~21 s, so
         # a run pays that once rather than once per tag.
@@ -221,7 +242,7 @@ class OverpassSource:
                 return elements
             except (SourceUnavailable, ValueError, KeyError, TypeError, OSError) as exc:
                 last_error = str(exc)
-        self.failures.append(f"{key}={value}: {last_error}")
+        self.failures.append(f"{key}={value}: {THROTTLED_MESSAGE} ({last_error})")
         return None
 
     @staticmethod

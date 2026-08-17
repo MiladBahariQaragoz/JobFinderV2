@@ -250,7 +250,7 @@ class RunManager:
         if self._contacts_source_factory is not None:
             return self._contacts_source_factory()
         from jobfinder.sources.http import PoliteClient
-        from jobfinder.sources.overpass import OverpassSource
+        from jobfinder.sources.overpass import REQUEST_GAP_SECONDS, OverpassSource
 
         # Overpass is a donated public server: a long gap between requests is the
         # etiquette, and it is what stops a 429 becoming the normal answer.
@@ -258,7 +258,7 @@ class RunManager:
             PoliteClient(
                 cache_dir=self._settings.data_dir / "http-cache",
                 budget=self._settings.request_budget,
-                min_delay=6.0,
+                min_delay=REQUEST_GAP_SECONDS,
             )
         )
 

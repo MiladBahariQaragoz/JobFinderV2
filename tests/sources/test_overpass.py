@@ -282,7 +282,9 @@ class TestQueryingTheSource:
         found = source.places_near(*NEUBURG, city="Neuburg an der Donau", radius_km=6)
 
         assert [place.name for place in found] == ["Bäckerei"]
-        assert source.failures == ["amenity=cafe: overpass said 504"]
+        assert len(source.failures) == 1
+        assert source.failures[0].startswith("amenity=cafe:")
+        assert "overpass said 504" in source.failures[0]
 
     def test_every_tag_failing_reports_them_all_and_returns_nothing(self):
         client = FakeClient([SourceUnavailable("504"), SourceUnavailable("504")])
@@ -334,6 +336,30 @@ class TestQueryingTheSource:
         # First tag: endpoint one refused, endpoint two answered. Second tag
         # must start at endpoint two rather than paying for one again.
         assert client.urls[1] == client.urls[2]
+
+    def test_a_failure_says_overpass_is_rate_limiting_not_just_the_status_code(self):
+        """Measured the hard way on 2026-08-17: after a few hundred queries every
+        Overpass host stopped accepting TCP connections from this machine at once
+        — including the lightweight `/api/status` — while the rest of the internet
+        answered in under a second. That is Overpass throttling an IP, and it
+        recovers on its own. "URLError" tells her nothing she can act on."""
+        client = FakeClient([OSError("[WinError 10060] no response"), OSError("again")])
+        source = OverpassSource(client, tags=(("amenity", "cafe"),), attempts=2)
+
+        source.places_near(*NEUBURG, city="Neuburg an der Donau", radius_km=6)
+
+        assert source.failures
+        message = source.failures[0]
+        assert "OpenStreetMap" in message
+        assert "later" in message.lower()
+
+    def test_only_two_endpoints_are_tried_by_default(self):
+        """Retrying one heavy query across five hosts multiplies the load on a
+        donated service — which is how this machine got throttled. A dead front
+        door needs one alternative, not four."""
+        source = OverpassSource(FakeClient([]))
+
+        assert source.attempts == 2
 
     def test_a_malformed_answer_is_a_failure_not_a_crash(self):
         client = FakeClient([{"no elements here": True}])

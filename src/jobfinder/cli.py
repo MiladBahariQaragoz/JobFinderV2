@@ -605,6 +605,7 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
     from jobfinder.contacts.imprint import imprint_email
     from jobfinder.contacts.runner import DEFAULT_RADIUS_KM, run_contacts
     from jobfinder.sources.http import PoliteClient
+    from jobfinder.sources.overpass import REQUEST_GAP_SECONDS
     from jobfinder.store.contacts import list_contacts
     from jobfinder.store.db import connect, migrate
 
@@ -616,7 +617,7 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
     client = PoliteClient(
         cache_dir=settings.data_dir / "http-cache",
         budget=settings.request_budget,
-        min_delay=6.0,
+        min_delay=REQUEST_GAP_SECONDS,
     )
     if _contacts_source is not None:
         source = _contacts_source(settings, client)
