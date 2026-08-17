@@ -42,6 +42,12 @@ class Settings:
     # refused this client in testing, and enabling them by default would spend
     # a run's minutes on timeouts.
     enabled_sources: tuple[str, ...] = ("ba", "arbeitnow", "adzuna", "kleinanzeigen", "xing")
+    # Where she is willing to work and what she can take. These were constants
+    # in `cli.py` until the first-run wizard needed somewhere to write her
+    # answers; `config.yaml` is the file the app already reads, so they live
+    # here and the constants stay as these defaults.
+    cities: tuple[str, ...] = ("Neuburg an der Donau", "Ingolstadt", "München")
+    employment_types: tuple[str, ...] = ("werkstudent", "minijob", "parttime")
     # Bounds for every Pool built this run — see docs/llm-backend.md.
     llm_max_wait_seconds: float = 3600
     llm_run_deadline_seconds: float = 7200
@@ -53,8 +59,11 @@ class Settings:
         # so a shell export beats a stale .env.
         load_dotenv(project_root / ENV_FILENAME, override=False)
         overrides = cls._read_config_file(project_root / CONFIG_FILENAME)
-        if "enabled_sources" in overrides:
-            overrides["enabled_sources"] = tuple(overrides["enabled_sources"])
+        for name in ("enabled_sources", "cities", "employment_types"):
+            if name in overrides:
+                # YAML gives a list; every list-valued setting is a tuple here,
+                # so `Settings` stays hashable and nothing can edit it in place.
+                overrides[name] = tuple(overrides[name])
         return cls(project_root=project_root, **overrides)
 
     @classmethod
@@ -88,8 +97,24 @@ class Settings:
         return self.data_dir / "jobs-enriched.csv"
 
     @property
+    def contacts_csv(self) -> Path:
+        return self.data_dir / "contacts.csv"
+
+    @property
     def pool_path(self) -> Path:
         return self.project_root / "pool.yaml"
+
+    @property
+    def pool_backup_path(self) -> Path:
+        """The CV she is replacing, kept in `data/` rather than beside the CV.
+
+        Anything derived from `pool.yaml` carries her name, address and contact
+        details, and `data/` is gitignored wholesale — so a copy is safe from
+        the moment it is written, instead of safe only once someone remembers to
+        add its name to `.gitignore`. That mistake has been made here once
+        already, on a public repository.
+        """
+        return self.data_dir / "pool.yaml.bak"
 
     @property
     def pool_state_path(self) -> Path:

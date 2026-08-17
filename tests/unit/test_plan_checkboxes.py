@@ -54,3 +54,26 @@ def test_the_plan_still_holds_ticked_boxes():
     # two tests above pass by finding nothing at all.
     ticked = [line for line in plan_lines() if TICKED_TEST.match(line)]
     assert len(ticked) > 40, f"only {len(ticked)} ticked test boxes parsed — the pattern drifted"
+
+
+def test_every_phase_plan_ticks_tests_that_exist():
+    """The same promise, in the phase plans.
+
+    The master plan was guarded and the turn-by-turn plans under
+    `docs/superpowers/plans/` were not, so a plan could tick a name that was
+    renamed on the way to green — which is exactly what happened while writing
+    the "wanted next" work: 33 of 62 names had drifted by the time it shipped.
+    A plan nobody can trust to name real tests is worse than no plan.
+    """
+    have = existing_test_names()
+    wrong: dict[str, list[str]] = {}
+    for path in sorted((REPO_ROOT / "docs" / "superpowers" / "plans").glob("*.md")):
+        claimed = [
+            match.group(1)
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if (match := TICKED_TEST.match(line))
+        ]
+        missing = sorted(name for name in claimed if name not in have)
+        if missing:
+            wrong[path.name] = missing
+    assert not wrong, f"phase plans tick tests that do not exist: {wrong}"

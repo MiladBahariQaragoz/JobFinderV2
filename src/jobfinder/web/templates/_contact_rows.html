@@ -1,0 +1,176 @@
+{#
+  The queue: one place per row, in the order she should ring them. Everything a
+  row needs to be acted on is in the row — the number, the German to read, and
+  the three answers — because scrolling back and forth with a phone in one hand
+  is how a call-list stops being used.
+#}
+<div id="contact-rows"
+     {% if finding %}hx-get="/contacts" hx-trigger="every 3s" hx-swap="outerHTML" hx-select="#contact-rows"{% endif %}>
+{% if refusal %}
+<div class="error-state">
+  <h1>Cannot start that</h1>
+  <p>{{ refusal.sentence }}</p>
+</div>
+{% elif contacts_failure %}
+<div class="error-state">
+  <h1>Something went wrong</h1>
+  <p>{{ contacts_failure }}</p>
+</div>
+{% endif %}
+
+{% if finding %}
+<div class="progress-panel">
+  <div class="list-head">
+    <h1>
+      Looking for places —
+      <span class="num">{{ counts.total }}</span> found so far
+    </h1>
+    <form method="post" action="/run/contacts/cancel">
+      <button type="submit" class="danger">Cancel</button>
+    </form>
+  </div>
+  <div class="bar indeterminate" role="progressbar" aria-label="looking for places"><span></span></div>
+  <p class="meta">
+    OpenStreetMap answers slowly and one town at a time — a few minutes per city
+    is normal. Every place is saved as it is found, so stopping costs nothing.
+  </p>
+</div>
+{% else %}
+<form class="filters" method="post" action="/run/contacts">
+  <label>Towns to look in
+    <input type="text" name="cities" value="{{ default_cities }}">
+  </label>
+  <button type="submit" class="primary">
+    {% if counts.total %}Look again{% else %}Build the list{% endif %}
+  </button>
+</form>
+{% endif %}
+
+{% if worked_through %}
+<section class="empty-state">
+  <h1>You have been through every place</h1>
+  <p>
+    Every place you can reach has an answer against it. Run the list again in a
+    few weeks — new places open, and the ones that said no in January often say
+    yes in March.
+  </p>
+  <p class="hint"><a href="/contacts?show=all">Show them all again</a></p>
+</section>
+{% elif not contacts and not waiting %}
+<section class="empty-state">
+  <h1>No places yet</h1>
+  <p>
+    This list is the restaurants, cafés, bakeries and hotels that never post a
+    job — the ones that hire when somebody rings them.
+  </p>
+  <p class="hint">
+    Build it from a terminal: <span class="num">jobfinder contacts</span>
+  </p>
+</section>
+{% else %}
+<div class="list-head">
+  <h1>
+    <span class="num">{{ counts.reachable }}</span> places you can reach
+    {% if counts.pending != counts.reachable %}
+    · <span class="num">{{ counts.pending }}</span> still to try
+    {% endif %}
+  </h1>
+  {% if show_all %}
+  <a class="button" href="/contacts">Just the ones left</a>
+  {% else %}
+  <a class="button" href="/contacts?show=all">Show every place</a>
+  {% endif %}
+</div>
+
+{% for contact in contacts %}
+<article class="contact-row">
+  <div class="contact-head">
+    <div>
+      <h2>{{ contact.name }}</h2>
+      <p class="meta">
+        {{ contact.kind }} · {{ contact.city }}{% if contact.street %} · {{ contact.street }}{% endif %}
+      </p>
+      {% if contact.score_reason %}<p class="meta">{{ contact.score_reason }}</p>{% endif %}
+    </div>
+    <div class="contact-score">
+      <div><span class="num">{{ contact.back_of_house_score | int }}</span></div>
+      <div class="meta">suits you</div>
+    </div>
+  </div>
+
+  <p class="contact-routes">
+    {% if contact.phone %}
+    <a class="button primary" href="tel:{{ contact.phone }}">Call <span class="num">{{ contact.phone }}</span></a>
+    {% endif %}
+    {% if contact.email %}
+    <a class="button" href="mailto:{{ contact.email }}{% if contact.email_draft %}?subject=Bewerbung%20als%20Aushilfe&amp;body={{ contact.email_draft | urlencode }}{% endif %}">Write to {{ contact.email }}</a>
+    {% endif %}
+    {% if contact.website %}
+    <a href="{{ contact.website }}" target="_blank" rel="noopener noreferrer">their website</a>
+    {% endif %}
+  </p>
+
+  {% if contact.script %}
+  <details class="contact-script">
+    <summary>What to say on the phone</summary>
+    <pre>{{ contact.script }}</pre>
+  </details>
+  {% else %}
+  <p class="meta">No script yet — run the list again with scripts turned on.</p>
+  {% endif %}
+
+  <div class="contact-actions">
+    {% for value, label in [("called", "Called"), ("emailed", "Emailed"), ("no", "Not for me")] %}
+    <form hx-post="/contacts/{{ contact.osm_id | urlencode }}/outcome"
+          hx-target="#contact-rows" hx-swap="outerHTML"
+          method="post" action="/contacts/{{ contact.osm_id | urlencode }}/outcome">
+      <input type="hidden" name="outcome" value="{{ value }}">
+      <button type="submit" class="{{ 'danger' if value == 'no' else '' }}">{{ label }}</button>
+    </form>
+    {% endfor %}
+    {% if contact.outcome %}
+    <span class="ok">{{ contact.outcome }}{% if contact.last_contacted_at %} on {{ contact.last_contacted_at[:10] }}{% endif %}</span>
+    {% endif %}
+  </div>
+
+  <form class="contact-notes"
+        hx-post="/contacts/{{ contact.osm_id | urlencode }}/notes"
+        hx-target="#contact-rows" hx-swap="outerHTML"
+        method="post" action="/contacts/{{ contact.osm_id | urlencode }}/notes">
+    <label>What they said
+      <input type="text" name="notes" value="{{ contact.notes or '' }}"
+             placeholder="e.g. Come by Tuesday at 9">
+    </label>
+    <button type="submit">Save</button>
+  </form>
+</article>
+{% endfor %}
+
+{% if prev_url or next_url %}
+<nav class="pages">
+  {% if prev_url %}<a class="button" href="{{ prev_url }}">Previous</a>{% endif %}
+  <span class="meta">page <span class="num">{{ page }}</span> of <span class="num">{{ pages }}</span></span>
+  {% if next_url %}<a class="button" href="{{ next_url }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+
+{% if waiting %}
+<section class="waiting">
+  <h2><span class="num">{{ waiting | length }}</span> with no phone or email yet</h2>
+  <p class="meta">
+    These have a website and nothing else. Running the list with
+    <span class="num">--imprint</span> fetches each site's imprint page once,
+    which is where German businesses have to publish an address.
+  </p>
+  <ul class="source-lines">
+    {% for contact in waiting %}
+    <li>
+      <span>{{ contact.name }} — {{ contact.kind }}</span>
+      <a href="{{ contact.website }}" target="_blank" rel="noopener noreferrer">their website</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endif %}
+</div>

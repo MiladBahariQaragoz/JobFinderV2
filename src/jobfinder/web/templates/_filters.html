@@ -38,6 +38,19 @@
     <input type="number" name="min_fit" min="0" max="100" placeholder="0"
            value="{{ filters.min_fit if filters.min_fit is not none else "" }}">
   </label>
+  {#
+    How old the ad may be — a different question from the greying out, which
+    says whether her searches still see it listed. Her store reaches back to
+    2022, so "any time" is a real answer and stays the default.
+  #}
+  <label>Posted
+    <select name="posted_within">
+      {% for value, label, _phrase in posted_within_options %}
+      {% set chosen = posted_within.get(value) == filters.posted_within_days %}
+      <option value="{{ value }}" {% if chosen %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
   <label>Sources
     <select name="source" multiple size="4">
       {% for source in options.sources %}

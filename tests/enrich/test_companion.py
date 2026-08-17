@@ -337,3 +337,56 @@ class TestRunJournal:
         assert row["state"] == "interrupted"
         assert row["enriched_count"] == result.enriched  # whatever landed, kept
         assert row["finished_at"]
+
+
+def test_companion_stops_after_the_limit_is_reached(db_path, settings):
+    """A bound on the whole pass, not on one batch.
+
+    The companion was built to keep up with an arriving search, so it drains
+    until nothing is left. Pressed from the browser it would spend her entire
+    free tier in one go, and the free-tier rule says a run announces its cost
+    first — a cost it can only promise if it can be held to it.
+    """
+    for index in range(6):
+        store_job(db_path, index)
+    worker = companion(db_path, FakePool([answer()] * 6), settings, limit=2)
+
+    worker.start()
+    result = worker.finish()
+
+    assert result.sent == 2
+    assert enriched_ids(db_path) == ["BA:000", "BA:001"]
+
+
+def test_companion_without_a_limit_keeps_the_old_behaviour(db_path, settings):
+    for index in range(6):
+        store_job(db_path, index)
+    worker = companion(db_path, FakePool([answer()] * 6), settings)
+
+    worker.start()
+
+    assert worker.finish().sent == 6
+
+
+def test_a_limit_larger_than_the_queue_enriches_the_queue_and_stops(db_path, settings):
+    for index in range(2):
+        store_job(db_path, index)
+    worker = companion(db_path, FakePool([answer()] * 2), settings, limit=50)
+
+    worker.start()
+    result = worker.finish()
+
+    assert result.sent == 2
+    assert result.remaining == 0
+
+
+def test_a_limited_pass_reports_what_is_still_waiting(db_path, settings):
+    """The number the Enrich page shows after a bounded pass — she has to be
+    able to see that pressing it again has something left to do."""
+    for index in range(5):
+        store_job(db_path, index)
+    worker = companion(db_path, FakePool([answer()] * 5), settings, limit=2)
+
+    worker.start()
+
+    assert worker.finish().remaining == 3

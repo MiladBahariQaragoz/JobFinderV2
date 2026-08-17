@@ -56,10 +56,10 @@ def upsert_job(
         "INSERT INTO jobs ("
         " job_id, source, source_id, dedupe_key, title, company, city, plz, lat, lon,"
         " employment_type_raw, is_minijob, is_parttime, is_fulltime, is_internship,"
-        " is_werkstudent, homeoffice, published_at, apply_url, source_url,"
+        " is_werkstudent, homeoffice, published_at, published_on, apply_url, source_url,"
         " has_description, content_hash, first_seen_at, last_seen_at"
         ") VALUES ("
-        " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+        " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
         ")",
         (
             posting.job_id,
@@ -80,6 +80,7 @@ def upsert_job(
             int(posting.is_werkstudent),
             int(posting.homeoffice),
             posting.published_at,
+            posting.published_on,
             posting.apply_url,
             posting.source_url,
             int(posting.has_description),

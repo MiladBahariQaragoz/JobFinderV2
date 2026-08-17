@@ -8,7 +8,8 @@
     <input type="text" name="types" value="{{ default_types }}">
   </label>
   <label>Keywords (optional)
-    <input type="text" name="keywords" placeholder="e.g. Küche, Verkauf">
+    <input type="text" name="keywords" value="{{ keywords or '' }}"
+           placeholder="e.g. Küche, Verkauf">
   </label>
   <label class="checkbox">
     <input type="checkbox" name="enrich" checked>

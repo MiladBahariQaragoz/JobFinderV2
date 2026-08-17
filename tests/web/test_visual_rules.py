@@ -33,7 +33,7 @@ def test_no_emoji_in_any_template():
 
 
 def test_rendered_pages_carry_no_emoji(client):
-    for url in ("/", "/jobs/BA%3A1", "/settings", "/progress"):
+    for url in ("/", "/jobs/BA%3A1", "/settings", "/progress", "/enrich", "/enrich/progress"):
         body = client.get(url).text
         emoji = [character for character in body if _is_emoji(character)]
         assert not emoji, f"{url} rendered emoji: {emoji[:5]}"

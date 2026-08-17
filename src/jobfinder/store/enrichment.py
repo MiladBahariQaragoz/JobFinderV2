@@ -76,14 +76,20 @@ _JOB_COLUMNS = (
 
 # "No answer at this version, or one read from a different version of the ad."
 # LEFT JOIN + IS NULL rather than NOT IN: the same statement then serves the
-# `--force` case by dropping the WHERE clause.
-_NEEDS_ENRICHMENT = f"""
-SELECT {_JOB_COLUMNS}
+# `--force` case by dropping the WHERE clause. Kept apart from its SELECT list
+# so the queue and its count are the same rule stated once — the Enrich button
+# would otherwise promise a number the pass then disagrees with.
+_NEEDS_ENRICHMENT_SOURCE = """
 FROM jobs j
 JOIN job_descriptions d ON d.job_id = j.job_id
 LEFT JOIN enrichment e ON e.job_id = j.job_id AND e.prompt_version = ?
 WHERE d.description IS NOT NULL AND TRIM(d.description) != ''
   AND (e.job_id IS NULL OR e.content_hash IS NOT j.content_hash)
+"""
+
+_NEEDS_ENRICHMENT = f"""
+SELECT {_JOB_COLUMNS}
+{_NEEDS_ENRICHMENT_SOURCE}
 ORDER BY j.first_seen_at, j.job_id
 """
 
@@ -115,6 +121,21 @@ def jobs_needing_enrichment(
     if limit is not None:
         sql += f" LIMIT {int(limit)}"
     return connection.execute(sql, parameters).fetchall()
+
+
+def pending_enrichment_count(connection: sqlite3.Connection, prompt_version: str) -> int:
+    """How many jobs a full pass would send — one LLM call each.
+
+    The same rows `jobs_needing_enrichment` returns, counted in SQL. The Enrich
+    button reads this to say what it will spend before it spends it, and the
+    progress panel re-reads it every second while a pass runs; fetching several
+    hundred rows to call `len()` on them is what this exists to avoid.
+    """
+    return int(
+        connection.execute(
+            f"SELECT COUNT(*) {_NEEDS_ENRICHMENT_SOURCE}", (prompt_version,)
+        ).fetchone()[0]
+    )
 
 
 def already_enriched_count(connection: sqlite3.Connection, prompt_version: str) -> int:

@@ -185,6 +185,61 @@ def _string_list(raw) -> tuple[str, ...]:
     return tuple(str(item) for item in raw)
 
 
+# Placeholders the blank template ships with. A template that was downloaded
+# and never filled in *parses* — it has a name, an email and a location — so
+# nothing downstream would object, and every row would carry a fit score
+# computed against "Your Full Name". Saying "this is still the template" is the
+# only honest answer.
+_TEMPLATE_VALUES = (
+    "your full name",
+    "your.email@example.com",
+    "city, country",
+)
+
+
+def is_unfilled_template(resume: Resume) -> bool:
+    """True when this parses but is still the blank template's placeholders."""
+    return any(
+        str(resume.basics.get(key, "")).strip().lower() in _TEMPLATE_VALUES
+        for key in REQUIRED_BASICS
+    )
+
+
+def save_profile_text(text: str, path: Path, *, backup_path: Path) -> Resume:
+    """Validate an uploaded CV, then write it — never the other way round.
+
+    Nothing on disk is touched until the text parses, so a bad paste costs her
+    the upload and not the CV she already had. What she had is copied to
+    `backup_path` anyway: replacing a file that took an afternoon to write is
+    not otherwise recoverable.
+
+    `backup_path` is required rather than derived, because the obvious
+    derivation — `pool.yaml.bak`, beside the CV — is the one that put her name
+    and contact details into a public repository. The caller has to name a
+    directory that is safe to write her CV into.
+    """
+    path = Path(path)
+    if not text.strip():
+        raise ProfileError(
+            "That file is empty. Download the template, fill in your details, and upload it."
+        )
+
+    resume = parse_profile(text, name=path.name)  # raises ProfileError, naming the field
+
+    # Bytes, not text, on both sides. `write_text` translates newlines on
+    # Windows, so a CV saved by any editor on this laptop — CRLF — came back
+    # with every line ending doubled to \r\r\n, and doubled again on the next
+    # upload. A backup whose bytes differ from the file it saved is not a
+    # backup either (§ Cross-cutting concerns, "Windows reality").
+    if path.exists():
+        backup_path = Path(backup_path)
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        backup_path.write_bytes(path.read_bytes())
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode("utf-8"))
+    return resume
+
+
 def load_profile(path: Path) -> Resume:
     """Parse and validate pool.yaml. Raises ProfileError with one actionable sentence."""
     path = Path(path)
@@ -192,21 +247,29 @@ def load_profile(path: Path) -> Resume:
         raise ProfileError(
             f"No CV file at {path}. Copy pool.template.yaml to pool.yaml and fill it in."
         )
+    return parse_profile(path.read_text(encoding="utf-8"), name=path.name)
 
-    text = path.read_text(encoding="utf-8")
+
+def parse_profile(text: str, *, name: str = "pool.yaml") -> Resume:
+    """The same validation, over text that may not be on disk yet.
+
+    `name` is only what the error sentences call the file, so a CV validated
+    before it is written still reads as `pool.yaml` rather than naming whatever
+    temporary thing it arrived in.
+    """
     try:
         data = yaml.safe_load(text) or {}
     except yaml.YAMLError as exc:
         line = getattr(getattr(exc, "problem_mark", None), "line", None)
         where = f" (line {line + 1})" if line is not None else ""
         raise ProfileError(
-            f"{path.name} is not valid YAML{where}: {getattr(exc, 'problem', exc)}."
+            f"{name} is not valid YAML{where}: {getattr(exc, 'problem', exc)}."
         ) from None
 
     if not isinstance(data, dict):
         raise ProfileError(
-            f"{path.name}: expected the file to be a list of sections like "
-            "'basics:' and 'experience:', found {type(data).__name__}."
+            f"{name}: expected the file to be a list of sections like "
+            f"'basics:' and 'experience:', found {type(data).__name__}."
         )
 
     lines = _section_lines(text)
@@ -215,7 +278,7 @@ def load_profile(path: Path) -> Resume:
     if not isinstance(basics, dict):
         where = f" (line {lines['basics']})" if "basics" in lines else ""
         raise ProfileError(
-            f"{path.name}: the 'basics' section{where} is missing or empty — "
+            f"{name}: the 'basics' section{where} is missing or empty — "
             "it holds your name, email and location. "
             "Copy it from pool.template.yaml and fill it in."
         )
@@ -223,7 +286,7 @@ def load_profile(path: Path) -> Resume:
     if missing:
         where = f" starts at line {lines['basics']}" if "basics" in lines else ""
         raise ProfileError(
-            f"{path.name}: 'basics'{where} is missing {', '.join(repr(m) for m in missing)}. "
+            f"{name}: 'basics'{where} is missing {', '.join(repr(m) for m in missing)}. "
             f"Required fields: {', '.join(REQUIRED_BASICS)}."
         )
 

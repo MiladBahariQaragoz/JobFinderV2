@@ -1,0 +1,1903 @@
+{
+ "elements": [
+  {
+   "type": "node",
+   "id": 192085186,
+   "lat": 48.7337596,
+   "lon": 11.1819325,
+   "tags": {
+    "addr:housenumber": "C 88",
+    "addr:street": "Färberstraße",
+    "amenity": "restaurant",
+    "check_date": "2025-07-30",
+    "cuisine": "regional",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Gasthof Neuwirt",
+    "opening_hours": "Mo,We-Sa 17:00-23:00; Tu off; Su,PH 11:00-15:00",
+    "operator": "Karl Deiml",
+    "payment:cash": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes",
+    "phone": "+49 8431 2078",
+    "tourism": "hotel",
+    "website": "https://www.neuwirt-neuburg.de/",
+    "website:menu": "https://www.neuwirt-neuburg.de/restaurant/speisekarten",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 267668436,
+   "lat": 48.7364493,
+   "lon": 11.1839519,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "200",
+    "addr:postcode": "86633",
+    "addr:street": "Adlerstraße",
+    "amenity": "restaurant",
+    "name": "Central",
+    "phone": "+4984312079",
+    "smoking": "outside",
+    "website": "https://www.central-neuburg.de/",
+    "website:menu": "https://www.central-neuburg.de/speisekarte",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 274253376,
+   "lat": 48.73624,
+   "lon": 11.1839334,
+   "tags": {
+    "amenity": "restaurant",
+    "indoor_seating": "yes",
+    "name": "Il re Matteo",
+    "outdoor_seating": "yes",
+    "toilets:wheelchair": "no",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 276610009,
+   "lat": 48.7375165,
+   "lon": 11.1817298,
+   "tags": {
+    "addr:housenumber": "C 39",
+    "addr:street": "Elisenplatz",
+    "amenity": "restaurant",
+    "cuisine": "tex-mex;burger",
+    "email": "info@huba-neuburg.de",
+    "mobile": "+49 157 39339954",
+    "name": "Huba",
+    "old_name": "Café Huber",
+    "opening_hours": "Mo-We 17:30-22:30; Th-Sa 17:30-24:00; Su 00:00-01:00,17:30-22:00; PH 09:00-22:00",
+    "outdoor_seating": "yes",
+    "website": "https://www.huba-neuburg.de/",
+    "website:menu": "https://huba-neuburg.de/#karten",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 309326343,
+   "lat": 48.7369444,
+   "lon": 11.1753883,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "A 27",
+    "addr:postcode": "86633",
+    "addr:street": "Amalienstraße",
+    "amenity": "restaurant",
+    "cuisine": "regional",
+    "name": "Aussicht",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321198987,
+   "lat": 48.7342838,
+   "lon": 11.1850955,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "D 228",
+    "addr:postcode": "86633",
+    "addr:street": "Neuhofstraße",
+    "amenity": "restaurant",
+    "contact:phone": "+49 8431 7572",
+    "cuisine": "italian",
+    "delivery": "yes",
+    "name": "Raffaello"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199008,
+   "lat": 48.7321647,
+   "lon": 11.1825077,
+   "tags": {
+    "amenity": "restaurant",
+    "cuisine": "italian",
+    "indoor_seating": "yes",
+    "name": "La Perla",
+    "outdoor_seating": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199286,
+   "lat": 48.7321576,
+   "lon": 11.1822134,
+   "tags": {
+    "amenity": "restaurant",
+    "indoor_seating": "yes",
+    "name": "Gasthof Hennenwirt",
+    "outdoor_seating": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321901443,
+   "lat": 48.7404991,
+   "lon": 11.181422,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "5",
+    "addr:postcode": "86633",
+    "addr:street": "Ingolstädter Straße",
+    "amenity": "restaurant",
+    "brewery": "Unterbaarer",
+    "capacity": "50",
+    "cuisine": "american;burger;steak_house",
+    "delivery": "no",
+    "email": "hallo@steakhouse-neuburg.de",
+    "mobile": "+49 174 9023861",
+    "name": "Steakhouse Neuburg",
+    "opening_hours": "Th-Su 17:00+",
+    "opening_hours:kitchen": "Th-Su 17:00-21:00",
+    "reservation": "yes",
+    "smoking": "outside",
+    "takeaway": "yes",
+    "website": "https://steakhouse-neuburg.de"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1500134106,
+   "lat": 48.7379513,
+   "lon": 11.1813927,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "C 15",
+    "addr:postcode": "86633",
+    "addr:street": "Elisenplatz",
+    "amenity": "restaurant",
+    "contact:email": "view22@web.de",
+    "contact:facebook": "https://www.facebook.com/VIEWDryAgingNextLevel",
+    "contact:instagram": "https://www.instagram.com/restaurantview22",
+    "contact:phone": "+49 8431 648595",
+    "contact:website": "https://www.view22.de",
+    "cuisine": "barbecue",
+    "description": "\"Dry Aging Next Level\"",
+    "name": "View",
+    "old_name": "Mythos",
+    "opening_hours": "We-Mo 12:00-14:30,17:45+; Tu off",
+    "outdoor_seating": "yes",
+    "reservation": "yes",
+    "toilets:wheelchair": "no",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1500134174,
+   "lat": 48.7401605,
+   "lon": 11.1811721,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "1b",
+    "addr:postcode": "86633",
+    "addr:street": "Monheimer Straße",
+    "amenity": "restaurant",
+    "cuisine": "vietnamese",
+    "email": "info@saomai-neuburg.de",
+    "name": "Sao Mai",
+    "opening_hours": "Mo-Su 11:30-14:30,17:30-22:00; Tu off",
+    "operator": "Familie Bui",
+    "phone": "+49 8431 5365515",
+    "toilets:wheelchair": "no",
+    "website": "https://saomai-neuburg.de",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1747019921,
+   "lat": 48.7658708,
+   "lon": 11.2124882,
+   "tags": {
+    "addr:city": "Bergheim",
+    "addr:housename": "Schützengaststätte Unterstall",
+    "addr:housenumber": "1",
+    "addr:postcode": "86673",
+    "addr:street": "Am Sportplatz",
+    "addr:suburb": "Unterstall",
+    "amenity": "restaurant",
+    "cuisine": "regional",
+    "name": "Schützengaststätte Unterstall",
+    "website": "https://www.eichenlaub-unterstall.de/schuetzenheim/schuetzenheim.html",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1886311961,
+   "lat": 48.7460942,
+   "lon": 11.2241865,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "4",
+    "addr:postcode": "86633",
+    "addr:street": "Nußschütt",
+    "amenity": "restaurant",
+    "name": "Sportgaststätte am See"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2229470193,
+   "lat": 48.7362901,
+   "lon": 11.1821602,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "C 122",
+    "addr:postcode": "86633",
+    "addr:street": "Weinstraße",
+    "amenity": "restaurant",
+    "cuisine": "indian",
+    "email": "info@ganeshaneuburg.com",
+    "name": "Ganesha",
+    "old_name": "Zum Hofgarten",
+    "opening_hours": "Mo-Sa 11:30-14:30,17:00-23:00; Tu off; Su 11:30-14:30,17:00-22:00",
+    "outdoor_seating": "yes",
+    "phone": "+49 8431 41199",
+    "website": "http://ganeshaneuburg.com"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2239803110,
+   "lat": 48.734019,
+   "lon": 11.1793248,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "B 229",
+    "addr:postcode": "86633",
+    "addr:street": "Franziskanerstraße",
+    "amenity": "restaurant",
+    "contact:phone": "+49 8431 1355",
+    "cuisine": "italian",
+    "indoor_seating": "yes",
+    "name": "Primavera",
+    "opening_hours": "Tu-Su 11:00-14:00, 17:00-23:00; Tu-Su 17:00-23:30",
+    "outdoor_seating": "yes",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2465865314,
+   "lat": 48.7247402,
+   "lon": 11.1943361,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "53",
+    "addr:postcode": "86633",
+    "addr:street": "Längenmühlweg",
+    "amenity": "restaurant",
+    "cuisine": "asian",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2468042902,
+   "lat": 48.7471494,
+   "lon": 11.1626966,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "43",
+    "addr:postcode": "86633",
+    "addr:street": "Gietlhausener Straße",
+    "amenity": "restaurant",
+    "contact:phone": "+49 8431 2700",
+    "cuisine": "regional",
+    "name": "Jagdschlössl",
+    "opening_hours": "Fr,Sa 17:00-22:00; Su 09:00-14:00,17:00-22:00",
+    "website": "http://www.jagdschlössl.de"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661686873,
+   "lat": 48.7342693,
+   "lon": 11.1808328,
+   "tags": {
+    "amenity": "restaurant",
+    "check_date": "2025-08-10",
+    "cuisine": "italian",
+    "name": "Viva Italia",
+    "toilets:wheelchair": "no",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2913907105,
+   "lat": 48.7218969,
+   "lon": 11.2318417,
+   "tags": {
+    "amenity": "restaurant",
+    "cuisine": "italian",
+    "name": "Lucio's Pizzeria und Café am Golfplatz"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5210477348,
+   "lat": 48.736815,
+   "lon": 11.2266863,
+   "tags": {
+    "alt_name": "BSV-Sportgaststätte",
+    "amenity": "restaurant",
+    "cuisine": "italian",
+    "name": "Da Angelo’s",
+    "opening_hours": "Mo-Su 11:00-13:30,16:30-21:00",
+    "outdoor_seating": "yes",
+    "phone": "+49 8431 44944",
+    "website": "https://pizzerianeuburg.de/"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6127451168,
+   "lat": 48.7370348,
+   "lon": 11.1789569,
+   "tags": {
+    "amenity": "restaurant",
+    "contact:facebook": "https://www.facebook.com/IlLampione/",
+    "cuisine": "italian",
+    "name": "Il Lampione",
+    "old_name": "Zur Laterne",
+    "operator": "Anis ChKiba (seit Juni2015)",
+    "outdoor_seating": "yes",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6412146124,
+   "lat": 48.7363108,
+   "lon": 11.1830947,
+   "tags": {
+    "amenity": "restaurant",
+    "cuisine": "regional",
+    "indoor_seating": "yes",
+    "name": "Pfafflinger",
+    "outdoor_seating": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6483722685,
+   "lat": 48.740623,
+   "lon": 11.2002802,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "25",
+    "addr:postcode": "86633",
+    "addr:street": "Flachslandenstraße",
+    "amenity": "restaurant",
+    "name": "Siam Grill",
+    "opening_hours": "Tu-Su 11:30-12:00, 13:00-14:30",
+    "phone": "+49 8431 646 8391"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9087750382,
+   "lat": 48.7538112,
+   "lon": 11.2626412,
+   "tags": {
+    "amenity": "restaurant",
+    "name": "Sportgaststätte Bergheim"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11160866581,
+   "lat": 48.7274476,
+   "lon": 11.1782343,
+   "tags": {
+    "amenity": "restaurant",
+    "indoor_seating": "yes",
+    "name": "Taki",
+    "outdoor_seating": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 12849528260,
+   "lat": 48.7280572,
+   "lon": 11.2498069,
+   "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "level": "1",
+    "name": "Audi drivers lounge",
+    "operator": "Mövenpick",
+    "outdoor_seating": "yes",
+    "toilets": "yes",
+    "website": "https://www.audi.de/de/audi-driving-experience/audi-driving-experience-center/#Restaurant",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13032116250,
+   "lat": 48.7340492,
+   "lon": 11.1823133,
+   "tags": {
+    "addr:floor": "0",
+    "addr:housenumber": "6",
+    "addr:street": "Färberstraße",
+    "amenity": "restaurant",
+    "changing_table": "yes",
+    "check_date": "2025-07-28",
+    "cuisine": "turkish",
+    "highchair": "yes",
+    "level": "0",
+    "name": "BospHorus",
+    "opening_hours": "Mo-Su,PH 09:00-23:00",
+    "payment:cash": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes",
+    "phone": "+49 8431 4363268",
+    "source": "survey",
+    "start_date": "2025-07-17",
+    "takeaway": "yes",
+    "toilets": "yes",
+    "toilets:wheelchair": "no",
+    "website": "https://www.bosphorusgrillmore.com/",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13037776702,
+   "lat": 48.7372715,
+   "lon": 11.1834395,
+   "tags": {
+    "amenity": "restaurant",
+    "check_date": "2025-07-30",
+    "cuisine": "greek",
+    "diet:vegetarian": "yes",
+    "name": "Neo Kastro",
+    "payment:cash": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes",
+    "toilets:wheelchair": "yes",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "way",
+   "id": 35537581,
+   "center": {
+    "lat": 48.744324,
+    "lon": 11.1903925
+   },
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "18",
+    "addr:postcode": "86633",
+    "addr:street": "Arcostraße",
+    "amenity": "restaurant",
+    "building": "yes",
+    "cuisine": "regional",
+    "email": "info@arco-schloesschen.com",
+    "name": "Arco-Schlösschen",
+    "phone": "+49 8431 7055",
+    "website": "https://www.arco-schloesschen.com/",
+    "wheelchair": "limited",
+    "wikidata": "Q98746484",
+    "wikipedia": "de:Ried (Neuburg an der Donau)"
+   }
+  },
+  {
+   "type": "way",
+   "id": 37556501,
+   "center": {
+    "lat": 48.7389115,
+    "lon": 11.1861841
+   },
+   "tags": {
+    "amenity": "restaurant",
+    "building": "yes",
+    "contact:email": "info@bootshaus-neuburg.de",
+    "contact:facebook": "https://www.facebook.com/bootshaus.neuburg/",
+    "contact:mobile": "+49 1573 9339952",
+    "contact:phone": "+49 8431 6477640",
+    "contact:website": "https://www.bootshaus-neuburg.de",
+    "cuisine": "mediterranean",
+    "diet:vegetarian": "yes",
+    "indoor_seating": "yes",
+    "name": "Bootshaus Neuburg",
+    "opening_hours": "Mo-We 14:00-21:30; Th-Fr 14:00-22:00; Sa 09:00-23:00; Su 09:00-22:00",
+    "outdoor_seating": "yes"
+   }
+  },
+  {
+   "type": "way",
+   "id": 135338250,
+   "center": {
+    "lat": 48.7370531,
+    "lon": 11.1781762
+   },
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "A 49",
+    "addr:postcode": "86633",
+    "addr:street": "Amalienstraße",
+    "amenity": "restaurant",
+    "building": "yes",
+    "building:levels": "3",
+    "cuisine": "regional",
+    "email": "info@zur-blauen-traube.de",
+    "name": "Zur blauen Traube",
+    "opening_hours": "Tu-Fr 16:00-22:00; Sa,Su 11:00-22:00",
+    "outdoor_seating": "yes",
+    "phone": "+49 8431 8392",
+    "roof:levels": "3",
+    "roof:orientation": "along",
+    "roof:shape": "gabled",
+    "smoking": "outside",
+    "tourism": "guest_house",
+    "website": "https://www.zur-blauen-traube.de/",
+    "wheelchair": "no",
+    "wikidata": "Q41272308"
+   }
+  },
+  {
+   "type": "way",
+   "id": 136732163,
+   "center": {
+    "lat": 48.7396976,
+    "lon": 11.1813121
+   },
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "1",
+    "addr:postcode": "86633",
+    "addr:street": "Ingolstädter Straße",
+    "amenity": "restaurant",
+    "building": "yes",
+    "cuisine": "italian",
+    "name": "Goldener Schwan",
+    "opening_hours": "Tu-Su 11:00-14:00, 18:00-22:00; Mo off",
+    "phone": "+49 8431 1817",
+    "takeaway": "yes",
+    "website": "https://www.goldener-schwan-neuburg.de",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "way",
+   "id": 162504613,
+   "center": {
+    "lat": 48.7290475,
+    "lon": 11.1774394
+   },
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "B 111",
+    "addr:postcode": "86633",
+    "addr:street": "Bahnhofstraße",
+    "amenity": "restaurant",
+    "building": "yes",
+    "cuisine": "greek",
+    "name": "Neuhof Gaststätte \"Der Grieche\"",
+    "name:de": "Neuhof Gaststätte \"Der Grieche\"",
+    "operator": "Familie Festas",
+    "source": "Bayern(2m)"
+   }
+  },
+  {
+   "type": "way",
+   "id": 231457812,
+   "center": {
+    "lat": 48.7368323,
+    "lon": 11.1958526
+   },
+   "tags": {
+    "amenity": "restaurant",
+    "building": "yes",
+    "cuisine": "italian",
+    "name": "Da Pippo"
+   }
+  },
+  {
+   "type": "way",
+   "id": 232936428,
+   "center": {
+    "lat": 48.6874771,
+    "lon": 11.1552564
+   },
+   "tags": {
+    "addr:city": "Rohrenfels",
+    "addr:country": "DE",
+    "addr:housenumber": "22",
+    "addr:postcode": "86701",
+    "addr:street": "Hauptstraße",
+    "amenity": "restaurant",
+    "building": "yes",
+    "name": "SAPA Restaurant"
+   }
+  },
+  {
+   "type": "way",
+   "id": 236114160,
+   "center": {
+    "lat": 48.7021373,
+    "lon": 11.246659
+   },
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "12",
+    "addr:postcode": "86633",
+    "addr:street": "Am Zeller See",
+    "addr:suburb": "Zell",
+    "amenity": "restaurant",
+    "building": "yes",
+    "cuisine": "regional",
+    "name": "Gasthof Mödl"
+   }
+  },
+  {
+   "type": "way",
+   "id": 260650050,
+   "center": {
+    "lat": 48.735265,
+    "lon": 11.1835304
+   },
+   "tags": {
+    "amenity": "restaurant",
+    "building": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 267668426,
+   "lat": 48.7369252,
+   "lon": 11.1834718,
+   "tags": {
+    "addr:housenumber": "12",
+    "addr:postcode": "86633",
+    "addr:street": "Spitalplatz",
+    "amenity": "cafe",
+    "indoor_seating": "yes",
+    "name": "Café Zeitlos",
+    "outdoor_seating": "yes",
+    "toilets:wheelchair": "no",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 274253134,
+   "lat": 48.7361094,
+   "lon": 11.1847873,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "196",
+    "addr:postcode": "86633",
+    "addr:street": "Spitalplatz",
+    "amenity": "cafe",
+    "cuisine": "ice_cream",
+    "name": "San Marco",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321198989,
+   "lat": 48.7352234,
+   "lon": 11.1844937,
+   "tags": {
+    "amenity": "cafe",
+    "name": "Sowieso"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321198999,
+   "lat": 48.7368986,
+   "lon": 11.1829487,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "54 ½",
+    "addr:postcode": "86633",
+    "addr:street": "Schrannenstraße",
+    "amenity": "cafe",
+    "name": "Göbel, Bäckerei und Kaffeehaus",
+    "opening_hours": "Mo-Fr 06:00-18:00, Sa 06:00-13:00",
+    "operator": "Anton Göbel e.K.",
+    "outdoor_seating": "yes",
+    "phone": "+4984312053",
+    "shop": "bakery",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199300,
+   "lat": 48.7360162,
+   "lon": 11.1840972,
+   "tags": {
+    "amenity": "cafe",
+    "name": "Ozon"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1874061008,
+   "lat": 48.72274,
+   "lon": 11.111114,
+   "tags": {
+    "amenity": "cafe",
+    "cuisine": "regional",
+    "name": "Bürgercafe"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1877349817,
+   "lat": 48.736917,
+   "lon": 11.1766752,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "A 44",
+    "addr:postcode": "86633",
+    "addr:street": "Amalienstraße",
+    "amenity": "cafe",
+    "check_date": "2025-01-29",
+    "email": "kontakt@zum-rufer.de",
+    "name": "Café Zum Rufer",
+    "outdoor_seating": "yes",
+    "phone": "+49 8431 432 2834",
+    "smoking": "outside",
+    "website": "https://zum-rufer.de",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2218058417,
+   "lat": 48.7361167,
+   "lon": 11.1826991,
+   "tags": {
+    "amenity": "cafe",
+    "entrance": "yes",
+    "indoor_seating": "yes",
+    "name": "Café Barista",
+    "outdoor_seating": "yes",
+    "website": "https://www.cafe-barista.de/",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2229469703,
+   "lat": 48.7365119,
+   "lon": 11.1820019,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "66c",
+    "addr:postcode": "86633",
+    "addr:street": "Luitpoldstraße",
+    "amenity": "cafe",
+    "brand": "Backhaus Hackner",
+    "brand:wikidata": "Q122761485",
+    "name": "Backhaus Hackner",
+    "old_name": "Café Luitpold",
+    "operator": "Backhaus Hackner",
+    "shop": "bakery",
+    "website": "https://www.backhaus-hackner.de",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2468040696,
+   "lat": 48.7340871,
+   "lon": 11.1806216,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "10",
+    "addr:postcode": "86633",
+    "addr:street": "Münchener Straße",
+    "amenity": "cafe",
+    "check_date": "2025-08-10",
+    "name": "Cantonati",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2667673503,
+   "lat": 48.7361682,
+   "lon": 11.1817924,
+   "tags": {
+    "addr:housenumber": "C 68",
+    "addr:street": "Luitpoldstraße",
+    "amenity": "cafe",
+    "cuisine": "ice_cream",
+    "name": "Eiscafe da Manuele",
+    "outdoor_seating": "yes",
+    "smoking": "outside",
+    "takeaway": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 3522465457,
+   "lat": 48.719923,
+   "lon": 11.170558,
+   "tags": {
+    "amenity": "cafe",
+    "brand": "McCafé",
+    "brand:wikidata": "Q3114287",
+    "brand:wikipedia": "en:McCafé",
+    "cuisine": "coffee_shop",
+    "name": "McCafé",
+    "takeaway": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4100958589,
+   "lat": 48.7375028,
+   "lon": 11.1828319,
+   "tags": {
+    "addr:housenumber": "3",
+    "addr:street": "Bürgermeister-Hocheder-Platz",
+    "amenity": "cafe",
+    "check_date": "2025-08-10",
+    "name": "Mary's Café",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4225947380,
+   "lat": 48.7345344,
+   "lon": 11.1773289,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "B 191",
+    "addr:postcode": "86633",
+    "addr:street": "Theresienstraße",
+    "amenity": "cafe",
+    "name": "Cafe Großmann",
+    "shop": "pastry"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4540156264,
+   "lat": 48.7338291,
+   "lon": 11.1789637,
+   "tags": {
+    "amenity": "cafe",
+    "name": "Schlegl",
+    "website": "https://www.schlegl.de"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5263616679,
+   "lat": 48.7365561,
+   "lon": 11.1797812,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "A66",
+    "addr:postcode": "86633",
+    "addr:street": "Residenzstraße",
+    "amenity": "cafe",
+    "email": "info@kate-cafe-am-theater.de",
+    "name": "Kate - Cafe am Theater",
+    "opening_hours": "Tu-Su 09:00-17:00",
+    "outdoor_seating": "yes",
+    "phone": "+49 8431 6478999",
+    "toilets:wheelchair": "no",
+    "website": "http://cafe-kate.de",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7637317807,
+   "lat": 48.7334001,
+   "lon": 11.182694,
+   "tags": {
+    "amenity": "cafe",
+    "cuisine": "ice_cream",
+    "indoor_seating": "yes",
+    "name": "Eiscafe da Stefano",
+    "outdoor_seating": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7637317818,
+   "lat": 48.7366313,
+   "lon": 11.1820905,
+   "tags": {
+    "amenity": "cafe",
+    "check_date": "2025-08-10",
+    "cuisine": "ice_cream",
+    "name": "Il Pinguino"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9696231720,
+   "lat": 48.7336336,
+   "lon": 11.1696243,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "70",
+    "addr:postcode": "86633",
+    "addr:street": "Donauwörther Straße",
+    "amenity": "cafe",
+    "brand": "Ihle",
+    "brand:wikidata": "Q1626371",
+    "contact:facebook": "https://fb.com/ihlebakers",
+    "contact:instagram": "https://www.instagram.com/ihle.baeckerei/",
+    "contact:website": "https://www.ihle.de/",
+    "cuisine": "cake;coffee_shop;german",
+    "name": "Ihle",
+    "opening_hours": "Mo-Sa 06:00-20:00; Su 07:30-12:00",
+    "operator": "Landbäckerei Ihle GmbH Dr.-Balthasar-Hubmaier-Straße 6 86316 Friedberg",
+    "phone": "+49 821 660070",
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 12980781330,
+   "lat": 48.7269987,
+   "lon": 11.1925061,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:housenumber": "5a",
+    "addr:postcode": "86633",
+    "addr:street": "Franz-Boecker-Straße",
+    "amenity": "cafe",
+    "contact:email": "reservierung@lorenz-neuburg.de",
+    "contact:instagram": "https://www.instagram.com/lorenz_tagesbar",
+    "contact:phone": "+49 8431 4322816",
+    "contact:website": "https://www.lorenz-tagesbar.de/",
+    "contact:whatsapp": "+49 160 8050500",
+    "cuisine": "bistro",
+    "name": "Lorenz Tagesbar",
+    "opening_hours": "Mo-Sa 08:00-14:00; Su off",
+    "toilets:wheelchair": "yes",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13020844969,
+   "lat": 48.7454267,
+   "lon": 11.1836985,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "49",
+    "addr:postcode": "86633",
+    "addr:street": "Ingolstädter Straße",
+    "amenity": "cafe",
+    "indoor_seating": "yes",
+    "name": "Aroma Brot trifft Bohne Café Bäckerei und Konditorei",
+    "opening_hours": "Mo-Fr 06:00-18:00; Sa 06:00-16:00; Su;PH 08:00-17:00",
+    "outdoor_seating": "no",
+    "website": "https://brot-trifft-bohne.de/"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199004,
+   "lat": 48.7330934,
+   "lon": 11.1828629,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "thai",
+    "delivery": "yes",
+    "drive_through": "no",
+    "name": "Jen-Hi",
+    "outdoor_seating": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661429863,
+   "lat": 48.7351461,
+   "lon": 11.1808773,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "kebab",
+    "name": "Imbis Kaspian Kebab"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661880761,
+   "lat": 48.7371953,
+   "lon": 11.1821454,
+   "tags": {
+    "amenity": "fast_food",
+    "check_date": "2025-08-10",
+    "cuisine": "pizza",
+    "name": "Toniz Pizzabar",
+    "website": "https://toniz.de",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4206041290,
+   "lat": 48.737789,
+   "lon": 11.2137422,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "6a",
+    "addr:postcode": "86633",
+    "addr:street": "Nördliche Grünauer Straße",
+    "amenity": "fast_food",
+    "entrance": "yes",
+    "name": "First Class Lieferservice"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4546910639,
+   "lat": 48.7374796,
+   "lon": 11.1823769,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "italian",
+    "name": "Da Angelo's"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6120740572,
+   "lat": 48.7348014,
+   "lon": 11.180302,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "kebab;italian",
+    "delivery": "yes",
+    "name": "Das Oracle",
+    "opening_hours": "Mo-Th, Su 11:00-23:00; Fr, Sa 11:00-00:00",
+    "phone": "+49 8431 42554",
+    "takeaway": "yes",
+    "website": "https://www.das-oracle-neuburg-an-der-donau.de/",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7637317810,
+   "lat": 48.7339609,
+   "lon": 11.1828375,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "kebab",
+    "name": "Ankara Döner Kebab"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7637317812,
+   "lat": 48.7345474,
+   "lon": 11.1833417,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "pizza",
+    "name": "Pizza Desiderio"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11536369753,
+   "lat": 48.7325275,
+   "lon": 11.1762889,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "21",
+    "addr:postcode": "86633",
+    "addr:street": "Fünfzehnerstraße",
+    "amenity": "fast_food",
+    "cuisine": "kebab",
+    "name": "Viel Liebe",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13385755763,
+   "lat": 48.7192154,
+   "lon": 11.1726638,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "6",
+    "addr:postcode": "86633",
+    "addr:street": "Am Südpark",
+    "amenity": "fast_food",
+    "cuisine": "kebab",
+    "drive_through": "no",
+    "name": "Ewin Döner & Pizza Haus",
+    "opening_hours": "Mo-Sa 10:00-20:30",
+    "phone": "+49 8431 6403079"
+   }
+  },
+  {
+   "type": "way",
+   "id": 184355969,
+   "center": {
+    "lat": 48.7337353,
+    "lon": 11.1814747
+   },
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Subway",
+    "brand:wikidata": "Q244457",
+    "brand:wikipedia": "en:Subway (restaurant)",
+    "building": "yes",
+    "check_date": "2025-08-10",
+    "cuisine": "sandwich",
+    "name": "Subway",
+    "takeaway": "yes"
+   }
+  },
+  {
+   "type": "way",
+   "id": 211744343,
+   "center": {
+    "lat": 48.7198807,
+    "lon": 11.1704526
+   },
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "3",
+    "addr:postcode": "86633",
+    "addr:street": "Am Südpark",
+    "amenity": "fast_food",
+    "brand": "McDonald's",
+    "brand:wikidata": "Q38076",
+    "brand:wikipedia": "en:McDonald's",
+    "building": "retail",
+    "cuisine": "burger",
+    "drive_through": "yes",
+    "internet_access": "wlan",
+    "name": "McDonald's",
+    "opening_hours": "Su-Th 08:00-01:00, Fr-Sa 08:00-03:00",
+    "operator": "Hovan KG",
+    "outdoor_seating": "yes",
+    "phone": "+49 8431 430515",
+    "smoking": "outside",
+    "takeaway": "yes",
+    "website": "http://www.mcdonalds-neuburg.de",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "way",
+   "id": 456869564,
+   "center": {
+    "lat": 48.7250028,
+    "lon": 11.1928626
+   },
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "kebab"
+   }
+  },
+  {
+   "type": "node",
+   "id": 276610200,
+   "lat": 48.7377371,
+   "lon": 11.1814682,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "C 16",
+    "addr:postcode": "86633",
+    "addr:street": "Elisenplatz",
+    "amenity": "bar",
+    "name": "Elisenlounge",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2468040488,
+   "lat": 48.7373922,
+   "lon": 11.1829246,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "1",
+    "addr:postcode": "86633",
+    "addr:street": "Bürgermeister-Hocheder-Platz",
+    "amenity": "bar",
+    "check_date": "2025-08-10",
+    "name": "Route66 Bar-Bistro-Spielothek",
+    "phone": "+49 8431 644072"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2660612026,
+   "lat": 48.7351811,
+   "lon": 11.1809381,
+   "tags": {
+    "amenity": "bar",
+    "name": "Shishco"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661286771,
+   "lat": 48.7337723,
+   "lon": 11.1996824,
+   "tags": {
+    "amenity": "bar"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661686861,
+   "lat": 48.736079,
+   "lon": 11.1838744,
+   "tags": {
+    "amenity": "bar",
+    "name": "Manhatten"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2778545772,
+   "lat": 48.7371684,
+   "lon": 11.1818819,
+   "tags": {
+    "addr:housenumber": "C 4",
+    "addr:street": "Luitpoldstraße",
+    "amenity": "bar",
+    "name": "Andrea's Cafe Lounge Bar"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2778545773,
+   "lat": 48.7376543,
+   "lon": 11.1812256,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "C 11",
+    "addr:postcode": "86633",
+    "addr:street": "Zur Hölle",
+    "alt_name": "Residenztor",
+    "amenity": "bar",
+    "min_age": "18",
+    "name": "Die Bar"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4206542589,
+   "lat": 48.7374852,
+   "lon": 11.1819812,
+   "tags": {
+    "amenity": "bar",
+    "contact:instagram": "https://www.instagram.com/flycocktailbar/",
+    "entrance": "yes",
+    "name": "Fly Cocktailbar",
+    "old_name": "Fly Cocktailbar; Déjà-Vu"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4225948336,
+   "lat": 48.7350602,
+   "lon": 11.1800948,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "B 179",
+    "addr:postcode": "86633",
+    "addr:street": "Am Graben",
+    "amenity": "bar",
+    "check_date": "2025-08-10",
+    "name": "Rob's Bar",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5611631730,
+   "lat": 48.7346888,
+   "lon": 11.182531,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "1",
+    "addr:postcode": "86633",
+    "addr:street": "Färberstraße",
+    "amenity": "bar",
+    "name": "Bistro Break-Time",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 12537233292,
+   "lat": 48.7349054,
+   "lon": 11.1799594,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "180",
+    "addr:postcode": "86633",
+    "addr:street": "Luitpoldstraße",
+    "amenity": "bar",
+    "name": "Drogerie"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321198988,
+   "lat": 48.7347602,
+   "lon": 11.1844205,
+   "tags": {
+    "amenity": "pub",
+    "name": "Zum Max"
+   }
+  },
+  {
+   "type": "node",
+   "id": 324160087,
+   "lat": 48.7375277,
+   "lon": 11.1826817,
+   "tags": {
+    "amenity": "pub",
+    "name": "Fischerstecher",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 563834394,
+   "lat": 48.7126317,
+   "lon": 11.1432975,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "100",
+    "addr:postcode": "86633",
+    "addr:street": "Sehensand",
+    "amenity": "pub",
+    "name": "Naturfreundehaus Neuburg",
+    "opening_hours": "May-Sep Sa,Su",
+    "operator": "NaturFreunde Deutschland",
+    "ref": "N 099",
+    "source": "Datenspende der NaturFreunde Deutschland"
+   }
+  },
+  {
+   "type": "node",
+   "id": 778197896,
+   "lat": 48.7204759,
+   "lon": 11.2192027,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "16",
+    "addr:postcode": "86633",
+    "addr:street": "Rödenhof",
+    "amenity": "pub",
+    "name": "Sky Sports Bar"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2966616008,
+   "lat": 48.7270841,
+   "lon": 11.1101416,
+   "tags": {
+    "amenity": "pub",
+    "name": "Waldbad"
+   }
+  },
+  {
+   "type": "node",
+   "id": 251318808,
+   "lat": 48.7203619,
+   "lon": 11.2220084,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "8",
+    "addr:postcode": "86633",
+    "addr:street": "Am Eichet",
+    "contact:email": "info@sport-hotel-neuburg.de",
+    "contact:fax": "+49 8431 675050",
+    "contact:phone": "+49 8431 67500",
+    "contact:website": "http://sport-hotel-neuburg.de",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Sporthotel Neuburg",
+    "smoking": "no",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199001,
+   "lat": 48.7360814,
+   "lon": 11.1840163,
+   "tags": {
+    "addr:housenumber": "C153 1/2",
+    "addr:postcode": "86633",
+    "addr:street": "Am Schrannenplatz",
+    "contact:website": "https://www.hotel-garni-amschrannenplatz.de/",
+    "internet_access": "wlan",
+    "name": "Am Schrannenhaus",
+    "phone": "+49 8431 67210",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1802484848,
+   "lat": 48.7331906,
+   "lon": 11.1762488,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "11",
+    "addr:postcode": "86633",
+    "addr:street": "Fünfzehnerstraße",
+    "name": "Hotel Bergbauer",
+    "phone": "+49 8431 61689",
+    "tourism": "hotel",
+    "website": "https://www.hotel-gasthof-bergbauer.de"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2468041043,
+   "lat": 48.7429158,
+   "lon": 11.1572874,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "119",
+    "addr:postcode": "86633",
+    "addr:street": "Monheimer Straße",
+    "name": "Kirchbaur",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2468042336,
+   "lat": 48.7402429,
+   "lon": 11.1798969,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "2a",
+    "addr:postcode": "86633",
+    "addr:street": "Mühlenweg",
+    "internet_access": "yes",
+    "name": "Hotel Garni Die Spindel",
+    "operator": "Margit Wolfmüller",
+    "phone": "+49 8431 49423",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "way",
+   "id": 33792843,
+   "center": {
+    "lat": 48.7215339,
+    "lon": 11.2638315
+   },
+   "tags": {
+    "building": "yes",
+    "check_date": "2025-11-09",
+    "name": "Wittelsbacher Golfclub & Hotel",
+    "roof:shape": "hipped",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "way",
+   "id": 488690162,
+   "center": {
+    "lat": 48.7297434,
+    "lon": 11.1585809
+   },
+   "tags": {
+    "building": "hotel",
+    "name": "Das Acker Hotel",
+    "tourism": "hotel",
+    "wikidata": "Q111853150"
+   }
+  },
+  {
+   "type": "way",
+   "id": 541631154,
+   "center": {
+    "lat": 48.7267595,
+    "lon": 11.1923071
+   },
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "5",
+    "addr:postcode": "86633",
+    "addr:street": "Franz-Boecker-Straße",
+    "building": "hotel",
+    "email": "info@living-neuburg.de",
+    "internet_access": "wlan",
+    "name": "Living Neuburg Apartmenthaus",
+    "phone": "+49 8431 676779",
+    "tourism": "hotel",
+    "website": "https://neuburg.apartments-living.de/"
+   }
+  },
+  {
+   "type": "node",
+   "id": 251322240,
+   "lat": 48.725339,
+   "lon": 11.2232257,
+   "tags": {
+    "name": "Schlegl",
+    "opening_hours": "Mo-Fr 05:30-13:00; Sa 06:00-13:00; Su 07:30-11:30",
+    "shop": "bakery",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 251361572,
+   "lat": 48.7323051,
+   "lon": 11.2002058,
+   "tags": {
+    "name": "Schlegl",
+    "shop": "bakery",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199099,
+   "lat": 48.7336591,
+   "lon": 11.1826887,
+   "tags": {
+    "indoor_seating": "yes",
+    "name": "Kaltenstadler",
+    "outdoor_seating": "yes",
+    "shop": "bakery",
+    "wheelchair": "limited"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321690820,
+   "lat": 48.7331535,
+   "lon": 11.2003163,
+   "tags": {
+    "name": "Hörmann",
+    "shop": "bakery",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 356647717,
+   "lat": 48.7382393,
+   "lon": 11.2110343,
+   "tags": {
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1762416239,
+   "lat": 48.6926239,
+   "lon": 11.2201361,
+   "tags": {
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661749090,
+   "lat": 48.7208121,
+   "lon": 11.1696199,
+   "tags": {
+    "name": "Heckl's Backparadies",
+    "opening_hours": "Mo-Fr 08:00-18:00; Sa 08:00-17:00",
+    "shop": "bakery",
+    "website": "http://www.heckls-backparadies.de"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2661749119,
+   "lat": 48.7273554,
+   "lon": 11.1848254,
+   "tags": {
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4198565069,
+   "lat": 48.7337582,
+   "lon": 11.1788792,
+   "tags": {
+    "bakehouse": "yes",
+    "email": "info@schlegl.de",
+    "name": "Schlegl",
+    "opening_hours": "Mo-Fr 06:00-18:00; Sa 06:00-13:00; Su 07:30-11:30",
+    "phone": "+49 8431 8324",
+    "shop": "bakery",
+    "snack": "yes",
+    "website": "https://www.schlegl.de/",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4778039077,
+   "lat": 48.7381421,
+   "lon": 11.2117005,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:housenumber": "3",
+    "addr:postcode": "86633",
+    "addr:street": "Nördliche Grünauer Straße",
+    "brand": "Backhaus Hackner",
+    "brand:wikidata": "Q122761485",
+    "name": "Backhaus Hackner",
+    "opening_hours": "Mo-Fr 06:00-18:00; Sa 06:00-17:00; Su,PH 07:00-17:00",
+    "operator": "Backhaus Hackner",
+    "phone": "+49 8431 5384564",
+    "shop": "bakery",
+    "website": "https://www.backhaus-hackner.de"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9016354258,
+   "lat": 48.7213138,
+   "lon": 11.1689017,
+   "tags": {
+    "brand": "Backstube Wünsche",
+    "brand:wikidata": "Q66085325",
+    "name": "Backstube Wünsche",
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11160866583,
+   "lat": 48.727498,
+   "lon": 11.1780635,
+   "tags": {
+    "indoor_seating": "yes",
+    "name": "Al Treno",
+    "outdoor_seating": "yes",
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "way",
+   "id": 260656165,
+   "center": {
+    "lat": 48.7250429,
+    "lon": 11.1788461
+   },
+   "tags": {
+    "building": "retail",
+    "indoor_seating": "yes",
+    "name": "Schlegl",
+    "outdoor_seating": "yes",
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "way",
+   "id": 314408190,
+   "center": {
+    "lat": 48.6971396,
+    "lon": 11.1722027
+   },
+   "tags": {
+    "addr:city": "Rohrenfels",
+    "addr:housenumber": "6",
+    "addr:postcode": "86701",
+    "addr:street": "Im Gewerbepark",
+    "building": "yes",
+    "name": "Ulrich Jann Sonntagsbäckerei",
+    "opening_hours": "Su 06:30-11:00",
+    "phone": "+498431644490",
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199006,
+   "lat": 48.7351453,
+   "lon": 11.1845014,
+   "tags": {
+    "name": "Rehm",
+    "shop": "butcher"
+   }
+  },
+  {
+   "type": "node",
+   "id": 321199007,
+   "lat": 48.7330651,
+   "lon": 11.182415,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "102",
+    "addr:postcode": "86633",
+    "addr:street": "Gärtnerstraße",
+    "name": "Mayer",
+    "shop": "butcher"
+   }
+  },
+  {
+   "type": "node",
+   "id": 560944977,
+   "lat": 48.7379655,
+   "lon": 11.2112086,
+   "tags": {
+    "name": "Artner",
+    "opening_hours": "Mo-Fr 08:30-19:00",
+    "shop": "butcher"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1874061007,
+   "lat": 48.722893,
+   "lon": 11.110905,
+   "tags": {
+    "name": "Halbich",
+    "shop": "butcher"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2450711851,
+   "lat": 48.7378338,
+   "lon": 11.2114687,
+   "tags": {
+    "name": "Metzgerei Ottillinger",
+    "opening_hours": "Mo-Fr 07:00-18:30; Sa 07:00-13:00",
+    "shop": "butcher",
+    "wheelchair": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2450787805,
+   "lat": 48.736559,
+   "lon": 11.1889604,
+   "tags": {
+    "addr:city": "Neuburg an der Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "14",
+    "addr:postcode": "86633",
+    "addr:street": "Rohrenfelder Straße",
+    "name": "Westenthanner",
+    "shop": "butcher",
+    "website": "http://www.metzgerei-westenthanner.de/",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4100958689,
+   "lat": 48.7337173,
+   "lon": 11.1824943,
+   "tags": {
+    "addr:street": "Hechtenstraße",
+    "name": "Metzgerei Ensinger",
+    "shop": "butcher"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9867986017,
+   "lat": 48.7243712,
+   "lon": 11.1789482,
+   "tags": {
+    "addr:city": "Neuburg a. d. Donau",
+    "addr:country": "DE",
+    "addr:housenumber": "1",
+    "addr:postcode": "86633",
+    "addr:street": "Pettenkoferring",
+    "name": "Metzgerei Walk",
+    "name:en": "Butcher‘s Shop Walk",
+    "shop": "butcher",
+    "website": "https://www.metzgerei-walk.de/"
+   }
+  },
+  {
+   "type": "way",
+   "id": 214466996,
+   "center": {
+    "lat": 48.7229436,
+    "lon": 11.1435935
+   },
+   "tags": {
+    "addr:city": "Oberhausen",
+    "addr:country": "DE",
+    "addr:housenumber": "3",
+    "addr:postcode": "86697",
+    "addr:street": "Mösleinstraße",
+    "building": "yes",
+    "shop": "butcher"
+   }
+  }
+ ]
+}

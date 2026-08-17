@@ -1,0 +1,106 @@
+{#
+  The Explain panel. Its own id and its own poll target, so watching a search
+  and watching an explanation pass never swap each other away (§10) — the
+  search panel keeps the progress-panel id, this one owns enrich-panel.
+#}
+{% set live = enriching or enrich_state == "running" %}
+<div id="enrich-panel"
+     {% if live %}hx-get="/enrich/progress" hx-trigger="every 1s" hx-swap="outerHTML" hx-select="#enrich-panel"{% endif %}>
+  {% if refusal %}
+  <div class="error-state progress-panel">
+    <h1>Cannot start that</h1>
+    <p>{{ refusal.sentence }}</p>
+    <p class="hint"><a href="{{ refusal.link }}">What to do</a></p>
+  </div>
+  {% elif enrich_failure %}
+  <div class="error-state progress-panel">
+    <h1>Something went wrong</h1>
+    <p>{{ enrich_failure }}</p>
+  </div>
+  {% elif live %}
+  <div class="progress-panel">
+    <div class="list-head">
+      <h1>
+        {% if enrich_stopping %}
+        Stopping —
+        <span class="num">{{ enrich_run.enriched_count or 0 }}</span> jobs explained so far
+        {% else %}
+        Explaining jobs in English —
+        <span class="num">{{ enrich_run.enriched_count or 0 }}</span> done
+        {% if pending %}, <span class="num">{{ pending }}</span> still waiting{% endif %}
+        {% endif %}
+      </h1>
+      {% if not enrich_stopping %}
+      <form hx-post="/run/enrich/cancel" hx-target="#enrich-panel" hx-swap="outerHTML"
+            method="post" action="/run/enrich/cancel">
+        <button type="submit" class="danger">Cancel</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="bar indeterminate" role="progressbar" aria-label="explaining jobs"><span></span></div>
+    {% if enrich_stopping %}
+    <p class="meta">
+      The jobs already sent are still coming back — they finish, then it stops.
+      Every answer that arrives is kept.
+    </p>
+    {% elif enrich_elapsed is not none %}
+    <p class="meta">
+      Running for
+      <span class="num">{{ enrich_elapsed // 60 }}</span> m
+      <span class="num">{{ enrich_elapsed % 60 }}</span> s ·
+      one job at a time, each answer saved the moment it arrives
+    </p>
+    {% endif %}
+  </div>
+  {% elif not has_any_jobs %}
+  <section class="empty-state">
+    <h1>No jobs yet</h1>
+    <p>
+      There is nothing to explain until a search has found something.
+    </p>
+    <p class="hint">Start one on the <a href="/search">Search</a> page.</p>
+  </section>
+  {% elif pending == 0 %}
+  <div class="progress-panel">
+    <h1>Every job has been explained</h1>
+    <p class="meta">
+      All <span class="num">{{ explained }}</span> jobs with an ad text carry an
+      English answer. New jobs from your next search will need explaining, and
+      this page will say so.
+    </p>
+  </div>
+  {% else %}
+  {% if enrich_run and enrich_state == "interrupted" %}
+  <div class="banner">
+    <span>
+      The last pass stopped early —
+      <span class="num">{{ enrich_run.enriched_count or 0 }}</span> jobs were
+      explained and kept. Pressing Explain again picks up where it left off; no
+      job is ever explained twice.
+    </span>
+  </div>
+  {% elif enrich_run and enrich_state == "done" and enrich_run.enriched_count %}
+  <p class="meta">
+    Last pass: <span class="num">{{ enrich_run.enriched_count }}</span> jobs
+    explained.
+  </p>
+  {% endif %}
+  <p>
+    <span class="num">{{ pending }}</span> of your jobs have no English answer
+    yet. Each one costs one free-tier call, so this asks how many to do now
+    rather than spending them all at once.
+  </p>
+  <form class="filters progress-panel"
+        hx-post="/run/enrich" hx-target="#enrich-panel" hx-swap="outerHTML"
+        method="post" action="/run/enrich">
+    <label>Explain at most
+      <input type="number" name="limit" value="{{ default_limit }}" min="1" max="{{ pending }}">
+    </label>
+    <button type="submit" class="primary">Explain them</button>
+  </form>
+  <p class="meta">
+    Stop it whenever you like — every answer is saved as it arrives, and the
+    next pass skips the jobs already done.
+  </p>
+  {% endif %}
+</div>

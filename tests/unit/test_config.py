@@ -98,3 +98,49 @@ def test_enrichment_worker_count_has_a_default_and_can_be_tuned(tmp_path):
     (tmp_path / "config.yaml").write_text("llm_workers: 2\n", encoding="utf-8", newline="\n")
 
     assert Settings.load(tmp_path).llm_workers == 2
+
+
+class TestHerSearch:
+    """Cities and employment types are hers, so they live in her config file.
+
+    They were constants in `cli.py` until the first-run wizard needed somewhere
+    to write her answers — and the file the app already reads is the honest
+    place for them (Phase 10).
+    """
+
+    def test_the_default_cities_are_the_three_she_searches(self, tmp_path):
+        settings = Settings.load(project_root=tmp_path)
+
+        assert settings.cities == ("Neuburg an der Donau", "Ingolstadt", "München")
+
+    def test_the_default_types_are_the_three_she_can_take(self, tmp_path):
+        settings = Settings.load(project_root=tmp_path)
+
+        assert settings.employment_types == ("werkstudent", "minijob", "parttime")
+
+    def test_config_yaml_can_override_the_cities(self, tmp_path):
+        (tmp_path / "config.yaml").write_text("cities: [Augsburg, Nürnberg]\n", encoding="utf-8")
+
+        settings = Settings.load(project_root=tmp_path)
+
+        assert settings.cities == ("Augsburg", "Nürnberg")
+
+    def test_config_yaml_can_override_the_employment_types(self, tmp_path):
+        (tmp_path / "config.yaml").write_text("employment_types: [minijob]\n", encoding="utf-8")
+
+        settings = Settings.load(project_root=tmp_path)
+
+        assert settings.employment_types == ("minijob",)
+
+    def test_a_search_defaults_to_the_configured_cities(self, tmp_path, capsys):
+        """The constants in `cli.py` are defaults, not the answer — what she
+        put in `config.yaml` is what a run without `--cities` searches."""
+        from jobfinder.cli import main
+
+        (tmp_path / "config.yaml").write_text("cities: [Augsburg]\n", encoding="utf-8")
+
+        main(["search", "--root", str(tmp_path), "--dry-run"])
+
+        out = capsys.readouterr().out
+        assert "wo=Augsburg" in out
+        assert "Ingolstadt" not in out

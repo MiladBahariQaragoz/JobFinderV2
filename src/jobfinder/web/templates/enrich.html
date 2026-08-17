@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Explain — JobFinder{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Explain jobs in English</h1>
+  <p class="meta">
+    This reads each German ad and writes back what the job is, what German it
+    asks for, and how well it fits you — in English. It does not go looking for
+    new jobs; that is the <a href="/search">Search</a> page.
+  </p>
+</div>
+{% include "_enrich_progress.html" %}
+{% endblock %}

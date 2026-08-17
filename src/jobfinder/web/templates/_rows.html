@@ -51,7 +51,9 @@
   <h1>No jobs match</h1>
   <p>You asked for {% for part in active_filters %}{{ part }}{% if not loop.last %}, {% endif %}{% endfor %} — nothing in the store fits all of that.</p>
   <p class="hint">
-    {% if filters.max_german and filters.min_fit %}
+    {% if filters.posted_within_days %}
+    Ask for older postings, or <a href="/">show every job</a>.
+    {% elif filters.max_german and filters.min_fit %}
     Loosen the German level or clear the fit floor, or <a href="/">show every job</a>.
     {% elif filters.max_german %}
     Loosen the German level, or <a href="/">show every job</a>.
@@ -62,6 +64,8 @@
     {% endif %}
     {% if filters.max_german %}Jobs whose ad does not state a German level are
     hidden while a level filter is on.{% endif %}
+    {% if filters.posted_within_days %}An ad that does not say when it was posted
+    is hidden while a date filter is on.{% endif %}
   </p>
 </div>
 {% else %}

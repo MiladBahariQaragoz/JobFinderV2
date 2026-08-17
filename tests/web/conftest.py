@@ -112,9 +112,23 @@ def store_job(
     return job_id
 
 
+@pytest.fixture(autouse=True)
+def already_set_up(tmp_path):
+    """Every page in this directory assumes an app that has been set up.
+
+    Without `config.yaml` the first-run wizard owns every route (Phase 10), and
+    that redirect is its own test file — `test_setup_wizard.py`, whose fixture
+    takes this marker away again.
+    """
+    (tmp_path / "config.yaml").write_text(
+        "cities:\n  - Neuburg an der Donau\n  - Ingolstadt\n  - München\n",
+        encoding="utf-8",
+    )
+
+
 @pytest.fixture
 def settings(tmp_path) -> Settings:
-    return Settings(project_root=tmp_path)
+    return Settings.load(project_root=tmp_path)
 
 
 @pytest.fixture

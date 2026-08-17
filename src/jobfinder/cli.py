@@ -181,23 +181,27 @@ def _cmd_suggest_roles(settings: Settings, args, *, _pool_factory=None) -> int:
     return 0
 
 
-DEFAULT_CITIES = ("Neuburg an der Donau", "Ingolstadt", "München")
-DEFAULT_TYPES = ("werkstudent", "minijob", "parttime")
+# The defaults, and only the defaults: what she actually searches comes from
+# `Settings` (and so from `config.yaml`, which the first-run wizard writes).
+# These names stay because the argparse help text quotes them before any
+# settings object exists.
+DEFAULT_CITIES = Settings.__dataclass_fields__["cities"].default
+DEFAULT_TYPES = Settings.__dataclass_fields__["employment_types"].default
 
 
 def _comma_list(raw: str | None) -> list[str]:
     return [part.strip() for part in (raw or "").split(",") if part.strip()]
 
 
-def _build_search_spec(args):
+def _build_search_spec(args, settings: Settings):
     from dataclasses import replace
 
     from jobfinder.search_spec import SearchSpec
 
     spec = SearchSpec.build(
         mode="general",
-        employment_types=_comma_list(args.types) or list(DEFAULT_TYPES),
-        city_names=_comma_list(args.cities) or list(DEFAULT_CITIES),
+        employment_types=_comma_list(args.types) or list(settings.employment_types),
+        city_names=_comma_list(args.cities) or list(settings.cities),
         keywords=_comma_list(args.keywords),
     )
     if args.radius is not None:
@@ -353,9 +357,13 @@ def _cmd_enrich(settings: Settings, args, *, _pool_factory=None) -> int:
         print(exc)
         return 1
 
+    from jobfinder.backup import back_up_data
     from jobfinder.llm.prompting import load_prompt
 
     version = load_prompt("enrich").version
+    # Before the store is touched — including the path that only rewrites the
+    # CSV, since that overwrites a file she may have open.
+    back_up_data(settings)
 
     with closing(connect(settings.db_path)) as connection:
         migrate(connection)
@@ -495,7 +503,7 @@ def _cmd_search(
     from jobfinder.store.db import connect, migrate
 
     try:
-        spec = _build_search_spec(args)
+        spec = _build_search_spec(args, settings)
     except (SearchSpecError, ValueError) as exc:  # resolve_city speaks ValueError
         print(exc)
         return 1
@@ -512,6 +520,13 @@ def _cmd_search(
 
     client_factory = _client_factory or _default_client_factory
     runner = _runner or run_search_until_done
+
+    # A copy of the irreplaceable files before anything is written to them. It
+    # is deliberately after the dry-run return: a run that stores nothing has
+    # nothing to protect her from.
+    from jobfinder.backup import back_up_data
+
+    back_up_data(settings)
 
     from contextlib import closing
 
@@ -595,22 +610,170 @@ def _uvicorn_serve(app, *, host: str, port: int, on_ready) -> None:
     server.run()
 
 
-def _cmd_serve(settings: Settings, args, *, _serve=None, _browser=None) -> int:
-    """Start the app and open her browser at it (§10: one double-click)."""
-    import webbrowser
+def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
+    """Build the call-list: places that hire without ever posting (Phase 9).
 
-    from jobfinder.web.app import SERVER_HOST, create_app
+    What it prints is the interface — how many places, how many she can reach
+    today, what each city gave, and the top of the list with the numbers on it,
+    so she can put the phone down beside the terminal and start.
+    """
+    from jobfinder.backup import back_up_data
+    from jobfinder.contacts.imprint import imprint_email
+    from jobfinder.contacts.runner import DEFAULT_RADIUS_KM, run_contacts
+    from jobfinder.sources.http import PoliteClient
+    from jobfinder.sources.overpass import REQUEST_GAP_SECONDS
+    from jobfinder.store.contacts import list_contacts
+    from jobfinder.store.db import connect, migrate
 
-    serve = _serve or _uvicorn_serve
-    open_browser = _browser or webbrowser.open
-    url = f"http://{SERVER_HOST}:{args.port}"
+    cities = tuple(_comma_list(args.cities) or settings.cities)
+    radius = args.radius or DEFAULT_RADIUS_KM
+    back_up_data(settings)
 
-    def open_when_ready() -> None:
-        if not args.no_browser:
-            open_browser(url)
+    # Overpass is a donated public server and it showed us why (see
+    # sources/overpass.py): a long gap between requests is the etiquette here.
+    client = PoliteClient(
+        cache_dir=settings.data_dir / "http-cache",
+        budget=settings.request_budget,
+        min_delay=REQUEST_GAP_SECONDS,
+    )
+    if _contacts_source is not None:
+        source = _contacts_source(settings, client)
+    else:
+        from jobfinder.sources.overpass import OverpassSource
 
-    serve(create_app(settings), host=SERVER_HOST, port=args.port, on_ready=open_when_ready)
+        source = OverpassSource(client)
+
+    languages = _her_languages(settings)
+    print(f"Looking for places to call in {', '.join(cities)} (within {radius} km)…")
+    result = run_contacts(
+        settings,
+        source,
+        cities=cities,
+        radius_km=radius,
+        languages=languages,
+        imprint_lookup=(lambda place: imprint_email(client, place)) if args.imprint else None,
+        script_writer=_script_writer(settings) if args.scripts else None,
+        on_city=lambda name, run: print(f"  {name} — {run.per_city[name]} places"),
+    )
+
+    # Two sentences, because they count two different things: what this run saw,
+    # and what the list holds now. One sentence mixing them read "53 places, 255
+    # you can reach today", which claims she can reach places the run never saw.
+    plural = "" if result.found == 1 else "s"
+    print(f"\nFound {result.found} place{plural} this run ({result.new} new).")
+    for name in cities:
+        print(f"  {name} — {result.per_city.get(name, 0)} places")
+    print(
+        f"Your list now holds {result.total_stored} places, {result.reachable} you can reach today."
+    )
+    if result.emails_recovered:
+        print(f"  {result.emails_recovered} email addresses recovered from imprint pages")
+    elif not args.imprint:
+        print("  Places with only a website were left alone — pass --imprint to look them up.")
+    if result.scripts_written:
+        print(f"  German phone scripts written for {result.scripts_written} kinds of place")
+    elif not args.scripts:
+        print("  No German scripts — pass --scripts to write one per kind of place.")
+    for error in result.errors:
+        print(f"  ! {error}")
+
+    connection = connect(settings.db_path)
+    try:
+        migrate(connection)
+        top = list_contacts(connection, pending_only=True, reachable_only=True)[: args.top]
+    finally:
+        connection.close()
+    if top:
+        print(f"\nStart here ({len(top)} of them):")
+        for row in top:
+            route = row["phone"] or row["email"]
+            print(f"  {int(row['back_of_house_score']):3}  {row['name']} — {row['kind']} — {route}")
+    print(f"\ncontacts.csv: {settings.contacts_csv}")
     return 0
+
+
+def _script_writer(settings: Settings):
+    """One German script and email per kind of place, through the LLM pool.
+
+    Her first name is all that is sent — the same line the CV digest holds. A
+    provider that refuses raises, and the runner records it without losing the
+    phone numbers it already stored.
+    """
+
+    def write(kinds: tuple[str, ...]) -> dict[str, tuple[str, str]]:
+        from jobfinder.contacts.scripts import render_script, write_texts_for_kinds
+        from jobfinder.llm.pool import build_pool
+        from jobfinder.llm.schema import FieldRule, make_validator
+
+        first_name = _her_first_name(settings)
+        # A validator only ever sees the answer, so it checks shape here; the
+        # rules that need the prompt live in `scripts.py` after the answer lands.
+        validator = make_validator(
+            {
+                "script_lines": FieldRule(kind="list"),
+                "email_subject": FieldRule(kind="str"),
+                "email_body": FieldRule(kind="str"),
+            }
+        )
+        pool = build_pool(settings, validator)
+        texts = write_texts_for_kinds(
+            settings, pool, kinds=kinds, first_name=first_name, stop_on_exhausted=True
+        )
+
+        # The script is rendered per place by the page; what is stored per kind is
+        # the script with its placeholders still in it, ready for substitution.
+        class _Template:
+            def __init__(self, kind):
+                self.name = "{place}"
+                self.city = "{city}"
+                self.kind = kind
+
+        return {
+            kind: (render_script(text, _Template(kind)), text.email_body)
+            for kind, text in texts.items()
+        }
+
+    return write
+
+
+def _her_first_name(settings: Settings) -> str:
+    """Her first name, or a neutral stand-in when there is no CV yet."""
+    try:
+        from jobfinder.profile import load_profile
+
+        name = str(load_profile(settings.pool_path).basics.get("name", "")).strip()
+    except Exception:
+        return "a student"
+    return name.split()[0] if name else "a student"
+
+
+def _her_languages(settings: Settings) -> tuple[str, ...]:
+    """The languages on her CV, for the cuisine nudge — empty if there is no CV."""
+    try:
+        from jobfinder.profile import load_profile
+
+        resume = load_profile(settings.pool_path)
+    except Exception:
+        return ()
+    return tuple(language.name.strip().lower() for language in resume.languages)
+
+
+def _cmd_serve(settings: Settings, args, *, _serve=None, _browser=None) -> int:
+    """Start the app and open her browser at it (§10: one double-click).
+
+    This is a thin call into `launch.start`, which is also what `JobFinder.exe`
+    runs — so the way she starts the app is the way this command starts it, and
+    neither is the untested one.
+    """
+    from jobfinder.launch import start
+
+    return start(
+        root=settings.project_root,
+        port=args.port,
+        open_browser_at_start=not args.no_browser,
+        serve=_serve or _uvicorn_serve,
+        open_browser=_browser,
+    )
 
 
 def main(
@@ -623,6 +786,7 @@ def main(
     _sources=None,
     _serve=None,
     _browser=None,
+    _contacts_source=None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="jobfinder", description="Local job-search assistant")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -692,6 +856,28 @@ def main(
     )
     search.add_argument("--path", type=Path, default=None, help="path to pool.yaml (with --enrich)")
 
+    contacts = sub.add_parser("contacts", help="build the call-list of places to ring")
+    contacts.add_argument("--root", type=Path, default=None, help="project root")
+    contacts.add_argument(
+        "--cities",
+        default=None,
+        help=f"comma-separated cities (default: {', '.join(DEFAULT_CITIES)})",
+    )
+    contacts.add_argument(
+        "--radius", type=int, default=None, help="search radius in km per city (default: 6)"
+    )
+    contacts.add_argument(
+        "--imprint",
+        action="store_true",
+        help="for places with only a website, fetch their imprint page once to find an email",
+    )
+    contacts.add_argument(
+        "--scripts",
+        action="store_true",
+        help="write a German phone script and email draft per kind of place (one call each)",
+    )
+    contacts.add_argument("--top", type=int, default=10, help="how many of the list to print")
+
     serve = sub.add_parser("serve", help="open the app in your browser")
     serve.add_argument("--root", type=Path, default=None, help="project root (default: cwd)")
     serve.add_argument("--port", type=int, default=8000, help="port to listen on (default: 8000)")
@@ -734,6 +920,10 @@ def main(
             _client_factory=_client_factory,
             _pool_factory=_pool_factory,
         )
+
+    if args.command == "contacts":
+        settings = Settings.load(args.root or Path.cwd())
+        return _cmd_contacts(settings, args, _contacts_source=_contacts_source)
 
     if args.command == "serve":
         settings = Settings.load(args.root or Path.cwd())

@@ -2,11 +2,161 @@
 {% block title %}Settings — JobFinder{% endblock %}
 {% block content %}
 <h1>Settings</h1>
+
+<h2>Your CV</h2>
 <p class="meta">
-  Everything lives on this laptop. The list below says which free LLM
-  providers have a key — one is enough to explain jobs in English.
-  Keys go into the <span class="num">.env</span> file in
-  <span class="num">{{ project_root }}</span>, one line each; restart the app
+  This is what the fit score on every job is measured against, and what the
+  role suggestions are built from. It stays on this laptop — only your skills
+  and education are ever sent to a language model, never your name, address,
+  phone or email.
+</p>
+
+{% if upload_error %}
+<div class="error-state">
+  <h3>That file could not be used</h3>
+  <p>{{ upload_error }}</p>
+  <p class="hint">Your previous CV is untouched. Fix that line and upload again.</p>
+</div>
+{% endif %}
+
+{% if cv_error %}
+<div class="error-state">
+  <h3>Your CV file will not open</h3>
+  <p>{{ cv_error }}</p>
+  <p class="hint">Fix it and upload it again below, or start from the template.</p>
+</div>
+{% elif cv and cv_is_template %}
+<div class="error-state">
+  <h3>That is still the template</h3>
+  <p>
+    The file has the placeholder details it shipped with, so a fit score built
+    from it would be meaningless. Fill in your own name, email, location,
+    languages and skills, then upload it again.
+  </p>
+</div>
+{% elif cv %}
+<div class="settings-list">
+  <div class="row">
+    <span>{{ cv.name }}{% if cv.headline %} — {{ cv.headline }}{% endif %}</span>
+    <span class="ok">CV in place</span>
+  </div>
+  <div class="row">
+    <span>Languages</span>
+    <span class="wrap">{{ cv.languages | join(" · ") if cv.languages else "none listed" }}</span>
+  </div>
+  <div class="row">
+    <span>Strongest skill groups</span>
+    <span class="wrap">
+      {% for group in cv.skill_groups %}
+      {{ group.name }} (<span class="num">{{ group.count }}</span>){% if not loop.last %} · {% endif %}
+      {% else %}
+      none listed
+      {% endfor %}
+    </span>
+  </div>
+  <div class="row">
+    <span>Experience</span>
+    <span>
+      <span class="num">{{ cv.jobs }}</span> roles ·
+      <span class="num">{{ cv.years }}</span> years
+    </span>
+  </div>
+</div>
+{% else %}
+<div class="empty-state">
+  <h3>No CV yet</h3>
+  <p>
+    Without one, jobs still arrive and are still explained in English — but no
+    job can be scored against you, so the fit column stays empty.
+  </p>
+  <p class="hint">
+    Download the template, fill it in with any text editor, and upload it here.
+  </p>
+</div>
+{% endif %}
+
+<div class="filters">
+  <a class="button" href="/settings/cv/template">Download the template</a>
+  <form method="post" action="/settings/cv" enctype="multipart/form-data">
+    <label>Upload your filled CV
+      <input type="file" name="cv" accept=".yaml,.yml">
+    </label>
+    <button type="submit" class="primary">Upload</button>
+  </form>
+</div>
+
+{% if cv or roles %}
+<h2>Roles worth searching for</h2>
+{% if roles_error %}
+<div class="error-state">
+  <h3>That did not work</h3>
+  <p>{{ roles_error }}</p>
+</div>
+{% endif %}
+{% if roles %}
+<p class="meta">
+  Read from your CV. Each German title is what to type into a German job site —
+  the link puts it straight into the search form.
+</p>
+<div class="settings-list">
+  {% for role in roles %}
+  <div class="row">
+    <span>
+      <strong>{{ role.title_de }}</strong> — {{ role.title_en }}
+      <span class="meta">{{ role.why }}</span>
+    </span>
+    <span><a href="{{ role.search_url }}">Search for this</a></span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="meta">
+  Your CV can be read for the job titles that match it, in German and English.
+  It costs one call and the answer is kept, so this is a once-in-a-while button.
+</p>
+{% endif %}
+{% if cv and not cv_is_template %}
+<form class="filters" method="post" action="/settings/roles">
+  <button type="submit" class="primary">
+    {% if roles %}Suggest roles again{% else %}Suggest roles{% endif %}
+  </button>
+</form>
+{% endif %}
+{% endif %}
+
+<h2>Your files</h2>
+{% if export %}
+<p>
+  Written: <span class="num">{{ export.jobs }}</span> jobs,
+  <span class="num">{{ export.explained }}</span> explained,
+  <span class="num">{{ export.places }}</span> place{{ '' if export.places == 1 else 's' }}
+  to call.
+</p>
+<div class="settings-list">
+  {% for file in export.files %}
+  <div class="row"><span class="num wrap">{{ file }}</span></div>
+  {% endfor %}
+</div>
+<p class="meta">
+  They are in <span class="num wrap">{{ export.folder }}</span> and open in Excel
+  as they are.
+</p>
+{% else %}
+<p class="meta">
+  Everything the app knows is written to three spreadsheets after every run. Use
+  this to write them again right now — after a run you stopped, or before you
+  send one somewhere.
+</p>
+{% endif %}
+<form class="filters" method="post" action="/settings/export">
+  <button type="submit" class="primary">Export everything</button>
+</form>
+
+<h2>Language model keys</h2>
+<p class="meta">
+  The list below says which free providers have a key — one is enough to
+  explain jobs in English. Keys go into the <span class="num">.env</span> file
+  in <span class="num">{{ project_root }}</span>, one line each; restart the app
   after editing.
 </p>
 <div class="settings-list">

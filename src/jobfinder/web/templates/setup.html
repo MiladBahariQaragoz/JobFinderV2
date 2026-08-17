@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Welcome — JobFinder{% endblock %}
+{% block content %}
+<h1>Welcome to JobFinder</h1>
+<p class="meta">
+  Three questions, once. Everything you answer here can be changed later on the
+  Settings page, and nothing you type leaves this laptop.
+</p>
+
+{% if error %}
+<div class="error-state">
+  <h3>That cannot be used yet</h3>
+  <p>{{ error }}</p>
+  <p class="hint">Nothing has been saved. Correct it below and try again.</p>
+</div>
+{% endif %}
+
+<form class="setup-form" method="post" action="/setup">
+  <h2>Where do you want to work?</h2>
+  <p class="meta">
+    Towns, separated by commas. Jobs are searched within about 25 km of each one.
+  </p>
+  <label for="cities">Towns</label>
+  <input type="text" id="cities" name="cities" value="{{ default_cities }}">
+
+  <h2>What kind of work?</h2>
+  <p class="meta">
+    Any of <span class="num">werkstudent</span>, <span class="num">minijob</span>,
+    <span class="num">parttime</span>, <span class="num">fulltime</span> —
+    separated by commas.
+  </p>
+  <label for="types">Kinds of work</label>
+  <input type="text" id="types" name="types" value="{{ default_types }}">
+
+  <h2>A free language model key</h2>
+  <p class="meta">
+    This is what writes the English explanation of each German advert. Searching
+    works without it, so you can skip this now and add one later. Pick a
+    provider, open its link, sign up for the free tier, and paste the key it
+    gives you.
+  </p>
+  <label for="env_var">Provider</label>
+  <select id="env_var" name="env_var">
+    <option value="">Skip for now</option>
+    {% for provider in providers %}
+    <option value="{{ provider.env_var }}">{{ provider.name }}</option>
+    {% endfor %}
+  </select>
+  <label for="api_key">Key</label>
+  <input type="password" id="api_key" name="api_key" autocomplete="off" placeholder="paste it here">
+
+  <div class="settings-list">
+    {% for provider in providers %}
+    <div class="row">
+      <span>{{ provider.name }}</span>
+      <span>
+        {% if provider.signup %}<a href="{{ provider.signup }}" rel="noopener">get a free key</a> · {% endif %}
+        <span class="num">{{ provider.env_var }}</span>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="primary">Save and start</button>
+</form>
+
+<p class="meta">
+  Your answers are written to <span class="num wrap">{{ project_root }}</span>,
+  as <span class="num">config.yaml</span> and — if you pasted a key —
+  <span class="num">.env</span>. The key is never shown again anywhere in this
+  app.
+</p>
+{% endblock %}

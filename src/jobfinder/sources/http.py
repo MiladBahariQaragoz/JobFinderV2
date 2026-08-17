@@ -25,7 +25,12 @@ USER_AGENT = (
     "JobFinder/0.1 (personal job search; +https://github.com/MiladBahariQaragoz/JobFinderV2)"
 )
 
-RETRYABLE_STATUSES = {429, 503}
+# Statuses worth trying again. 429 and 503 are "not now"; 502 and 504 are a
+# gateway saying the request never completed, which is Overpass's normal way of
+# being busy — measured 2026-08-17, its front door answered 504 for four minutes
+# while its own backends served the same query in under a second. A 403 or a 404
+# is an answer and is never retried.
+RETRYABLE_STATUSES = {429, 502, 503, 504}
 CACHE_TTL_SECONDS = 24 * 60 * 60
 
 
@@ -127,16 +132,38 @@ class PoliteClient:
         query = ""
         if params:
             query = "?" + urllib.parse.urlencode(params, doseq=True)
-        full_url = url + query
-        if (cached := self._from_cache(full_url)) is not None:
+        return self._fetch(url + query, headers=headers)
+
+    def get_json(self, url: str, *, params: dict | None = None, headers: dict | None = None):
+        return self.get(url, params=params, headers=headers).json()
+
+    def post(self, url: str, *, body: str, headers: dict | None = None) -> Response:
+        """A POST through the same spacing, budget, cache and retries as a GET.
+
+        Overpass takes its query in the body, so the URL alone cannot identify
+        the request — the cache key covers the body too, or one tag's places
+        would be served as another's.
+        """
+        return self._fetch(url, headers=headers, body=body.encode("utf-8"))
+
+    def post_json(self, url: str, *, body: str, headers: dict | None = None):
+        return self.post(url, body=body, headers=headers).json()
+
+    # -- internals ----------------------------------------------------------
+
+    def _fetch(
+        self, full_url: str, *, headers: dict | None = None, body: bytes | None = None
+    ) -> Response:
+        cache_key = self._cache_key(full_url, body)
+        if (cached := self._from_cache(cache_key)) is not None:
             return cached
 
         host = urllib.parse.urlsplit(full_url).netloc
         for attempt in range(self.max_retries + 1):
-            response = self._network_get(full_url, host, headers)
+            response = self._network_get(full_url, host, headers, body)
             failed = isinstance(response, Exception)
             if not failed and response.status not in RETRYABLE_STATUSES:
-                self._to_cache(full_url, response)
+                self._to_cache(cache_key, response)
                 return response
             if attempt == self.max_retries:
                 break
@@ -146,19 +173,16 @@ class PoliteClient:
             f"after {self.max_retries + 1} attempts."
         )
 
-    def get_json(self, url: str, *, params: dict | None = None, headers: dict | None = None):
-        return self.get(url, params=params, headers=headers).json()
-
-    # -- internals ----------------------------------------------------------
-
-    def _network_get(self, full_url: str, host: str, headers: dict | None) -> Response | Exception:
+    def _network_get(
+        self, full_url: str, host: str, headers: dict | None, body: bytes | None = None
+    ) -> Response | Exception:
         self._throttle(host)
         if self.network_calls >= self.budget:
             raise RequestBudgetExhausted(
                 f"Request budget of {self.budget} spent — the run stops rather than flood a host."
             )
         request = urllib.request.Request(
-            full_url, headers={"User-Agent": self.user_agent, **(headers or {})}
+            full_url, data=body, headers={"User-Agent": self.user_agent, **(headers or {})}
         )
         self.network_calls += 1
         try:
@@ -199,14 +223,21 @@ class PoliteClient:
 
     # -- on-disk cache ------------------------------------------------------
 
-    def _cache_path(self, full_url: str) -> Path:
-        digest = hashlib.sha1(full_url.encode("utf-8")).hexdigest()
+    def _cache_key(self, full_url: str, body: bytes | None) -> str:
+        """What identifies a request. For a GET that is the URL; for a POST the
+        body is where the whole question lives, so it has to be in here too."""
+        if not body:
+            return full_url
+        return f"{full_url}\n{hashlib.sha1(body).hexdigest()}"
+
+    def _cache_path(self, cache_key: str) -> Path:
+        digest = hashlib.sha1(cache_key.encode("utf-8")).hexdigest()
         return self.cache_dir / f"{digest}.json"
 
-    def _from_cache(self, full_url: str) -> Response | None:
+    def _from_cache(self, cache_key: str) -> Response | None:
         if self.cache_dir is None:
             return None
-        path = self._cache_path(full_url)
+        path = self._cache_path(cache_key)
         if not path.exists():
             return None
         try:
@@ -222,17 +253,17 @@ class PoliteClient:
             from_cache=True,
         )
 
-    def _to_cache(self, full_url: str, response: Response) -> None:
+    def _to_cache(self, cache_key: str, response: Response) -> None:
         if self.cache_dir is None or response.status != 200:
             return
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         envelope = {
-            "url": full_url,
+            "url": cache_key,
             "status": response.status,
             "headers": response.headers,
             "body_b64": base64.b64encode(response.body).decode("ascii"),
             "fetched_at": time.time(),
         }
-        tmp = self._cache_path(full_url).with_suffix(".tmp")
+        tmp = self._cache_path(cache_key).with_suffix(".tmp")
         tmp.write_text(json.dumps(envelope), encoding="utf-8")
-        tmp.replace(self._cache_path(full_url))
+        tmp.replace(self._cache_path(cache_key))

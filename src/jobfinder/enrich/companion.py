@@ -61,6 +61,7 @@ class EnrichmentCompanion:
         workers: int = 4,
         poll_seconds: float = POLL_SECONDS,
         prompt_version: str | None = None,
+        limit: int | None = None,
     ):
         self._db_path = Path(db_path)
         self._pool = pool
@@ -71,6 +72,11 @@ class EnrichmentCompanion:
         self._workers = max(1, workers)
         self._poll_seconds = poll_seconds
         self._prompt_version = prompt_version
+        # A ceiling on the whole pass, not on one batch. Alongside a search this
+        # worker is meant to drain, but pressed from the browser it would spend
+        # her entire free tier in one go — and the free-tier rule says a run
+        # announces its cost before making it, which needs a cost it can keep.
+        self._limit = limit
 
         self._no_more_jobs = threading.Event()
         self._thread: threading.Thread | None = None
@@ -169,6 +175,8 @@ class EnrichmentCompanion:
     def _one_batch(self, connection: sqlite3.Connection) -> EnrichmentRun | None:
         """One pass over what the store holds; None when the run cannot go on."""
         budget_left = self._settings.llm_budget - self._sent
+        if self._limit is not None:
+            budget_left = min(budget_left, self._limit - self._sent)
         if budget_left <= 0:
             return None
 
