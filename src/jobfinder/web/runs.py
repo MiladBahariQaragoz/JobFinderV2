@@ -134,6 +134,17 @@ class RunManager:
 
     # -- her buttons -----------------------------------------------------------
 
+    def _back_up(self) -> None:
+        """A copy of the irreplaceable files before a run changes them.
+
+        Every start goes through here rather than through the runs themselves:
+        the promise in MASTER_PLAN is "on every run", and a run that only backs
+        up when started one particular way keeps half of it.
+        """
+        from jobfinder.backup import back_up_data
+
+        back_up_data(self._settings)
+
     def start(
         self,
         *,
@@ -149,6 +160,7 @@ class RunManager:
             )
 
         spec = self._build_spec(cities, types, keywords)
+        self._back_up()
 
         companion = None
         if enrich:
@@ -181,6 +193,7 @@ class RunManager:
 
         factory = self._companion_factory or production_companion_factory(self._settings)
         companion = factory(limit=limit)  # may refuse: no key, no readable CV
+        self._back_up()
 
         with self._lock:
             self._enrich_failure = None
@@ -207,6 +220,7 @@ class RunManager:
         from jobfinder.cli import DEFAULT_CITIES
 
         names = tuple(_comma_list(cities) or DEFAULT_CITIES)
+        self._back_up()
         with self._lock:
             self._contacts_failure = None
         self._contacts_cancel = threading.Event()

@@ -353,9 +353,13 @@ def _cmd_enrich(settings: Settings, args, *, _pool_factory=None) -> int:
         print(exc)
         return 1
 
+    from jobfinder.backup import back_up_data
     from jobfinder.llm.prompting import load_prompt
 
     version = load_prompt("enrich").version
+    # Before the store is touched — including the path that only rewrites the
+    # CSV, since that overwrites a file she may have open.
+    back_up_data(settings)
 
     with closing(connect(settings.db_path)) as connection:
         migrate(connection)
@@ -513,6 +517,13 @@ def _cmd_search(
     client_factory = _client_factory or _default_client_factory
     runner = _runner or run_search_until_done
 
+    # A copy of the irreplaceable files before anything is written to them. It
+    # is deliberately after the dry-run return: a run that stores nothing has
+    # nothing to protect her from.
+    from jobfinder.backup import back_up_data
+
+    back_up_data(settings)
+
     from contextlib import closing
 
     from jobfinder.sources.registry import skipped_sources
@@ -602,6 +613,7 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
     today, what each city gave, and the top of the list with the numbers on it,
     so she can put the phone down beside the terminal and start.
     """
+    from jobfinder.backup import back_up_data
     from jobfinder.contacts.imprint import imprint_email
     from jobfinder.contacts.runner import DEFAULT_RADIUS_KM, run_contacts
     from jobfinder.sources.http import PoliteClient
@@ -611,6 +623,7 @@ def _cmd_contacts(settings: Settings, args, *, _contacts_source=None) -> int:
 
     cities = tuple(_comma_list(args.cities) or DEFAULT_CITIES)
     radius = args.radius or DEFAULT_RADIUS_KM
+    back_up_data(settings)
 
     # Overpass is a donated public server and it showed us why (see
     # sources/overpass.py): a long gap between requests is the etiquette here.

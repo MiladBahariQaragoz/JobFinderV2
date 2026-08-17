@@ -115,11 +115,18 @@ else in the codebase learns that an exe exists (decision 6).
 
 ## T3 — A backup before every run, five kept
 
-- [ ] `test_a_backup_copies_the_database_and_the_csvs`
-- [ ] `test_a_backup_leaves_the_http_cache_alone`
-- [ ] `test_backup_rotation_keeps_five_and_deletes_the_sixth`
-- [ ] `test_a_first_run_with_nothing_to_copy_is_not_an_error`
-- [ ] `test_a_backup_that_cannot_be_written_never_fails_the_run`
+- [x] `test_a_backup_copies_the_database_and_the_csvs`
+- [x] `test_a_backup_leaves_the_http_cache_alone`
+- [x] `test_backup_rotation_keeps_five_and_deletes_the_sixth`
+- [x] `test_a_first_run_with_nothing_to_copy_is_not_an_error`
+- [x] `test_a_backup_that_cannot_be_written_never_fails_the_run`
+- [x] `test_a_search_started_from_the_browser_backs_up_first` +
+      `test_an_explanation_pass_backs_up_first_too` +
+      `test_a_call_list_run_backs_up_first_too`
+- [x] `test_a_search_from_the_command_line_backs_up_too` +
+      `test_an_explanation_pass_from_the_command_line_backs_up_too` +
+      `test_a_call_list_from_the_command_line_backs_up_too`
+- [x] `test_a_dry_run_backs_up_nothing_because_it_changes_nothing`
 
 `backup.py` `back_up_data(settings)` → `data/backups/<UTC stamp>/`. It runs at
 the start of every run started from the browser and from the CLI. The measured
