@@ -188,16 +188,36 @@ class TestQueries:
             "https://www.kleinanzeigen.de/s-jobs/ingolstadt/anzeige:angebote/seite:3/c102l7586"
         )
 
-    def test_a_city_without_a_location_id_is_skipped_loudly(self, monkeypatch):
-        import jobfinder.cities as cities
+    def test_a_town_without_a_location_id_is_skipped_not_refused(self):
+        """Their location ids were recorded by hand for thirteen towns and
+        cannot be derived for nine hundred. Refusing the whole source — what
+        this did until 2026-08-24 — meant one town outside Bavaria cost every
+        other town its Kleinanzeigen results."""
         from jobfinder.sources.kleinanzeigen import build_queries
 
-        monkeypatch.delitem(cities.KLEINANZEIGEN_LOCATIONS, "Ingolstadt")
+        queries = build_queries(spec(city_names=["Ingolstadt", "Flensburg"]))
+
+        assert [q.slug for q in queries] == ["ingolstadt"]
+
+    def test_the_towns_it_had_to_skip_can_be_named(self):
+        """A source that quietly searched fewer towns than it was asked for
+        would be lying by omission, so the run can say which ones."""
+        from jobfinder.sources.kleinanzeigen import unmapped_cities
+
+        assert unmapped_cities(spec(city_names=["Ingolstadt", "Flensburg", "Kiel"])) == [
+            "Flensburg",
+            "Kiel",
+        ]
+
+    def test_a_search_it_can_do_nothing_with_still_refuses(self):
+        """Every town unmapped is not a partial answer, it is no answer."""
+        from jobfinder.sources.kleinanzeigen import build_queries
+
         try:
-            build_queries(spec())
+            build_queries(spec(city_names=["Flensburg"]))
             raise AssertionError("expected a loud failure")
         except ValueError as exc:
-            assert "Ingolstadt" in str(exc)
+            assert "Flensburg" in str(exc)
             assert "location id" in str(exc)
 
 

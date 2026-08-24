@@ -53,18 +53,32 @@ class BrowseQuery:
         return f"{stem}/seite:{page}/c102l{tail}"
 
 
+def unmapped_cities(spec: SearchSpec) -> list[str]:
+    """The towns in this search Kleinanzeigen has no recorded location id for.
+
+    Their ids were read by hand off the site's own location picker, thirteen of
+    them, and cannot be derived: `l7414` looks like Ingolstadt and is
+    Stockstadt. So the map is a subset of the towns the app knows, and this is
+    how a run says which towns it could not ask this one source about.
+    """
+    return [city.name for city in spec.cities if kleinanzeigen_location(city.name) is None]
+
+
 def build_queries(spec: SearchSpec) -> list[BrowseQuery]:
-    """One browse per city — a city without a recorded id is refused loudly.
+    """One browse per town it has an id for; the rest are skipped.
 
     A guessed id returns jobs in the wrong part of Germany, which looks like
-    success; an error she can act on is the better failure.
+    success — so an unmapped town is never guessed at. It used to refuse the
+    whole search instead, which was the right answer when every town the app
+    knew was mapped and the wrong one from the moment the list became a
+    country: one town in Schleswig-Holstein would have cost Ingolstadt its
+    Kleinanzeigen results. A search where *nothing* is mapped is still refused,
+    because that is not a partial answer, it is no answer.
     """
     queries = []
-    unmapped = []
     for city in spec.cities:
         location = kleinanzeigen_location(city.name)
         if location is None:
-            unmapped.append(city.name)
             continue
         slug, location_id = location
         queries.append(
@@ -74,10 +88,11 @@ def build_queries(spec: SearchSpec) -> list[BrowseQuery]:
                 location_id=location_id,
             )
         )
-    if unmapped:
+    if not queries:
+        skipped = unmapped_cities(spec)
         raise ValueError(
-            f"Kleinanzeigen has no location id for {', '.join(unmapped)}. Record one in "
-            f"cities.py (KLEINANZEIGEN_LOCATIONS) or search without that city — "
+            f"Kleinanzeigen has no location id for {', '.join(skipped)}. Record one in "
+            f"cities.py (KLEINANZEIGEN_LOCATIONS) or search a town it knows — "
             f"a guessed id returns jobs in the wrong part of Germany."
         )
     return queries
