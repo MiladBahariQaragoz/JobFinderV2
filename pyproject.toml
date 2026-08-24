@@ -25,6 +25,9 @@ dev = [
     # double-clicks. Never a runtime dependency of the app (Phase 10).
     "pyinstaller>=6.0",
     "ruff>=0.6",
+    # Build-time only: the GeoNames extract `scripts/build_city_list.py` reads
+    # to regenerate the town list. The app itself reads the generated file.
+    "geonamescache>=2.0",
     "httpx>=0.27",
     "httpx2>=2.0",
     "playwright>=1.40",
