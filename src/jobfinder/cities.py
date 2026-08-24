@@ -1,32 +1,28 @@
-"""The Bavarian city list: coordinates, default radius, forgiving name lookup.
+"""The town list: coordinates, default radius, forgiving name lookup.
 
-Every city she can search is known here up front — an unknown city must fail at
-second zero with a readable error, never produce an empty result list after four
-minutes of searching.
+Every town that can be searched is known here up front — an unknown one must
+fail at second zero with a readable error, never produce an empty result list
+after four minutes of searching.
+
+The list itself is generated: `city_data.py` holds every German town above
+15,000 people, biggest first, written by `scripts/build_city_list.py`. This
+module is what the rest of the app talks to.
 """
 
 from __future__ import annotations
 
+import difflib
 from dataclasses import dataclass, replace
+
+from jobfinder.city_data import CITIES
 
 DEFAULT_RADIUS_KM = 25
 
-# name -> (latitude, longitude)
+# name -> (latitude, longitude), and the two lookups the picker needs beside it
 CITY_COORDS: dict[str, tuple[float, float]] = {
-    "Neuburg an der Donau": (48.7370, 11.1807),
-    "Ingolstadt": (48.7665, 11.4258),
-    "München": (48.1351, 11.5820),
-    "Erlangen": (49.5964, 11.0044),
-    "Nürnberg": (49.4520, 11.0768),
-    "Würzburg": (49.7913, 9.9534),
-    "Ansbach": (49.3005, 10.5722),
-    "Regensburg": (49.0134, 12.1016),
-    "Augsburg": (48.3712, 10.8982),
-    "Landshut": (48.5366, 12.1512),
-    "Bamberg": (49.8981, 10.9030),
-    "Bayreuth": (49.9456, 11.5713),
-    "Passau": (48.5667, 13.4319),
+    name: (lat, lon) for name, lat, lon, _population, _state in CITIES
 }
+CITY_STATE: dict[str, str] = {name: state for name, _lat, _lon, _population, state in CITIES}
 
 CITY_NAMES = tuple(CITY_COORDS)
 
@@ -119,8 +115,56 @@ class City:
         return replace(self, radius_km=radius_km)
 
 
+# Every spelling of every town, worked out once at import rather than on each
+# keystroke: nine hundred towns times three spellings is cheap to build and not
+# something to rebuild while someone is typing.
+_SPELLINGS: tuple[tuple[str, frozenset[str]], ...] = tuple(
+    (name, frozenset(_variants(name))) for name in CITY_NAMES
+)
+
+SEARCH_LIMIT = 20
+
+
+def search_cities(query: str, limit: int = SEARCH_LIMIT, exclude: object = ()) -> list[str]:
+    """The towns worth offering for what has been typed so far.
+
+    Towns that *start* with it first, then the ones that merely contain it,
+    each group biggest first — because someone typing `ber` means Berlin, and
+    someone typing `burg` probably means a town called Burg-something rather
+    than Augsburg. Empty query means "the biggest towns", so the picker has
+    something on it before a single key is pressed.
+    """
+    skip = set(exclude or ())
+    typed = _variants(query.strip())
+    if not query.strip():
+        return [name for name in CITY_NAMES if name not in skip][:limit]
+
+    starts: list[str] = []
+    contains: list[str] = []
+    for name, spellings in _SPELLINGS:
+        if name in skip:
+            continue
+        if any(spelling.startswith(word) for spelling in spellings for word in typed):
+            starts.append(name)
+        elif any(word in spelling for spelling in spellings for word in typed):
+            contains.append(name)
+    return (starts + contains)[:limit]
+
+
+def _suggestions(name: str) -> list[str]:
+    """The two or three towns someone probably meant."""
+    found = search_cities(name, limit=3)
+    if found:
+        return found
+    folded = {spelling: town for town, spellings in _SPELLINGS for spelling in spellings}
+    close = difflib.get_close_matches(_variants(name).pop(), list(folded), n=3, cutoff=0.7)
+    # dict.fromkeys keeps the order and drops the town a second spelling of it
+    # would otherwise name twice.
+    return list(dict.fromkeys(folded[spelling] for spelling in close))
+
+
 def resolve_city(name: str) -> City:
-    """One city by name — exact, cased, or umlaut-folded — or a readable error."""
+    """One town by name — exact, cased, or umlaut-folded — or a readable error."""
     if name in CITY_COORDS:
         lat, lon = CITY_COORDS[name]
         return City(name=name, lat=lat, lon=lon)
@@ -130,8 +174,13 @@ def resolve_city(name: str) -> City:
         if variants & _variants(canonical):
             return City(name=canonical, lat=lat, lon=lon)
 
+    # Naming every valid town was the helpful answer when there were thirteen.
+    # There are nine hundred, so it names the ones that look like what was
+    # meant instead.
+    suggestions = _suggestions(name)
+    hint = f" Did you mean {', '.join(suggestions)}?" if suggestions else ""
     raise ValueError(
-        f"Unknown city '{name}'. "
-        f"Valid cities are: {', '.join(CITY_NAMES)}. "
-        "Umlaut-free spellings like 'Muenchen' also work."
+        f"Unknown town '{name}'.{hint} "
+        "Pick one from the list on the Search page — umlaut-free spellings "
+        "like 'Muenchen' work too."
     )

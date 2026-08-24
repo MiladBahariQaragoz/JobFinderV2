@@ -67,10 +67,12 @@ def test_resume_mode_accepts_a_resume():
 
 
 def test_unknown_city_fails_at_build_time_not_search_time():
+    """Leipzig used to be the example here. It is a town the app searches now,
+    so the unknown one has to be a town that does not exist."""
     with pytest.raises(ValueError) as exc:
-        SearchSpec.build(mode="general", employment_types=["minijob"], city_names=["Leipzig"])
+        SearchSpec.build(mode="general", employment_types=["minijob"], city_names=["Lipzieg"])
 
-    assert "Leipzig" in str(exc.value)
+    assert "Lipzieg" in str(exc.value)
 
 
 def test_radius_override_applies_only_to_that_city():
