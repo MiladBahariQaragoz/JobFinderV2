@@ -37,15 +37,7 @@
 </div>
 {% else %}
 <form class="filters" method="post" action="/run/contacts">
-  <fieldset class="town-picker">
-    <legend>Towns to look in</legend>
-    {% for city in city_options %}
-    <label class="checkbox">
-      <input type="checkbox" name="cities" value="{{ city.name }}"{% if city.chosen %} checked{% endif %}>
-      {{ city.name }}
-    </label>
-    {% endfor %}
-  </fieldset>
+  {% with town_picker_legend = "Towns to look in" %}{% include "_town_picker.html" %}{% endwith %}
   <button type="submit" class="primary">
     {% if counts.total %}Look again{% else %}Build the list{% endif %}
   </button>

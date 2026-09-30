@@ -96,3 +96,40 @@ def test_playwright_smoke_filter_open_job_mark_applied(server_url):
             assert "applied" in page.inner_text("#actions")
         finally:
             browser.close()
+
+
+def test_playwright_the_town_picker_filters_and_keeps_what_was_ticked(server_url):
+    """The picker in the thing it is read in.
+
+    Three keystrokes, one tick, and then more typing: the town ticked has to
+    still be there afterwards, because the whole picker is re-rendered on every
+    toggle rather than only the matches under the box.
+    """
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.goto(f"{server_url}/search")
+            page.wait_for_selector("#town-picker")
+
+            page.fill("input[name='town_filter']", "flen")
+            page.wait_for_selector("#town-matches input[value='Flensburg']")
+
+            page.check("#town-matches input[value='Flensburg']")
+            page.wait_for_selector(".town-chosen input[value='Flensburg']")
+
+            # Typing again must not take it away.
+            page.fill("input[name='town_filter']", "kie")
+            page.wait_for_selector("#town-matches input[value='Kiel']")
+            assert page.is_checked(".town-chosen input[value='Flensburg']")
+
+            # And the towns from the settings are still there beside it.
+            assert page.is_checked(".town-chosen input[value='Ingolstadt']")
+
+            # Enter in the filter box must not start a search.
+            page.press("input[name='town_filter']", "Enter")
+            page.wait_for_timeout(400)
+            assert page.locator("[role='progressbar'][aria-label='searching']").count() == 0
+            assert page.locator("button.danger", has_text="Cancel").count() == 0
+        finally:
+            browser.close()

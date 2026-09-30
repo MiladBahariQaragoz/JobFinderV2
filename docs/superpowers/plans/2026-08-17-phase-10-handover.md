@@ -172,7 +172,7 @@ The wizard needs somewhere to write her answers, and `config.yaml` is the file
 - [x] `test_the_wizard_writes_the_cities_and_types_she_picked`
 - [x] `test_the_wizard_can_be_finished_without_a_key`
 - [x] `test_finishing_the_wizard_lands_her_on_the_search_page`
-- [x] `test_an_unknown_city_is_refused_with_the_names_that_work`
+- [x] `test_an_unknown_city_is_refused_and_nothing_is_written`
 - [x] `test_the_static_files_are_served_during_the_wizard`
 - [x] `test_the_wizard_keeps_a_key_that_was_already_in_the_env_file`
 

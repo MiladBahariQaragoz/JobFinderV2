@@ -1,15 +1,7 @@
 <form class="filters progress-panel search-form"
       hx-post="/run/start" hx-target="#progress-panel" hx-swap="outerHTML"
       method="post" action="/run/start">
-  <fieldset class="town-picker">
-    <legend>Towns</legend>
-    {% for city in city_options %}
-    <label class="checkbox">
-      <input type="checkbox" name="cities" value="{{ city.name }}"{% if city.chosen %} checked{% endif %}>
-      {{ city.name }}
-    </label>
-    {% endfor %}
-  </fieldset>
+  {% include "_town_picker.html" %}
   <label>Job types
     <input type="text" name="types" value="{{ default_types }}">
   </label>

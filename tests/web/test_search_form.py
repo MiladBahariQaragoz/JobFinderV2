@@ -4,7 +4,9 @@ Two rules this file holds, both asked for after seeing the app:
 
 - **Towns are ticked, not typed.** A text box asks her to spell
   `Neuburg an der Donau` correctly, and answers a typo with a refusal. The
-  list is known — thirteen towns — so it is a list.
+  list was thirteen towns and so it was a list; it is the whole country now
+  and so it is a filter — see `test_town_picker.py` for the picker itself.
+  What the form submits is a ticked checkbox either way.
 - **Search searches.** Explaining jobs in English is its own page, its own
   thread and its own free-tier cost, because the day she is done searching and
   only wants the interrupted explanations finished, one button that does both
@@ -39,13 +41,14 @@ class TestTownsAreTicked:
 
         assert checked_cities(body) == ["Neuburg an der Donau", "Ingolstadt", "München"]
 
-    def test_the_other_towns_are_offered_unticked(self, client):
-        """She can search Augsburg without editing a settings file — and
-        without it joining every search from now on."""
-        body = client.get("/search").text
+    def test_another_town_can_be_added_without_editing_a_settings_file(self, client):
+        """Augsburg was a checkbox on the page when the list was thirteen long.
+        It is two or three letters typed into the filter now, and still a tick
+        — and still not one that joins every search from now on."""
+        found = client.get("/cities/options", params={"town_filter": "augsb"}).text
 
-        assert "Augsburg" in offered_cities(body)
-        assert "Augsburg" not in checked_cities(body)
+        assert "Augsburg" in found
+        assert "Augsburg" not in checked_cities(client.get("/search").text)
 
     def test_the_towns_she_ticks_are_the_ones_searched(self, seeded, monkeypatch):
         from fastapi.testclient import TestClient
@@ -128,7 +131,6 @@ class TestTheOtherPlacesTownsAreAsked:
 
         assert '<input type="text" id="cities"' not in body
         assert checked_cities(body) == ["Neuburg an der Donau", "Ingolstadt", "München"]
-        assert "Augsburg" in offered_cities(body)
 
     def test_the_wizard_writes_the_towns_she_ticked(self, tmp_path):
         from fastapi.testclient import TestClient

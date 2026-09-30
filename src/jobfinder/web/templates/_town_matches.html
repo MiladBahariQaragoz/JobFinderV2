@@ -1,0 +1,22 @@
+{#
+  The towns that match what has been typed so far — swapped in on its own by
+  GET /cities/options, and rendered as part of the picker on a page load.
+  Every box carries the same toggle: ticking one re-renders the whole picker,
+  which is what stops a chosen town from vanishing with the next keystroke.
+#}
+<div id="town-matches" class="town-matches">
+  {% for city in city_matches %}
+  <label class="checkbox">
+    <input type="checkbox" name="cities" value="{{ city.name }}"
+           hx-post="/cities/toggle" hx-target="#town-picker" hx-swap="outerHTML"
+           hx-include="#town-picker">
+    <span>{{ city.name }}</span>
+    <span class="town-state">{{ city.state }}</span>
+  </label>
+  {% else %}
+  <p class="meta town-none">
+    No town in the list matches <span class="num">{{ town_filter }}</span>.
+    Try fewer letters — <span class="num">mun</span> finds München.
+  </p>
+  {% endfor %}
+</div>

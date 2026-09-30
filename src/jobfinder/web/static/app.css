@@ -430,15 +430,55 @@ details.original .body {
    spell "Neuburg an der Donau" exactly and answers a typo with a refusal. The
    ones from her setup come ticked; the rest are there for a wider look. */
 .town-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1rem;
+  display: block;
   border: 1px solid var(--rule);
   border-radius: 6px;
   padding: 0.5rem 0.75rem 0.6rem;
   margin: 0 0 0.75rem;
   max-width: 40rem;
 }
+/* ---- the picker: chosen above the rule, matches below ------------------- */
+.town-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+.town-chip {
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent-soft);
+}
+.town-filter {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+}
+.town-filter:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.town-matches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  max-height: 9.5rem;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rule);
+}
+.town-state {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+}
+.town-none { margin: 0.25rem 0 0; font-size: 0.8rem; }
 .town-picker legend {
   font-size: 0.75rem;
   color: var(--text-dim);

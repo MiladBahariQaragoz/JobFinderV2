@@ -46,20 +46,30 @@ def render(request: Request, template: str, context: dict, status_code: int = 20
     return templates.TemplateResponse(request, template, context, status_code=status_code)
 
 
-def city_options(settings) -> list[dict]:
-    """Every town the app knows, with hers ticked.
+def picker_context(settings, *, chosen=None, query: str = "") -> dict:
+    """What the town picker renders: the ticked towns, and what matches typing.
 
-    A text box asks her to spell `Neuburg an der Donau` exactly and answers a
-    typo with a refusal; the list of towns is thirteen long and known at import
-    time, so it is a list of checkboxes. The ones from her setup are ticked, and
-    the rest are there for the day she wants to look further afield — unticked,
-    because a search of thirteen towns is a very long search.
+    A text box would ask someone to spell `Neuburg an der Donau` exactly and
+    answer a typo with a refusal, so towns are ticked rather than typed. They
+    were a flat list of thirteen checkboxes until the list became every town in
+    Germany; now the same rule is kept by filtering — type two or three letters,
+    tick the one you meant, and what the form submits is still a canonical name.
+
+    `chosen` is the selection to render. `None` means "the towns from the
+    settings", which is what a page load wants; the partials pass the list the
+    form actually sent, empty list included — an empty picker is a real state.
     """
-    from jobfinder.cities import CITY_NAMES
+    from jobfinder.cities import CITY_STATE, search_cities
 
-    chosen = set(settings.cities)
-    ordered = list(settings.cities) + [name for name in CITY_NAMES if name not in chosen]
-    return [{"name": name, "chosen": name in chosen} for name in ordered]
+    names = list(settings.cities) if chosen is None else list(dict.fromkeys(chosen))
+    return {
+        "chosen_cities": [{"name": name, "state": CITY_STATE.get(name, "")} for name in names],
+        "town_filter": query,
+        "city_matches": [
+            {"name": name, "state": CITY_STATE.get(name, "")}
+            for name in search_cities(query, exclude=names)
+        ],
+    }
 
 
 def _list_context(request: Request) -> dict:
@@ -289,9 +299,44 @@ def _progress_context(request: Request) -> dict:
         # A run that ended with every source failed says so, rather than
         # leaving her to read "0 found" as an answer about her filters.
         "trouble": None if running else run_trouble(run, sources),
-        "city_options": city_options(settings),
+        **picker_context(settings),
         "default_types": ", ".join(settings.employment_types),
     }
+
+
+@router.get("/cities/options", response_class=HTMLResponse)
+def city_matches(request: Request):
+    """The towns worth offering for what has been typed so far."""
+    settings = request.app.state.settings
+    return render(
+        request,
+        "_town_matches.html",
+        picker_context(
+            settings,
+            chosen=request.query_params.getlist("cities"),
+            query=str(request.query_params.get("town_filter") or ""),
+        ),
+    )
+
+
+@router.post("/cities/toggle", response_class=HTMLResponse)
+async def toggle_city(request: Request):
+    """Ticking or unticking anything re-renders the whole picker.
+
+    Swapping only the matches would drop a town the moment the next letter was
+    typed, because the checkbox holding it would have been swapped away.
+    """
+    form = await request.form()
+    settings = request.app.state.settings
+    return render(
+        request,
+        "_town_picker.html",
+        picker_context(
+            settings,
+            chosen=[str(name) for name in form.getlist("cities")],
+            query=str(form.get("town_filter") or ""),
+        ),
+    )
 
 
 @router.get("/progress", response_class=HTMLResponse)
@@ -561,7 +606,7 @@ def _contacts_context(request: Request) -> dict:
         "worked_through": counts["total"] > 0 and not queue and not show_all,
         "finding": manager.is_finding_contacts() if manager is not None else False,
         "contacts_failure": manager.contacts_failure() if manager is not None else None,
-        "city_options": city_options(settings),
+        **picker_context(settings),
     }
 
 
@@ -732,7 +777,7 @@ def _setup_context(request: Request) -> dict:
         # Only the ones still without a key are worth offering her.
         "providers": [p for p in every_provider if p["env_var"] in missing_now],
         "ready": ready,
-        "city_options": city_options(settings),
+        **picker_context(settings),
         "default_types": ", ".join(settings.employment_types),
         "project_root": settings.project_root,
     }
@@ -760,11 +805,8 @@ async def finish_setup(request: Request):
     except SetupError as exc:
         context = _setup_context(request)
         context["error"] = str(exc)
-        # What she typed comes back, except the key — that one she pastes again.
-        context["city_options"] = [
-            {"name": option["name"], "chosen": option["name"] in set(form.getlist("cities"))}
-            for option in city_options(settings)
-        ]
+        # What was ticked comes back, except the key — that one is pasted again.
+        context.update(picker_context(settings, chosen=form.getlist("cities")))
         context["default_types"] = str(form.get("types", ""))
         return render(request, "setup.html", context)
 

@@ -929,7 +929,9 @@ never a failed run and never a blocked IP. Everything in
 - [x] `test_minijob_wording_sets_the_minijob_flag` + `test_detail_wording_sets_the_flags`
       ("Minijob", "450 €", "520 €", "Aushilfe", "geringfügig")
 - [x] `test_gesuche_ads_are_excluded` — people *seeking* work, not offering it
-- [x] `test_a_city_without_a_location_id_is_skipped_loudly`
+- [x] `test_a_town_without_a_location_id_is_skipped_not_refused` (renamed
+      2026-08-24: refusing the whole source stopped being right once the
+      town list left Bavaria)
 - [x] `tests/live/test_kleinanzeigen_location_ids.py` — each mapped id still returns ads
       whose **postcodes** match the intended city (big cities label ads by borough)
 - [ ] `test_stepstone_fixture_yields_expected_listing_urls` — URL parsing is

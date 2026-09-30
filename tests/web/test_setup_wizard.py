@@ -164,7 +164,10 @@ def test_finishing_the_wizard_lands_her_on_the_search_page(fresh):
     assert response.headers["location"] == "/search"
 
 
-def test_an_unknown_city_is_refused_with_the_names_that_work(fresh):
+def test_an_unknown_city_is_refused_and_nothing_is_written(fresh):
+    """Naming every town that does work was the helpful answer at thirteen. At
+    nine hundred and fifty the refusal says what was wrong and sends you to the
+    picker, and — the part that matters — writes nothing."""
     settings, client = fresh
 
     response = client.post(
@@ -172,7 +175,7 @@ def test_an_unknown_city_is_refused_with_the_names_that_work(fresh):
     )
 
     assert "Atlantis" in response.text
-    assert "Ingolstadt" in response.text  # the list of ones that do work
+    assert "Search page" in response.text
     assert not (settings.project_root / "config.yaml").exists()
 
 

@@ -22,15 +22,7 @@
     25 km, so a town brings the villages around it with it. You can change this
     later, and pick different ones for any single search.
   </p>
-  <fieldset class="town-picker">
-    <legend class="sr-only">Towns</legend>
-    {% for city in city_options %}
-    <label class="checkbox">
-      <input type="checkbox" name="cities" value="{{ city.name }}"{% if city.chosen %} checked{% endif %}>
-      {{ city.name }}
-    </label>
-    {% endfor %}
-  </fieldset>
+  {% include "_town_picker.html" %}
 
   <h2>What kind of work?</h2>
   <p class="meta">

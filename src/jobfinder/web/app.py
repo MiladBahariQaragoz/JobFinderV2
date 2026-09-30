@@ -56,7 +56,15 @@ def create_app(settings: Settings, *, run_manager=None, roles_pool_factory=None)
         from jobfinder.first_run import needs_setup
 
         path = request.url.path
-        exempt = path == "/setup" or path.startswith("/static") or path == "/healthz"
+        # `/cities` is exempt for the same reason `/static` is: the wizard's
+        # own town picker talks to it, and a redirect would leave the first
+        # page anyone ever sees with a filter box that answers nothing.
+        exempt = (
+            path == "/setup"
+            or path.startswith("/static")
+            or path.startswith("/cities")
+            or path == "/healthz"
+        )
         if not exempt and needs_setup(app.state.settings):
             from fastapi.responses import RedirectResponse
 

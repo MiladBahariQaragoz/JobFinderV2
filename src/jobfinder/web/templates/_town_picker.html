@@ -1,0 +1,36 @@
+{#
+  Where to work. Nine hundred and fifty towns is not a list of checkboxes, so
+  this asks for the first letters of one and offers what matches.
+
+  The filter box is deliberately named something no form here reads as a town:
+  what gets submitted is always a ticked checkbox carrying a canonical name,
+  so a typo can never reach a source. Enter is stopped by hand because this
+  picker lives inside the search form, and Enter in a filter box must not
+  start a four-minute search.
+#}
+<fieldset class="town-picker" id="town-picker">
+  <legend>{{ town_picker_legend | default("Towns") }}</legend>
+  <div class="town-chosen">
+    {% for city in chosen_cities %}
+    <label class="checkbox town-chip">
+      <input type="checkbox" name="cities" value="{{ city.name }}" checked
+             hx-post="/cities/toggle" hx-target="#town-picker" hx-swap="outerHTML"
+             hx-include="#town-picker">
+      <span>{{ city.name }}</span>
+      {% if city.state %}<span class="town-state">{{ city.state }}</span>{% endif %}
+    </label>
+    {% else %}
+    <p class="meta town-none">
+      No town picked yet — find one below.
+    </p>
+    {% endfor %}
+  </div>
+  <input class="town-filter" type="search" name="town_filter" value="{{ town_filter }}"
+         placeholder="Type the first letters of a town"
+         autocomplete="off" aria-label="Find a town"
+         hx-get="/cities/options" hx-target="#town-matches" hx-swap="outerHTML"
+         hx-trigger="input changed delay:150ms, search"
+         hx-include="#town-picker"
+         onkeydown="if (event.key === 'Enter') { event.preventDefault(); }">
+  {% include "_town_matches.html" %}
+</fieldset>
